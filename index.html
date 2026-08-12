@@ -156,7 +156,7 @@
             </div>
         </div>
 
-        <!-- GAS 連線區塊 (iPad 強制連線支援) -->
+        <!-- GAS 連線區塊 (iPad JSONP 穿透技術) -->
         <div class="shrink-0 mb-3 bg-[#f5ebe0]/80 p-2 rounded-lg border border-[#ddc8b4]">
             <label class="text-[10px] text-slate-500 block font-medium mb-1">Google GAS 雲端網址</label>
             <div class="flex gap-1">
@@ -652,7 +652,6 @@
             fetchCloudData();
         }
 
-        // 🌟 iPad 專屬修復：清理網址與驗證
         function saveGasConfig() {
             let inputUrl = document.getElementById('gasUrlInput').value.trim();
             if (!inputUrl) {
@@ -694,117 +693,141 @@
             if (fancyAnchor) fancyAnchor.href = getGoogleDriveOriginalLink(images[currentIndex]);
         };
 
-        // 🌟 核心修復：相容 iOS/iPad Safari 的跨網域通訊 Fetch 管道
-        async function fetchCloudData(showAlert = false) {
+        // 🌟 全新雙軌連線機制：優先試用 JSONP 穿透（專為 iPad Safari 設計），失敗時自動降級至 Fetch
+        window.handleGasJsonpResponse = function(response) {
+            if (response && response.data) {
+                renderMapMarkers(response.data);
+                if (window.pendingGasAlert) {
+                    alert("✅ 連線成功！已成功穿透 Safari 限制並同步手帳資料！");
+                    window.pendingGasAlert = false;
+                }
+            }
+        };
+
+        function fetchCloudData(showAlert = false) {
             if (!gasUrl) return;
+            window.pendingGasAlert = showAlert;
+
+            // 1. 嘗試 JSONP 方式 (100% 穿透 iPad Safari)
+            const scriptId = 'gas_jsonp_script';
+            const oldScript = document.getElementById(scriptId);
+            if (oldScript) oldScript.remove();
+
+            let cleanUrl = gasUrl;
+            cleanUrl += (cleanUrl.includes('?') ? '&' : '?') + 'action=read&callback=handleGasJsonpResponse&_t=' + Date.now();
+
+            const script = document.createElement('script');
+            script.id = scriptId;
+            script.src = cleanUrl;
+            script.onerror = function() {
+                // 如果 JSONP 失敗，自動降級嘗試傳統 Fetch
+                fetchFallback(showAlert);
+            };
+            document.body.appendChild(script);
+        }
+
+        async function fetchFallback(showAlert) {
             try {
                 let cleanUrl = gasUrl;
                 if (!cleanUrl.includes('action=read')) {
                     cleanUrl += (cleanUrl.includes('?') ? '&' : '?') + 'action=read';
                 }
-
-                // 加入 cache: 'no-cache' 避免 iPad Safari 讀取舊快取，並設定 redirect: 'follow'
-                const res = await fetch(cleanUrl, {
-                    method: 'GET',
-                    redirect: 'follow',
-                    headers: { 'Accept': 'application/json' }
-                });
-
-                if (!res.ok) throw new Error("網路連線異常");
+                const res = await fetch(cleanUrl, { method: 'GET', redirect: 'follow' });
                 const json = await res.json();
-                markersData = json.data || [];
-
-                markersData.sort((a, b) => (a.order || 0) - (b.order || 0));
-
-                map.eachLayer(layer => {
-                    if (layer instanceof L.Marker) map.removeLayer(layer);
-                });
-                markerInstances = {};
-
-                markersData.forEach(item => {
-                    const marker = L.marker([parseFloat(item.lat), parseFloat(item.lng)], { icon: createCustomIcon(item.color, item.icon) }).addTo(map);
-                    markerInstances[item.id] = marker; 
-                    
-                    const rawImages = parseImageUrls(item.image_url);
-                    const embedVideoUrl = getYouTubeEmbedUrl(item.video_url);
-                    const cleanDate = formatDateString(item.date);
-
-                    let popupHtml = '<div class="p-1 min-w-[200px] text-slate-700">';
-                    popupHtml += '<div class="font-bold text-sm text-[#7f5539] mb-0.5">' + item.title + '</div>';
-                    
-                    if (cleanDate) {
-                        popupHtml += `<div class="text-[11px] text-pink-600 font-medium mb-1.5 flex items-center gap-1">📅 ${cleanDate}</div>`;
-                    }
-                    
-                    if (rawImages.length > 0) {
-                        const firstSafeImg = convertGoogleDriveLink(rawImages[0]);
-                        const galleryGroup = `gallery_${item.id}`;
-                        
-                        popupHtml += `
-                            <div id="popup_img_box_${item.id}" data-images="${rawImages.join(',')}" data-index="0" class="popup-img-container relative w-full h-32 rounded-lg overflow-hidden bg-slate-100 flex items-center justify-center mt-1 mb-1.5 shadow-sm group select-none">
-                                <a href="${getGoogleDriveOriginalLink(rawImages[0])}" data-caption="${item.title}" data-fancybox="${galleryGroup}" class="w-full h-full flex items-center justify-center">
-                                    <img src="${firstSafeImg}" class="w-full h-full object-cover map-thumb" onerror="this.parentElement.parentElement.innerHTML='<span class=\'text-[10px] text-slate-400\'>圖片載入中/未公開</span>'">
-                                </a>
-                                ${rawImages.length > 1 ? `
-                                    <span class="img-count-badge absolute top-1 right-1 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded-md z-10 pointer-events-none">1/${rawImages.length}</span>
-                                    <button onclick="event.stopPropagation(); changePopupImage('${item.id}', -1)" class="btn-interactive absolute left-1 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/70 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs shadow-md z-10 font-bold">❮</button>
-                                    <button onclick="event.stopPropagation(); changePopupImage('${item.id}', 1)" class="btn-interactive absolute right-1 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/70 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs shadow-md z-10 font-bold">❯</button>
-                                ` : ''}
-                            </div>`;
-                    }
-                    
-                    if (embedVideoUrl) {
-                        popupHtml += `
-                            <div class="w-full h-28 rounded-lg overflow-hidden bg-black mt-1 mb-1.5 shadow-sm">
-                                <iframe class="w-full h-full" src="${embedVideoUrl}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
-                            </div>`;
-                    }
-
-                    if (item.notes) {
-                        popupHtml += '<div class="text-[12px] text-slate-600 popup-notes mt-1 border-t border-slate-100 pt-1.5 leading-relaxed">' + item.notes + '</div>';
-                    }
-                    popupHtml += '</div>';
-                    
-                    marker.bindPopup(popupHtml, { 
-                        minWidth: 220, 
-                        maxWidth: 390,
-                        autoPan: false
-                    });
-
-                    marker.on('click', (e) => {
-                        if (!isEditMode) return;
-
-                        activeId = item.id;
-                        currentLatLng = { lat: parseFloat(item.lat), lng: parseFloat(item.lng) };
-                        
-                        openPanel(false);
-                        document.getElementById('placeTitle').value = item.title;
-                        document.getElementById('placeDate').value = formatDateString(item.date);
-                        document.getElementById('placeNotes').value = item.notes || '';
-                        document.getElementById('placeImageUrl').value = item.image_url || '';
-                        document.getElementById('placeVideoUrl').value = item.video_url || '';
-                        document.getElementById('placeColor').value = item.color;
-                        document.getElementById('placeIcon').value = item.icon;
-                        document.getElementById('placeFolder').value = item.folder_name;
-                    });
-                });
-
-                renderSidebar();
-                renderTimeline();
-                renderGallery();
-                updateFolderSelect();
-                
-                Fancybox.bind("[data-fancybox]", {
-                    Hash: false, Thumbs: false,
-                    Toolbar: { display: { left: ["infobar"], middle: [], right: ["zoomIn", "zoomOut", "close"] } }
-                });
-
+                renderMapMarkers(json.data || []);
                 if (showAlert) alert("✅ 連線成功！已同步載入浪漫手帳資料。");
-
             } catch (e) {
                 console.error("GAS 連線失敗:", e);
-                if (showAlert) alert("❌ 連線失敗：請檢查 GAS 部署權限是否設為「所有人 (Anyone)」，且網址結尾是否為 /exec");
+                if (showAlert) alert("❌ 連線失敗：請檢查步驟 1 的 GAS 程式碼是否有更新並重新部署喔！");
             }
+        }
+
+        function renderMapMarkers(data) {
+            markersData = data || [];
+            markersData.sort((a, b) => (a.order || 0) - (b.order || 0));
+
+            map.eachLayer(layer => {
+                if (layer instanceof L.Marker) map.removeLayer(layer);
+            });
+            markerInstances = {};
+
+            markersData.forEach(item => {
+                const marker = L.marker([parseFloat(item.lat), parseFloat(item.lng)], { icon: createCustomIcon(item.color, item.icon) }).addTo(map);
+                markerInstances[item.id] = marker; 
+                
+                const rawImages = parseImageUrls(item.image_url);
+                const embedVideoUrl = getYouTubeEmbedUrl(item.video_url);
+                const cleanDate = formatDateString(item.date);
+
+                let popupHtml = '<div class="p-1 min-w-[200px] text-slate-700">';
+                popupHtml += '<div class="font-bold text-sm text-[#7f5539] mb-0.5">' + item.title + '</div>';
+                
+                if (cleanDate) {
+                    popupHtml += `<div class="text-[11px] text-pink-600 font-medium mb-1.5 flex items-center gap-1">📅 ${cleanDate}</div>`;
+                }
+                
+                if (rawImages.length > 0) {
+                    const firstSafeImg = convertGoogleDriveLink(rawImages[0]);
+                    const galleryGroup = `gallery_${item.id}`;
+                    
+                    popupHtml += `
+                        <div id="popup_img_box_${item.id}" data-images="${rawImages.join(',')}" data-index="0" class="popup-img-container relative w-full h-32 rounded-lg overflow-hidden bg-slate-100 flex items-center justify-center mt-1 mb-1.5 shadow-sm group select-none">
+                            <a href="${getGoogleDriveOriginalLink(rawImages[0])}" data-caption="${item.title}" data-fancybox="${galleryGroup}" class="w-full h-full flex items-center justify-center">
+                                <img src="${firstSafeImg}" class="w-full h-full object-cover map-thumb" onerror="this.parentElement.parentElement.innerHTML='<span class=\'text-[10px] text-slate-400\'>圖片載入中/未公開</span>'">
+                            </a>
+                            ${rawImages.length > 1 ? `
+                                <span class="img-count-badge absolute top-1 right-1 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded-md z-10 pointer-events-none">1/${rawImages.length}</span>
+                                <button onclick="event.stopPropagation(); changePopupImage('${item.id}', -1)" class="btn-interactive absolute left-1 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/70 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs shadow-md z-10 font-bold">❮</button>
+                                <button onclick="event.stopPropagation(); changePopupImage('${item.id}', 1)" class="btn-interactive absolute right-1 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/70 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs shadow-md z-10 font-bold">❯</button>
+                            ` : ''}
+                        </div>`;
+                }
+                
+                if (embedVideoUrl) {
+                    popupHtml += `
+                        <div class="w-full h-28 rounded-lg overflow-hidden bg-black mt-1 mb-1.5 shadow-sm">
+                            <iframe class="w-full h-full" src="${embedVideoUrl}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+                        </div>`;
+                }
+
+                if (item.notes) {
+                    popupHtml += '<div class="text-[12px] text-slate-600 popup-notes mt-1 border-t border-slate-100 pt-1.5 leading-relaxed">' + item.notes + '</div>';
+                }
+                popupHtml += '</div>';
+                
+                marker.bindPopup(popupHtml, { 
+                    minWidth: 220, 
+                    maxWidth: 390,
+                    autoPan: false
+                });
+
+                marker.on('click', (e) => {
+                    if (!isEditMode) return;
+
+                    activeId = item.id;
+                    currentLatLng = { lat: parseFloat(item.lat), lng: parseFloat(item.lng) };
+                    
+                    openPanel(false);
+                    document.getElementById('placeTitle').value = item.title;
+                    document.getElementById('placeDate').value = formatDateString(item.date);
+                    document.getElementById('placeNotes').value = item.notes || '';
+                    document.getElementById('placeImageUrl').value = item.image_url || '';
+                    document.getElementById('placeVideoUrl').value = item.video_url || '';
+                    document.getElementById('placeColor').value = item.color;
+                    document.getElementById('placeIcon').value = item.icon;
+                    document.getElementById('placeFolder').value = item.folder_name;
+                });
+            });
+
+            renderSidebar();
+            renderTimeline();
+            renderGallery();
+            updateFolderSelect();
+            
+            Fancybox.bind("[data-fancybox]", {
+                Hash: false, Thumbs: false,
+                Toolbar: { display: { left: ["infobar"], middle: [], right: ["zoomIn", "zoomOut", "close"] } }
+            });
         }
 
         function switchSidebarTab(tabName) {
