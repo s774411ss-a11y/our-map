@@ -55,7 +55,7 @@
             word-break: break-all;
         }
 
-        /* 🌟 動態回放專屬樣式：對話框放大 30% (300px -> 390px)，照片完整顯示 */
+        /* 動態回放專屬樣式：對話框放大 30% (300px -> 390px)，照片完整顯示 */
         body.playback-active .leaflet-popup {
             min-width: 330px !important;
         }
@@ -926,7 +926,6 @@
             updatePlaybackButtonUI(playbackState);
         }
 
-        // 🌟 精準解法：僅在動態回放時，用螢幕像素 (Pixel) 將地圖中心強制下平移 260px，讓圖標精準落在下半部（圖二位置）
         function runPlaybackLoop() {
             if (playbackState !== 'playing') return;
 
@@ -945,9 +944,8 @@
                 const targetLatLng = L.latLng(parseFloat(item.lat), parseFloat(item.lng));
                 const targetZoom = 15;
 
-                // 🌟 使用像素 offset 轉換，確保不管地圖怎麼縮放，圖標都精準落在螢幕下半部 260px 處
                 const targetPoint = map.project(targetLatLng, targetZoom);
-                const offsetPoint = L.point(targetPoint.x, targetPoint.y - 260); // 往下搬移地圖中心 = 圖標相對往下掉
+                const offsetPoint = L.point(targetPoint.x, targetPoint.y - 260); 
                 const centerLatLng = map.unproject(offsetPoint, targetZoom);
 
                 map.setView(centerLatLng, targetZoom, { animate: true, duration: 0.6 });
@@ -1120,7 +1118,6 @@
             lucide.createIcons();
         }
 
-        // 🌟 一般點擊（集合 / 時間軸）：正常拉到景點為中心
         function focusPlace(lat, lng, id) {
             const targetLat = parseFloat(lat);
             const targetLng = parseFloat(lng);
