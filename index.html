@@ -128,9 +128,9 @@
 <body class="bg-[#f4ebe1] text-slate-700 h-screen flex flex-col md:flex-row font-sans relative overflow-hidden">
 
     <!-- 側邊欄區域 -->
-    <div class="w-full md:w-80 bg-[#ede0d4] p-4 flex flex-col border-b md:border-b-0 md:border-r border-[#ddc8b4] h-2/5 md:h-full z-[1000] shadow-md">
+    <div class="w-full md:w-80 bg-[#ede0d4] p-4 flex flex-col border-b md:border-b-0 md:border-r border-[#ddc8b4] h-2/5 md:h-full z-[1000] shadow-md relative">
         <!-- 標題與分頁切換按鈕 -->
-        <div class="mb-3">
+        <div class="shrink-0 mb-3">
             <h1 class="text-xl font-bold flex items-center gap-2 mb-2 text-[#7f5539]">
                 <i data-lucide="heart-handshake" class="text-[#b7b7a4]"></i> 浪漫足跡手帳
             </h1>
@@ -144,7 +144,7 @@
         </div>
 
         <!-- GAS 連線區塊 -->
-        <div class="mb-3 bg-[#f5ebe0]/80 p-2 rounded-lg border border-[#ddc8b4]">
+        <div class="shrink-0 mb-3 bg-[#f5ebe0]/80 p-2 rounded-lg border border-[#ddc8b4]">
             <label class="text-[10px] text-slate-500 block font-medium mb-1">Google GAS 雲端網址</label>
             <div class="flex gap-1">
                 <input type="text" id="gasUrlInput" class="w-full text-xs p-1.5 rounded bg-white border border-[#ddc8b4] text-slate-700 focus:outline-none focus:border-[#7f5539] disabled:bg-slate-100 disabled:text-slate-400" placeholder="請貼上 GAS Web App 網址">
@@ -153,7 +153,7 @@
         </div>
 
         <!-- 內容切換區域 1: 我的景點集合 -->
-        <div id="viewFolders" class="flex-1 overflow-y-auto space-y-3 pr-1">
+        <div id="viewFolders" class="flex-1 overflow-y-auto space-y-3 pr-1 mb-12">
             <div class="flex justify-between items-center">
                 <h2 class="text-xs font-semibold text-[#7f5539] uppercase tracking-wider">景點集合</h2>
                 <button id="btnCreateFolder" onclick="createNewFolder()" class="text-xs text-[#9c6644] flex items-center gap-1 hover:underline font-medium disabled:opacity-30 disabled:no-underline disabled:cursor-not-allowed">
@@ -164,8 +164,8 @@
         </div>
 
         <!-- 內容切換區域 2: 時間軸檢視 (Timeline) -->
-        <div id="viewTimeline" class="hidden flex-1 flex flex-col min-h-0">
-            <div class="flex flex-col gap-1.5 mb-2 pb-2 border-b border-[#ddc8b4]">
+        <div id="viewTimeline" class="hidden flex-1 flex flex-col min-h-0 mb-12">
+            <div class="flex flex-col gap-1.5 mb-2 pb-2 border-b border-[#ddc8b4] shrink-0">
                 <div class="flex justify-between items-center">
                     <span class="text-xs font-semibold text-[#7f5539]">回憶時間軸 (可按住拖動順序)</span>
                     <button id="btnPlayTimeline" onclick="toggleTimelinePlayback()" class="text-xs bg-[#7f5539] text-white px-2.5 py-1 rounded-md hover:bg-[#9c6644] flex items-center gap-1 shadow-xs transition">
@@ -186,13 +186,13 @@
         </div>
 
         <!-- 內容切換區域 3: 拍立得相片牆 (Photo Wall) -->
-        <div id="viewGallery" class="hidden flex-1 overflow-y-auto space-y-3 pr-1">
+        <div id="viewGallery" class="hidden flex-1 overflow-y-auto space-y-3 pr-1 mb-12">
             <div id="galleryContainer" class="space-y-3"></div>
         </div>
 
-        <!-- 底部權限切換按鈕 -->
-        <div class="pt-3 border-t border-[#ddc8b4]/60 mt-auto">
-            <button id="btnToggleAuth" onclick="toggleAuthMode()" class="w-full text-xs bg-[#7f5539] hover:bg-[#9c6644] text-white py-1.5 rounded-md font-medium transition shadow-sm flex items-center justify-center gap-1.5">
+        <!-- 🌟 底部權限切換按鈕：固定釘在側邊欄最下方，絕不被蓋住 -->
+        <div class="absolute bottom-0 left-0 right-0 p-3 bg-[#ede0d4] border-t border-[#ddc8b4] z-20">
+            <button id="btnToggleAuth" onclick="toggleAuthMode()" class="w-full text-xs bg-[#7f5539] hover:bg-[#9c6644] text-white py-2 rounded-md font-medium transition shadow-md flex items-center justify-center gap-1.5">
                 <i id="authIcon" data-lucide="eye" class="w-3.5 h-3.5"></i>
                 <span id="authText">觀看模式</span>
             </button>
@@ -1169,7 +1169,7 @@
                 
                 authText.innerText = "編輯模式";
                 authIcon.setAttribute('data-lucide', 'lock-open');
-                btnToggle.className = "w-full text-xs bg-emerald-600 hover:bg-emerald-700 text-white py-1.5 rounded-md font-medium transition shadow-sm flex items-center justify-center gap-1.5";
+                btnToggle.className = "w-full text-xs bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-md font-medium transition shadow-md flex items-center justify-center gap-1.5";
             } else {
                 gasInput.disabled = true;
                 btnConnect.disabled = true;
@@ -1177,7 +1177,7 @@
 
                 authText.innerText = "觀看模式";
                 authIcon.setAttribute('data-lucide', 'eye');
-                btnToggle.className = "w-full text-xs bg-[#7f5539] hover:bg-[#9c6644] text-white py-1.5 rounded-md font-medium transition shadow-sm flex items-center justify-center gap-1.5";
+                btnToggle.className = "w-full text-xs bg-[#7f5539] hover:bg-[#9c6644] text-white py-2 rounded-md font-medium transition shadow-md flex items-center justify-center gap-1.5";
             }
             
             renderSidebar();
