@@ -1,0 +1,1202 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>質感生活同步互動地圖 - 回憶手帳版</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.umd.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css" />
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+
+    <!-- Google 字體：手寫風字型增添拍立得質感 -->
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Noto Sans TC', sans-serif; }
+        .font-handwriting { font-family: 'Caveat', cursive, 'Noto Sans TC', sans-serif; }
+
+        /* 修正 Leaflet 彈出視窗為暖米白色風格 */
+        .leaflet-popup-content-wrapper {
+            background: #fdfbf7 !important;
+            color: #334155 !important;
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 0.75rem !important;
+            padding: 0.2rem !important;
+            box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.1) !important;
+        }
+        .leaflet-popup-tip {
+            background: #fdfbf7 !important;
+            border: 1px solid #e2e8f0 !important;
+        }
+        .leaflet-popup-close-button {
+            color: #94a3b8 !important;
+            padding: 8px 8px 0 0 !important;
+        }
+        .leaflet-popup-close-button:hover {
+            color: #334155 !important;
+        }
+        
+        .map-thumb {
+            transition: transform 0.2s ease;
+        }
+
+        /* 確保筆記字串可以自動換行，保留換行符號 */
+        .popup-notes {
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        /* 🌟 動態回放專屬樣式：對話框放大 30% (300px -> 390px)，照片完整顯示 */
+        body.playback-active .leaflet-popup {
+            min-width: 330px !important;
+        }
+        body.playback-active .leaflet-popup-content-wrapper {
+            max-height: 80vh !important;
+            overflow-y: auto !important;
+        }
+        body.playback-active .leaflet-popup-content {
+            width: 350px !important;
+            max-width: 390px !important;
+            margin: 12px !important;
+        }
+        body.playback-active .popup-img-container {
+            height: auto !important;
+            max-height: 380px !important;
+            background-color: #f1f5f9 !important;
+        }
+        body.playback-active .popup-img-container img {
+            object-fit: contain !important;
+            height: auto !important;
+            max-height: 360px !important;
+        }
+
+        /* 美化搜尋輸入框以融入文青風格 */
+        .leaflet-control-geocoder {
+            border: 1px solid #ddc8b4 !important;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05) !important;
+            border-radius: 0.5rem !important;
+            background-color: #fdfbf7 !important;
+        }
+        .leaflet-control-geocoder-form input {
+            background-color: #fdfbf7 !important;
+            color: #334155 !important;
+        }
+
+        /* 拖曳時被選中項目的樣式樣式 */
+        .sortable-ghost {
+            opacity: 0.4;
+            background-color: #ede0d4 !important;
+        }
+        .sortable-chosen {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        /* 拍立得卡片效果 */
+        .polaroid-card {
+            background: #fff;
+            padding: 8px 8px 16px 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+        }
+        .polaroid-card:hover {
+            transform: translateY(-4px) rotate(1deg);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        }
+
+        /* 時間軸節點動畫 */
+        .timeline-item {
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+        .timeline-item.active {
+            border-left-color: #7f5539;
+        }
+
+        /* 隱藏滾動條但保持滾動 */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-[#f4ebe1] text-slate-700 h-screen flex flex-col md:flex-row font-sans relative overflow-hidden">
+
+    <!-- 側邊欄區域 -->
+    <div class="w-full md:w-80 bg-[#ede0d4] p-4 flex flex-col border-b md:border-b-0 md:border-r border-[#ddc8b4] h-2/5 md:h-full z-[1000] shadow-md">
+        <!-- 標題與分頁切換按鈕 -->
+        <div class="mb-3">
+            <h1 class="text-xl font-bold flex items-center gap-2 mb-2 text-[#7f5539]">
+                <i data-lucide="heart-handshake" class="text-[#b7b7a4]"></i> 浪漫足跡手帳
+            </h1>
+            
+            <!-- 模式功能頁籤 -->
+            <div class="grid grid-cols-3 gap-1 bg-[#dfd0c0] p-1 rounded-lg text-xs font-medium text-[#7f5539]">
+                <button id="tabFolders" onclick="switchSidebarTab('folders')" class="py-1.5 rounded-md bg-[#fdfbf7] shadow-xs text-center transition">集合</button>
+                <button id="tabTimeline" onclick="switchSidebarTab('timeline')" class="py-1.5 rounded-md hover:bg-[#fdfbf7]/50 text-center transition">時間軸</button>
+                <button id="tabGallery" onclick="switchSidebarTab('gallery')" class="py-1.5 rounded-md hover:bg-[#fdfbf7]/50 text-center transition">拍立得</button>
+            </div>
+        </div>
+
+        <!-- GAS 連線區塊 -->
+        <div class="mb-3 bg-[#f5ebe0]/80 p-2 rounded-lg border border-[#ddc8b4]">
+            <label class="text-[10px] text-slate-500 block font-medium mb-1">Google GAS 雲端網址</label>
+            <div class="flex gap-1">
+                <input type="text" id="gasUrlInput" class="w-full text-xs p-1.5 rounded bg-white border border-[#ddc8b4] text-slate-700 focus:outline-none focus:border-[#7f5539] disabled:bg-slate-100 disabled:text-slate-400" placeholder="請貼上 GAS Web App 網址">
+                <button id="btnConnectCloud" onclick="saveGasConfig()" class="text-xs bg-[#7f5539] hover:bg-[#9c6644] text-white px-2 py-1.5 rounded-md font-medium transition whitespace-nowrap disabled:bg-slate-400">連線</button>
+            </div>
+        </div>
+
+        <!-- 內容切換區域 1: 我的景點集合 -->
+        <div id="viewFolders" class="flex-1 overflow-y-auto space-y-3 pr-1">
+            <div class="flex justify-between items-center">
+                <h2 class="text-xs font-semibold text-[#7f5539] uppercase tracking-wider">景點集合</h2>
+                <button id="btnCreateFolder" onclick="createNewFolder()" class="text-xs text-[#9c6644] flex items-center gap-1 hover:underline font-medium disabled:opacity-30 disabled:no-underline disabled:cursor-not-allowed">
+                    <i data-lucide="folder-plus" class="w-3.5 h-3.5"></i>新增集合
+                </button>
+            </div>
+            <div id="folderContainer" class="space-y-2"></div>
+        </div>
+
+        <!-- 內容切換區域 2: 時間軸檢視 (Timeline) -->
+        <div id="viewTimeline" class="hidden flex-1 flex flex-col min-h-0">
+            <div class="flex flex-col gap-1.5 mb-2 pb-2 border-b border-[#ddc8b4]">
+                <div class="flex justify-between items-center">
+                    <span class="text-xs font-semibold text-[#7f5539]">回憶時間軸 (可按住拖動順序)</span>
+                    <button id="btnPlayTimeline" onclick="toggleTimelinePlayback()" class="text-xs bg-[#7f5539] text-white px-2.5 py-1 rounded-md hover:bg-[#9c6644] flex items-center gap-1 shadow-xs transition">
+                        <i data-lucide="play" class="w-3 h-3"></i>動態回放
+                    </button>
+                </div>
+                <div class="flex items-center justify-between bg-[#f5ebe0]/90 p-1.5 rounded border border-[#ddc8b4]/80 text-[11px] text-slate-600">
+                    <span class="flex items-center gap-1"><i data-lucide="timer" class="w-3 h-3 text-[#7f5539]"></i> 每張照片停留時間:</span>
+                    <div class="flex items-center gap-1">
+                        <input type="number" id="playbackDelayInput" min="1" max="10" step="0.5" value="2.5" onchange="savePlaybackDelay()" class="w-12 text-center p-0.5 rounded border border-[#ddc8b4] bg-white text-slate-800 text-xs focus:outline-none">
+                        <span>秒</span>
+                    </div>
+                </div>
+            </div>
+            <div id="timelineContainer" class="flex-1 overflow-y-auto space-y-2 pr-1 no-scrollbar relative">
+                <!-- 動態注入時間軸節點 -->
+            </div>
+        </div>
+
+        <!-- 內容切換區域 3: 拍立得相片牆 (Photo Wall) -->
+        <div id="viewGallery" class="hidden flex-1 overflow-y-auto space-y-3 pr-1">
+            <div id="galleryContainer" class="space-y-3"></div>
+        </div>
+
+        <!-- 底部權限切換按鈕 -->
+        <div class="pt-3 border-t border-[#ddc8b4]/60 mt-auto">
+            <button id="btnToggleAuth" onclick="toggleAuthMode()" class="w-full text-xs bg-[#7f5539] hover:bg-[#9c6644] text-white py-1.5 rounded-md font-medium transition shadow-sm flex items-center justify-center gap-1.5">
+                <i id="authIcon" data-lucide="eye" class="w-3.5 h-3.5"></i>
+                <span id="authText">觀看模式</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- 地圖核心容器 -->
+    <div id="map" class="flex-1 h-3/5 md:h-full z-[1]"></div>
+
+    <!-- 景點編輯與新增面板 -->
+    <div id="editPanel" class="hidden w-full md:w-80 bg-[#fdfbf7] p-4 border-t md:border-t-0 md:border-l border-[#ddc8b4] md:h-full flex flex-col z-[1000] shadow-xl">
+        <div class="flex justify-between items-center mb-4">
+            <h3 id="panelTitle" class="font-bold text-lg text-[#7f5539]">新增景點</h3>
+            <button onclick="closePanel()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x"></i></button>
+        </div>
+        
+        <div class="space-y-3 flex-1 overflow-y-auto text-sm text-slate-600 pr-1">
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1">地點名稱 (主旨)</label>
+                <input type="text" id="placeTitle" class="w-full p-2 rounded-md bg-white border border-slate-200 text-slate-800 focus:outline-none focus:border-[#7f5539]">
+            </div>
+            
+            <!-- 紀念/踩點日期欄位 -->
+            <div>
+                <label class="block text-xs font-medium text-[#7f5539] font-bold mb-1 flex items-center gap-1">
+                    <i data-lucide="calendar-heart" class="w-3.5 h-3.5 text-pink-500"></i> 紀念/踩點日期
+                </label>
+                <input type="date" id="placeDate" class="w-full p-2 rounded-md bg-white border border-slate-200 text-slate-800 focus:outline-none focus:border-[#7f5539]">
+            </div>
+
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1">所屬集合</label>
+                <select id="placeFolder" class="w-full p-2 rounded-md bg-white border border-slate-200 text-slate-800 focus:outline-none focus:border-[#7f5539]"></select>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">標記顏色</label>
+                    <select id="placeColor" class="w-full p-2 rounded-md bg-white border border-slate-200 text-slate-800">
+                        <option value="red">🔴 紅色</option>
+                        <option value="blue">🔵 藍色</option>
+                        <option value="green">🟢 綠色</option>
+                        <option value="yellow">🟡 黃色</option>
+                        <option value="purple">🟣 紫色</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">標記圖標</label>
+                    <select id="placeIcon" class="w-full p-2 rounded-md bg-white border border-slate-200 text-slate-800">
+                        <option value="map-pin">📍 預設點</option>
+                        <option value="footprints">👣 我們的足跡</option>
+                        <option value="utensils">🍴 美食餐廳</option>
+                        <option value="heart">💖 第一次/紀念</option>
+                        <option value="calendar">📅 未來計畫</option>
+                    </select>
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1">圖片網址 (多張請用逗號 , 隔開)</label>
+                <input type="text" id="placeImageUrl" class="w-full p-2 rounded-md bg-white border border-slate-200 text-slate-800 focus:outline-none focus:border-[#7f5539]" placeholder="網址1, 網址2...">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1">YouTube 影片網址</label>
+                <input type="text" id="placeVideoUrl" class="w-full p-2 rounded-md bg-white border border-slate-200 text-slate-800 focus:outline-none focus:border-[#7f5539]" placeholder="https://...">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1">筆記想法</label>
+                <textarea id="placeNotes" rows="3" class="w-full p-2 rounded-md bg-white border border-slate-200 text-slate-800 focus:outline-none focus:border-[#7f5539]"></textarea>
+            </div>
+        </div>
+
+        <div class="pt-4 border-t border-slate-100 flex gap-2">
+            <button onclick="deleteMarker()" id="btnDelete" class="flex-1 py-2 bg-red-50 text-red-600 rounded-md hover:bg-red-100 transition font-medium text-sm">刪除</button>
+            <button onclick="saveMarkerData()" class="flex-1 py-2 bg-[#7f5539] text-white rounded-md hover:bg-[#9c6644] transition font-medium text-sm shadow-sm">儲存並同步</button>
+        </div>
+    </div>
+
+    <script>
+        const map = L.map('map').setView([23.6, 121.0], 7);
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19
+        }).addTo(map);
+
+        const CustomTaiwanGeocoder = {
+            geocode: function(query) {
+                const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&accept-language=zh-TW&limit=6`;
+                
+                return fetch(url)
+                    .then(res => {
+                        if (!res.ok) throw new Error("網路請求失敗");
+                        return res.json();
+                    })
+                    .then(data => {
+                        if (!data || data.length === 0) return [];
+
+                        return data.map(item => {
+                            let cleanName = item.display_name
+                                .replace(/, 臺灣|, 中華民國/g, '')
+                                .split(', ').reverse().join(' ').trim();
+
+                            const lat = parseFloat(item.lat);
+                            const lng = parseFloat(item.lon);
+
+                            return {
+                                name: cleanName,
+                                center: L.latLng(lat, lng),
+                                bounds: L.latLngBounds(
+                                    [parseFloat(item.boundingbox[0]), parseFloat(item.boundingbox[2])],
+                                    [parseFloat(item.boundingbox[1]), parseFloat(item.boundingbox[3])]
+                                )
+                            };
+                        });
+                    })
+                    .catch((err) => {
+                        console.error("全球搜尋發生錯誤:", err);
+                        return [];
+                    });
+            }
+        };
+
+        const geocoder = L.Control.geocoder({
+            geocoder: CustomTaiwanGeocoder,
+            defaultMarkGeocode: false,
+            placeholder: "搜尋全球景點、城市或台灣地址...",
+            errorMessage: "找不到這個地點呢..."
+        })
+        .on('markgeocode', function(e) {
+            if (!isEditMode) {
+                const latlng = e.geocode.center;
+                map.setView(latlng, 16);
+                return;
+            }
+
+            const latlng = e.geocode.center;
+            const name = e.geocode.name;
+            
+            map.setView(latlng, 16);
+            
+            activeId = null;
+            currentLatLng = latlng;
+            if (currentMarker) map.removeLayer(currentMarker);
+            
+            currentMarker = L.marker(latlng, { icon: createCustomIcon('blue', 'map-pin') }).addTo(map);
+            
+            openPanel(true);
+            document.getElementById('placeTitle').value = name;
+            lucide.createIcons();
+        })
+        .addTo(map);
+
+        let markersData = [];
+        let markerInstances = {}; 
+        let currentMarker = null;
+        let activeId = null;
+        let currentLatLng = null;
+        let gasUrl = localStorage.getItem('gasUrl') || '';
+        let playbackDelay = parseFloat(localStorage.getItem('playbackDelay')) || 2.5; 
+        
+        let playbackState = 'stopped'; // 'stopped' | 'playing' | 'paused' | 'ended'
+        let currentPlaybackItemIndex = 0;
+        let currentPlaybackImgIndex = 0;
+        let playbackTimer = null;
+
+        let timelineSortable = null;
+        let folders = JSON.parse(localStorage.getItem('mapFolders')) || ['行程總覽', '美食口袋名單', '住宿備忘'];
+        let isEditMode = false;
+
+        document.getElementById('gasUrlInput').value = gasUrl;
+        document.getElementById('playbackDelayInput').value = playbackDelay;
+
+        const colorMap = { red: '#ef4444', blue: '#3b82f6', green: '#10b981', yellow: '#eab308', purple: '#a855f7' };
+
+        function parseImageUrls(rawStr) {
+            if (!rawStr) return [];
+            return String(rawStr)
+                .split(/[,，\n]+/)
+                .map(s => s.trim())
+                .filter(Boolean);
+        }
+
+        function convertGoogleDriveLink(url) {
+            if (!url) return '';
+            if (url.includes('drive.google.com')) {
+                let id = '';
+                if (url.includes('/d/')) {
+                    id = url.split('/d/')[1].split('/')[0];
+                } else if (url.includes('id=')) {
+                    id = url.split('id=')[1].split('&')[0];
+                }
+                if (id) {
+                    return "https://lh3.googleusercontent.com/d/" + id;
+                }
+            }
+            return url;
+        }
+
+        function getGoogleDriveOriginalLink(url) {
+            return convertGoogleDriveLink(url);
+        }
+
+        function formatDateString(dateStr) {
+            if (!dateStr) return '';
+            if (typeof dateStr === 'string') {
+                return dateStr.split('T')[0];
+            }
+            try {
+                const d = new Date(dateStr);
+                if (!isNaN(d.getTime())) {
+                    return d.toISOString().split('T')[0];
+                }
+            } catch(e){}
+            return String(dateStr);
+        }
+
+        function savePlaybackDelay() {
+            const val = parseFloat(document.getElementById('playbackDelayInput').value) || 2.5;
+            playbackDelay = val;
+            localStorage.setItem('playbackDelay', val);
+        }
+
+        function getYouTubeEmbedUrl(url) {
+            if (!url) return '';
+            let videoId = '';
+            if (url.includes('youtu.be/')) {
+                videoId = url.split('youtu.be/')[1].split('?')[0].split('/')[0];
+            } else if (url.includes('youtube.com/watch')) {
+                const urlParams = new URLSearchParams(new URL(url).search);
+                videoId = urlParams.get('v');
+            } else if (url.includes('youtube.com/embed/')) {
+                videoId = url.split('youtube.com/embed/')[1].split('?')[0];
+            } else if (url.includes('youtube.com/shorts/')) {
+                videoId = url.split('youtube.com/shorts/')[1].split('?')[0];
+            }
+            return videoId ? `https://www.youtube.com/embed/${videoId}` : '';
+        }
+
+        function createCustomIcon(colorName, iconName) {
+            const color = colorMap[colorName] || '#3b82f6';
+            
+            const svgHtml = `
+                <svg width="40" height="40" viewBox="0 0 40 40" style="display:block;">
+                    <path d="M20 2C13.1 2 7.5 7.6 7.5 14.5C7.5 23.2 20 37 20 37S32.5 23.2 32.5 14.5C32.5 7.6 26.9 2 20 2Z" fill="${color}"/>
+                    <circle cx="20" cy="14.5" r="9" fill="white"/>
+                </svg>
+            `;
+
+            let targetIcon = iconName;
+            if (iconName === 'first-time') targetIcon = 'heart';
+            if (iconName === 'calendar-days' || iconName === 'calendar-heart') targetIcon = 'calendar';
+
+            if (targetIcon === 'heart') {
+                return L.divIcon({
+                    html: `<div style="position:relative; width:40px; height:40px;">${svgHtml}<div style="position:absolute; inset:0; top:-11px; font-size:14px; pointer-events:none; display:flex; align-items:center; justify-content:center;">💖</div></div>`,
+                    className: 'custom-leaflet-icon-emoji', iconSize: [40, 40], iconAnchor: [20, 37]
+                });
+            }
+
+            if (targetIcon === 'calendar') {
+                return L.divIcon({
+                    html: `<div style="position:relative; width:40px; height:40px;">${svgHtml}<div style="position:absolute; inset:0; top:-11px; font-size:14px; pointer-events:none; display:flex; align-items:center; justify-content:center;">📅</div></div>`,
+                    className: 'custom-leaflet-icon-emoji', iconSize: [40, 40], iconAnchor: [20, 37]
+                });
+            }
+
+            let strokeColor = '#475569'; 
+            let fillColor = '#475569';   
+            if (targetIcon === 'footprints') { strokeColor = '#2563eb'; fillColor = '#2563eb'; }
+
+            return L.divIcon({
+                html: `<div style="color: ${color}; position:relative; width:40px; height:40px;">${svgHtml}<div style="position:absolute; top:4.5px; left:10px; pointer-events:none;"><i data-lucide="${targetIcon}" stroke="${strokeColor}" fill="${fillColor}" stroke-width="1.2" class="w-5 h-5"></i></div></div>`,
+                className: 'custom-leaflet-icon', iconSize: [40, 40], iconAnchor: [20, 37]
+            });
+        }
+
+        map.on('click', function(e) {
+            if (!isEditMode) return;
+            if (e.originalEvent.target.id === 'map' || e.originalEvent.target.classList.contains('leaflet-container')) {
+                activeId = null;
+                currentLatLng = e.latlng;
+                if (currentMarker) map.removeLayer(currentMarker);
+                currentMarker = L.marker(e.latlng, { icon: createCustomIcon('blue', 'map-pin') }).addTo(map);
+                openPanel(true);
+                lucide.createIcons();
+            }
+        });
+
+        function openPanel(isNew = false) {
+            if (!isEditMode) return;
+            document.getElementById('editPanel').classList.remove('hidden');
+            updateFolderSelect();
+            if (isNew) {
+                document.getElementById('panelTitle').innerText = "新增浪漫景點";
+                document.getElementById('placeTitle').value = "";
+                document.getElementById('placeDate').value = new Date().toISOString().split('T')[0];
+                document.getElementById('placeNotes').value = "";
+                document.getElementById('placeImageUrl').value = "";
+                document.getElementById('placeVideoUrl').value = "";
+                document.getElementById('btnDelete').classList.add('hidden');
+                document.getElementById('placeColor').value = 'blue';
+                document.getElementById('placeIcon').value = 'map-pin';
+            } else {
+                document.getElementById('panelTitle').innerText = "編輯手帳細節";
+                document.getElementById('btnDelete').classList.remove('hidden');
+            }
+        }
+
+        function closePanel() {
+            document.getElementById('editPanel').classList.add('hidden');
+            if (currentMarker && !activeId) {
+                map.removeLayer(currentMarker);
+                currentMarker = null;
+            }
+        }
+
+        function updateFolderSelect() {
+            const select = document.getElementById('placeFolder');
+            if (!select) return;
+            const currentSelectedValue = select.value || '';
+            const allFolders = Array.from(new Set([...folders, ...markersData.map(m => m.folder_name).filter(Boolean)]));
+            select.innerHTML = allFolders.map(f => `<option value="${f}">${f}</option>`).join('');
+            if (currentSelectedValue && allFolders.includes(currentSelectedValue)) select.value = currentSelectedValue;
+        }
+
+        function createNewFolder() {
+            if (!isEditMode) return;
+            const name = prompt("請輸入新集合名稱：");
+            if (name && !folders.includes(name)) {
+                folders.push(name);
+                saveFoldersToStorage();
+                updateFolderSelect();
+                renderSidebar();
+                renderGallery();
+            }
+        }
+
+        async function renameFolder(oldName) {
+            if (!isEditMode) return;
+            const newName = prompt(`將集合「${oldName}」修改為新名稱：`, oldName);
+            if (!newName || newName.trim() === '' || newName === oldName) return;
+            if (folders.includes(newName)) { alert("已經有同名的集合囉！"); return; }
+
+            folders = folders.map(f => f === oldName ? newName : f);
+            saveFoldersToStorage();
+            updateFolderSelect();
+
+            for (let item of markersData) {
+                if (item.folder_name === oldName) {
+                    item.folder_name = newName;
+                    if (gasUrl) {
+                        try {
+                            await fetch(gasUrl, {
+                                method: 'POST', mode: 'no-cors',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ action: 'save', data: item })
+                            });
+                        } catch(e){}
+                    }
+                }
+            }
+            fetchCloudData();
+        }
+
+        async function deleteFolder(folderName) {
+            if (!isEditMode) return;
+            if (!confirm(`確定要刪除「${folderName}」集合嗎？裡面的景點會被移至行程總覽。`)) return;
+
+            folders = folders.filter(f => f !== folderName);
+            saveFoldersToStorage();
+            updateFolderSelect();
+
+            for (let item of markersData) {
+                if (item.folder_name === folderName) {
+                    item.folder_name = '行程總覽';
+                    if (gasUrl) {
+                        try {
+                            await fetch(gasUrl, {
+                                method: 'POST', mode: 'no-cors',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ action: 'save', data: item })
+                            });
+                        } catch(e){}
+                    }
+                }
+            }
+            fetchCloudData();
+        }
+
+        function saveFoldersToStorage() { localStorage.setItem('mapFolders', JSON.stringify(folders)); }
+
+        async function saveMarkerData() {
+            if (!isEditMode) return;
+            const title = document.getElementById('placeTitle').value || "未命名地點";
+            const date = document.getElementById('placeDate').value || ""; 
+            const notes = document.getElementById('placeNotes').value;
+            const imageUrl = document.getElementById('placeImageUrl').value;
+            const videoUrl = document.getElementById('placeVideoUrl').value;
+            const color = document.getElementById('placeColor').value;
+            let icon = document.getElementById('placeIcon').value;
+            const folder = document.getElementById('placeFolder').value;
+
+            const id = activeId || 'id_' + Date.now();
+            const lat = currentLatLng ? currentLatLng.lat : (currentMarker ? currentMarker.getLatLng().lat : 23.6);
+            const lng = currentLatLng ? currentLatLng.lng : (currentMarker ? currentMarker.getLatLng().lng : 121.0);
+
+            const folderItems = markersData.filter(m => m.folder_name === folder);
+            const maxOrder = folderItems.reduce((max, item) => (item.order > max ? item.order : max), Date.now());
+
+            const dataItem = { id, title, date, lat, lng, notes, video_url: videoUrl, image_url: imageUrl, color, icon, folder_name: folder, order: maxOrder + 1000 };
+
+            if (gasUrl) {
+                try {
+                    await fetch(gasUrl, {
+                        method: 'POST', mode: 'no-cors',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: 'save', data: dataItem })
+                    });
+                } catch (e) { console.error(e); }
+            }
+
+            if (activeId) markersData = markersData.filter(m => m.id !== id);
+            markersData.push(dataItem);
+            if (currentMarker) map.removeLayer(currentMarker);
+            currentMarker = null;
+            
+            closePanel();
+            fetchCloudData();
+        }
+
+        async function deleteMarker() {
+            if (!isEditMode || !activeId) return;
+            if (!confirm("確定要刪除這個景點手帳嗎？")) return;
+            if (gasUrl) {
+                try {
+                    await fetch(gasUrl, {
+                        method: 'POST', mode: 'no-cors',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: 'delete', id: activeId })
+                    });
+                } catch(e){}
+            }
+            markersData = markersData.filter(m => m.id !== activeId);
+            closePanel();
+            fetchCloudData();
+        }
+
+        function saveGasConfig() {
+            if (!isEditMode) return;
+            gasUrl = document.getElementById('gasUrlInput').value.trim();
+            localStorage.setItem('gasUrl', gasUrl);
+            if (gasUrl) fetchCloudData();
+        }
+
+        window.changePopupImage = function(itemId, dir) {
+            const container = document.getElementById(`popup_img_box_${itemId}`);
+            if (!container) return;
+            
+            const raw = container.getAttribute('data-images');
+            if (!raw) return;
+            const images = parseImageUrls(raw);
+            let currentIndex = parseInt(container.getAttribute('data-index')) || 0;
+            
+            currentIndex += dir;
+            if (currentIndex < 0) currentIndex = images.length - 1;
+            if (currentIndex >= images.length) currentIndex = 0;
+            
+            container.setAttribute('data-index', currentIndex);
+            
+            const imgEl = container.querySelector('img');
+            const countEl = container.querySelector('.img-count-badge');
+            const fancyAnchor = container.querySelector('a');
+            
+            if (imgEl) imgEl.src = convertGoogleDriveLink(images[currentIndex]);
+            if (countEl) countEl.innerText = `${currentIndex + 1}/${images.length}`;
+            if (fancyAnchor) fancyAnchor.href = getGoogleDriveOriginalLink(images[currentIndex]);
+        };
+
+        async function fetchCloudData() {
+            if (!gasUrl) return;
+            try {
+                const res = await fetch(gasUrl + '?action=read');
+                const json = await res.json();
+                markersData = json.data || [];
+
+                markersData.sort((a, b) => (a.order || 0) - (b.order || 0));
+
+                map.eachLayer(layer => {
+                    if (layer instanceof L.Marker) map.removeLayer(layer);
+                });
+                markerInstances = {};
+
+                markersData.forEach(item => {
+                    const marker = L.marker([parseFloat(item.lat), parseFloat(item.lng)], { icon: createCustomIcon(item.color, item.icon) }).addTo(map);
+                    markerInstances[item.id] = marker; 
+                    
+                    const rawImages = parseImageUrls(item.image_url);
+                    const embedVideoUrl = getYouTubeEmbedUrl(item.video_url);
+                    const cleanDate = formatDateString(item.date);
+
+                    let popupHtml = '<div class="p-1 min-w-[200px] text-slate-700">';
+                    popupHtml += '<div class="font-bold text-sm text-[#7f5539] mb-0.5">' + item.title + '</div>';
+                    
+                    if (cleanDate) {
+                        popupHtml += `<div class="text-[11px] text-pink-600 font-medium mb-1.5 flex items-center gap-1">📅 ${cleanDate}</div>`;
+                    }
+                    
+                    if (rawImages.length > 0) {
+                        const firstSafeImg = convertGoogleDriveLink(rawImages[0]);
+                        const galleryGroup = `gallery_${item.id}`;
+                        
+                        popupHtml += `
+                            <div id="popup_img_box_${item.id}" data-images="${rawImages.join(',')}" data-index="0" class="popup-img-container relative w-full h-32 rounded-lg overflow-hidden bg-slate-100 flex items-center justify-center mt-1 mb-1.5 shadow-sm group select-none">
+                                <a href="${getGoogleDriveOriginalLink(rawImages[0])}" data-caption="${item.title}" data-fancybox="${galleryGroup}" class="w-full h-full flex items-center justify-center">
+                                    <img src="${firstSafeImg}" class="w-full h-full object-cover map-thumb" onerror="this.parentElement.parentElement.innerHTML='<span class=\'text-[10px] text-slate-400\'>圖片載入中/未公開</span>'">
+                                </a>
+                                ${rawImages.length > 1 ? `
+                                    <span class="img-count-badge absolute top-1 right-1 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded-md z-10 pointer-events-none">1/${rawImages.length}</span>
+                                    <button onclick="event.stopPropagation(); changePopupImage('${item.id}', -1)" class="absolute left-1 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/70 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs shadow-md z-10 font-bold">❮</button>
+                                    <button onclick="event.stopPropagation(); changePopupImage('${item.id}', 1)" class="absolute right-1 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/70 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs shadow-md z-10 font-bold">❯</button>
+                                ` : ''}
+                            </div>`;
+                    }
+                    
+                    if (embedVideoUrl) {
+                        popupHtml += `
+                            <div class="w-full h-28 rounded-lg overflow-hidden bg-black mt-1 mb-1.5 shadow-sm">
+                                <iframe class="w-full h-full" src="${embedVideoUrl}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+                            </div>`;
+                    }
+
+                    if (item.notes) {
+                        popupHtml += '<div class="text-[12px] text-slate-600 popup-notes mt-1 border-t border-slate-100 pt-1.5 leading-relaxed">' + item.notes + '</div>';
+                    }
+                    popupHtml += '</div>';
+                    
+                    marker.bindPopup(popupHtml, { 
+                        minWidth: 220, 
+                        maxWidth: 390,
+                        autoPan: false
+                    });
+
+                    marker.on('click', (e) => {
+                        if (!isEditMode) return;
+
+                        activeId = item.id;
+                        currentLatLng = { lat: parseFloat(item.lat), lng: parseFloat(item.lng) };
+                        
+                        openPanel(false);
+                        document.getElementById('placeTitle').value = item.title;
+                        document.getElementById('placeDate').value = formatDateString(item.date);
+                        document.getElementById('placeNotes').value = item.notes || '';
+                        document.getElementById('placeImageUrl').value = item.image_url || '';
+                        document.getElementById('placeVideoUrl').value = item.video_url || '';
+                        document.getElementById('placeColor').value = item.color;
+                        document.getElementById('placeIcon').value = item.icon;
+                        document.getElementById('placeFolder').value = item.folder_name;
+                    });
+                });
+
+                renderSidebar();
+                renderTimeline();
+                renderGallery();
+                updateFolderSelect();
+                
+                Fancybox.bind("[data-fancybox]", {
+                    Hash: false, Thumbs: false,
+                    Toolbar: { display: { left: ["infobar"], middle: [], right: ["zoomIn", "zoomOut", "close"] } }
+                });
+
+            } catch (e) { console.error(e); }
+        }
+
+        function switchSidebarTab(tabName) {
+            const tabs = ['folders', 'timeline', 'gallery'];
+            tabs.forEach(t => {
+                const btn = document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1));
+                const view = document.getElementById('view' + t.charAt(0).toUpperCase() + t.slice(1));
+                
+                if (t === tabName) {
+                    btn.classList.add('bg-[#fdfbf7]', 'shadow-xs');
+                    btn.classList.remove('hover:bg-[#fdfbf7]/50');
+                    view.classList.remove('hidden');
+                } else {
+                    btn.classList.remove('bg-[#fdfbf7]', 'shadow-xs');
+                    btn.classList.add('hover:bg-[#fdfbf7]/50');
+                    view.classList.add('hidden');
+                }
+            });
+            lucide.createIcons();
+        }
+
+        function renderTimeline() {
+            const container = document.getElementById('timelineContainer');
+            container.innerHTML = '';
+
+            const sortedItems = markersData.filter(m => formatDateString(m.date)).sort((a, b) => {
+                const dateA = formatDateString(a.date);
+                const dateB = formatDateString(b.date);
+                if (dateA === dateB) {
+                    return (a.order || 0) - (b.order || 0);
+                }
+                return new Date(dateA) - new Date(dateB);
+            });
+
+            if (sortedItems.length === 0) {
+                container.innerHTML = '<div class="text-xs text-slate-400 text-center py-4">尚無設定日期的地點回憶...</div>';
+                return;
+            }
+
+            let timelineHtml = '<div class="absolute left-3 top-2 bottom-2 w-0.5 bg-[#ddc8b4]/60 pointer-events-none"></div>';
+
+            sortedItems.forEach((item) => {
+                const cleanDate = formatDateString(item.date);
+                timelineHtml += `
+                    <div data-id="${item.id}" id="tl_item_${item.id}" class="timeline-item relative pl-7 pr-2 py-1.5 rounded-r-lg border-l-2 border-transparent bg-white/40 mb-1 flex items-center justify-between group">
+                        <div onclick="focusPlace('${item.lat}', '${item.lng}', '${item.id}')" class="flex-1 cursor-pointer">
+                            <div class="absolute left-[9px] top-3 w-2 h-2 rounded-full bg-[#7f5539] ring-4 ring-[#f4ebe1]"></div>
+                            <div class="text-[10px] text-pink-600 font-bold flex items-center gap-1">
+                                <i data-lucide="calendar" class="w-2.5 h-2.5"></i> ${cleanDate}
+                            </div>
+                            <div class="text-xs font-bold text-slate-700 leading-tight">${item.title}</div>
+                            ${item.notes ? `<div class="text-[10px] text-slate-500 line-clamp-1">${item.notes}</div>` : ''}
+                        </div>
+                        <i data-lucide="menu" class="w-3.5 h-3.5 text-slate-400 ${isEditMode ? 'cursor-grab active:cursor-grabbing' : 'opacity-0 pointer-events-none'} ml-1"></i>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = timelineHtml;
+            lucide.createIcons();
+
+            if (timelineSortable) timelineSortable.destroy();
+            timelineSortable = Sortable.create(container, {
+                animation: 180,
+                ghostClass: 'sortable-ghost',
+                chosenClass: 'sortable-chosen',
+                handle: '.cursor-grab',
+                disabled: !isEditMode,
+                onEnd: async function () {
+                    if (!isEditMode) return;
+                    const reorderedIds = Array.from(container.children).map(el => el.getAttribute('data-id')).filter(Boolean);
+                    
+                    for (let i = 0; i < reorderedIds.length; i++) {
+                        const matchedItem = markersData.find(m => m.id === reorderedIds[i]);
+                        if (matchedItem) {
+                            matchedItem.order = i * 10; 
+                            
+                            if (gasUrl) {
+                                fetch(gasUrl, {
+                                    method: 'POST', mode: 'no-cors',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ action: 'save', data: matchedItem })
+                                }).catch(e => console.error(e));
+                            }
+                        }
+                    }
+                    markersData.sort((a, b) => (a.order || 0) - (b.order || 0));
+                }
+            });
+        }
+
+        function toggleTimelinePlayback() {
+            if (playbackState === 'playing') {
+                pauseTimelinePlayback();
+            } else if (playbackState === 'paused') {
+                resumeTimelinePlayback();
+            } else {
+                startTimelinePlayback();
+            }
+        }
+
+        function updatePlaybackButtonUI(state) {
+            const btn = document.getElementById('btnPlayTimeline');
+            if (!btn) return;
+            if (state === 'playing') {
+                btn.innerHTML = '<i data-lucide="pause" class="w-3 h-3"></i>暫停';
+                btn.className = "text-xs bg-amber-600 text-white px-2.5 py-1 rounded-md hover:bg-amber-700 flex items-center gap-1 shadow-xs transition";
+            } else if (state === 'paused') {
+                btn.innerHTML = '<i data-lucide="play" class="w-3 h-3"></i>繼續';
+                btn.className = "text-xs bg-emerald-600 text-white px-2.5 py-1 rounded-md hover:bg-emerald-700 flex items-center gap-1 shadow-xs transition";
+            } else if (state === 'ended') {
+                btn.innerHTML = '<i data-lucide="rotate-ccw" class="w-3 h-3"></i>重播';
+                btn.className = "text-xs bg-[#7f5539] text-white px-2.5 py-1 rounded-md hover:bg-[#9c6644] flex items-center gap-1 shadow-xs transition";
+            } else {
+                btn.innerHTML = '<i data-lucide="play" class="w-3 h-3"></i>動態回放';
+                btn.className = "text-xs bg-[#7f5539] text-white px-2.5 py-1 rounded-md hover:bg-[#9c6644] flex items-center gap-1 shadow-xs transition";
+            }
+            lucide.createIcons();
+        }
+
+        function getSortedTimelineItems() {
+            return markersData.filter(m => formatDateString(m.date)).sort((a, b) => {
+                const dateA = formatDateString(a.date);
+                const dateB = formatDateString(b.date);
+                if (dateA === dateB) return (a.order || 0) - (b.order || 0);
+                return new Date(dateA) - new Date(dateB);
+            });
+        }
+
+        function startTimelinePlayback() {
+            playbackState = 'playing';
+            document.body.classList.add('playback-active');
+            updatePlaybackButtonUI('playing');
+            
+            currentPlaybackItemIndex = 0;
+            currentPlaybackImgIndex = 0;
+
+            const sortedItems = getSortedTimelineItems();
+            Object.values(markerInstances).forEach(m => map.removeLayer(m));
+
+            runPlaybackLoop();
+        }
+
+        function resumeTimelinePlayback() {
+            playbackState = 'playing';
+            document.body.classList.add('playback-active');
+            updatePlaybackButtonUI('playing');
+            runPlaybackLoop();
+        }
+
+        function pauseTimelinePlayback() {
+            playbackState = 'paused';
+            if (playbackTimer) clearTimeout(playbackTimer);
+            updatePlaybackButtonUI('paused');
+        }
+
+        function stopTimelinePlayback(isEnded = false) {
+            playbackState = isEnded ? 'ended' : 'stopped';
+            if (playbackTimer) clearTimeout(playbackTimer);
+            document.body.classList.remove('playback-active');
+            updatePlaybackButtonUI(playbackState);
+        }
+
+        // 🌟 精準解法：僅在動態回放時，用螢幕像素 (Pixel) 將地圖中心強制下平移 260px，讓圖標精準落在下半部（圖二位置）
+        function runPlaybackLoop() {
+            if (playbackState !== 'playing') return;
+
+            const sortedItems = getSortedTimelineItems();
+            if (currentPlaybackItemIndex >= sortedItems.length) {
+                stopTimelinePlayback(true);
+                return;
+            }
+
+            const item = sortedItems[currentPlaybackItemIndex];
+            const marker = markerInstances[item.id];
+            const rawImages = parseImageUrls(item.image_url);
+
+            if (marker) {
+                marker.addTo(map);
+                const targetLatLng = L.latLng(parseFloat(item.lat), parseFloat(item.lng));
+                const targetZoom = 15;
+
+                // 🌟 使用像素 offset 轉換，確保不管地圖怎麼縮放，圖標都精準落在螢幕下半部 260px 處
+                const targetPoint = map.project(targetLatLng, targetZoom);
+                const offsetPoint = L.point(targetPoint.x, targetPoint.y - 260); // 往下搬移地圖中心 = 圖標相對往下掉
+                const centerLatLng = map.unproject(offsetPoint, targetZoom);
+
+                map.setView(centerLatLng, targetZoom, { animate: true, duration: 0.6 });
+                marker.openPopup();
+
+                document.querySelectorAll('.timeline-item').forEach(el => el.classList.remove('bg-[#fdfbf7]', 'shadow-xs', 'active'));
+                const tlEl = document.getElementById(`tl_item_${item.id}`);
+                if (tlEl) {
+                    tlEl.classList.add('bg-[#fdfbf7]', 'shadow-xs', 'active');
+                    tlEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+
+                if (currentPlaybackImgIndex > 0) {
+                    window.changePopupImage(item.id, 1);
+                }
+
+                playbackTimer = setTimeout(() => {
+                    if (playbackState !== 'playing') return;
+
+                    currentPlaybackImgIndex++;
+                    if (currentPlaybackImgIndex >= Math.max(1, rawImages.length)) {
+                        currentPlaybackItemIndex++;
+                        currentPlaybackImgIndex = 0;
+                    }
+                    runPlaybackLoop();
+                }, playbackDelay * 1000);
+            } else {
+                currentPlaybackItemIndex++;
+                currentPlaybackImgIndex = 0;
+                runPlaybackLoop();
+            }
+        }
+
+        function renderGallery() {
+            const container = document.getElementById('galleryContainer');
+            container.innerHTML = '';
+
+            const allFolders = Array.from(new Set([...folders, ...markersData.map(m => m.folder_name).filter(Boolean)]));
+            let totalPhotos = 0;
+
+            allFolders.forEach(folderName => {
+                const folderPhotoItems = markersData.filter(m => m.folder_name === folderName && m.image_url);
+
+                if (folderPhotoItems.length === 0) return;
+
+                folderPhotoItems.sort((a, b) => {
+                    const dateA = formatDateString(a.date);
+                    const dateB = formatDateString(b.date);
+                    if (!dateA) return 1;
+                    if (!dateB) return -1;
+                    return new Date(dateA) - new Date(dateB);
+                });
+
+                totalPhotos += folderPhotoItems.length;
+
+                const folderDiv = document.createElement('div');
+                folderDiv.className = "bg-[#f5ebe0]/60 rounded-xl p-2.5 border border-[#ddc8b4]/60 shadow-sm";
+                
+                let cardsHtml = `<div class="font-bold text-xs text-[#7f5539] flex items-center gap-1 mb-2 select-none">
+                    <i data-lucide="folder" class="w-3.5 h-3.5 text-[#b7b7a4]"></i> 
+                    <span>${folderName} (${folderPhotoItems.length})</span>
+                </div>`;
+
+                cardsHtml += `<div class="grid grid-cols-2 gap-2">`;
+
+                folderPhotoItems.forEach(item => {
+                    const rawImages = parseImageUrls(item.image_url);
+                    if (rawImages.length === 0) return;
+
+                    const firstSafeImg = convertGoogleDriveLink(rawImages[0]);
+                    const cleanDate = formatDateString(item.date);
+
+                    cardsHtml += `
+                        <div onclick="focusPlace('${item.lat}', '${item.lng}', '${item.id}')" class="polaroid-card rounded cursor-pointer select-none flex flex-col relative">
+                            <div class="relative w-full h-24 bg-slate-100 rounded-xs overflow-hidden mb-1.5 shadow-inner">
+                                ${rawImages.length > 1 ? `<span class="absolute top-1 right-1 bg-black/60 text-white text-[8px] px-1 py-0.5 rounded z-10">📸 ${rawImages.length}</span>` : ''}
+                                <img src="${firstSafeImg}" class="w-full h-full object-cover" onerror="this.src='https://via.placeholder.com/150?text=圖片載入中/未公開'">
+                            </div>
+                            <div class="text-[11px] font-bold text-slate-800 line-clamp-1 leading-snug">${item.title}</div>
+                            <div class="text-[9px] font-handwriting text-slate-500 mt-auto pt-1 flex justify-between items-center">
+                                <span>${cleanDate || 'Memory'}</span>
+                                <span class="text-pink-500">💖</span>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                cardsHtml += `</div>`;
+                folderDiv.innerHTML = cardsHtml;
+                container.appendChild(folderDiv);
+            });
+
+            if (totalPhotos === 0) {
+                container.innerHTML = '<div class="text-xs text-slate-400 text-center py-6">尚未上傳相片...</div>';
+            }
+            lucide.createIcons();
+        }
+
+        function renderSidebar() {
+            const container = document.getElementById('folderContainer');
+            container.innerHTML = '';
+            
+            const allFolders = Array.from(new Set([...folders, ...markersData.map(m => m.folder_name).filter(Boolean)]));
+
+            allFolders.forEach(folderName => {
+                const folderItems = markersData.filter(m => m.folder_name === folderName);
+                
+                const isDefault = folderName === '行程總覽';
+                const actionButtons = (isDefault || !isEditMode) ? '' : `
+                    <div class="flex gap-1.5 opacity-40 hover:opacity-100 transition ml-auto">
+                        <button onclick="event.stopPropagation(); renameFolder('${folderName}')" title="重命名" class="hover:text-blue-600"><i data-lucide="edit-3" class="w-3.5 h-3.5"></i></button>
+                        <button onclick="event.stopPropagation(); deleteFolder('${folderName}')" title="刪除" class="hover:text-red-600"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                    </div>
+                `;
+
+                const folderId = 'folder_' + btoa(encodeURIComponent(folderName)).replace(/=/g, '');
+
+                const folderDiv = document.createElement('div');
+                folderDiv.className = "bg-[#f5ebe0]/60 rounded-xl p-2.5 border border-[#ddc8b4]/60 mb-2 shadow-sm";
+                folderDiv.innerHTML = `
+                    <div class="font-bold text-xs text-[#7f5539] flex items-center gap-1 mb-1.5 select-none">
+                        <i data-lucide="folder" class="w-3.5 h-3.5 text-[#b7b7a4]"></i> 
+                        <span>${folderName} (${folderItems.length})</span>
+                        ${actionButtons}
+                    </div>
+                    <div id="${folderId}" class="sortable-list space-y-1 min-h-[10px]">
+                        ${folderItems.map(item => `
+                            <div data-id="${item.id}" class="sortable-item text-xs bg-white/90 p-2 rounded-lg cursor-pointer hover:bg-[#f5ebe0] text-slate-700 flex justify-between items-center transition border border-slate-100 shadow-2xs">
+                                <span onclick="focusPlace('${item.lat}', '${item.lng}', '${item.id}')" class="flex items-center gap-1 font-medium flex-1">
+                                    <span style="color: ${colorMap[item.color] || '#fff'}">●</span> ${item.title}
+                                </span>
+                                <i data-lucide="menu" class="w-3.5 h-3.5 text-slate-300 ${isEditMode ? 'cursor-grab active:cursor-grabbing' : 'opacity-0 pointer-events-none'} ml-2"></i>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                container.appendChild(folderDiv);
+
+                const listEl = document.getElementById(folderId);
+                if (listEl) {
+                    Sortable.create(listEl, {
+                        animation: 180,
+                        ghostClass: 'sortable-ghost',
+                        chosenClass: 'sortable-chosen',
+                        handle: '.cursor-grab', 
+                        disabled: !isEditMode, 
+                        onEnd: async function () {
+                            if (!isEditMode) return;
+                            const reorderedIds = Array.from(listEl.children).map(el => el.getAttribute('data-id'));
+                            
+                            for (let i = 0; i < reorderedIds.length; i++) {
+                                const matchedItem = markersData.find(m => m.id === reorderedIds[i]);
+                                if (matchedItem) {
+                                    matchedItem.order = i * 10; 
+                                    
+                                    if (gasUrl) {
+                                        fetch(gasUrl, {
+                                            method: 'POST', mode: 'no-cors',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ action: 'save', data: matchedItem })
+                                        }).catch(e => console.error(e));
+                                    }
+                                }
+                            }
+                            markersData.sort((a, b) => (a.order || 0) - (b.order || 0));
+                        }
+                    });
+                }
+            });
+            lucide.createIcons();
+        }
+
+        // 🌟 一般點擊（集合 / 時間軸）：正常拉到景點為中心
+        function focusPlace(lat, lng, id) {
+            const targetLat = parseFloat(lat);
+            const targetLng = parseFloat(lng);
+            
+            const marker = markerInstances[id];
+            if (marker) {
+                marker.addTo(map);
+                marker.openPopup();
+                if (isEditMode) {
+                    marker.fire('click');
+                }
+            }
+            
+            map.panTo([targetLat, targetLng], { animate: true, duration: 0.5 });
+        }
+
+        function toggleAuthMode() {
+            if (!isEditMode) {
+                const password = prompt("請輸入管理員密碼以開啟編輯權限：");
+                if (password === "20250214") {
+                    isEditMode = true;
+                    alert("認證成功！已切換至【編輯模式】。");
+                } else if (password !== null) {
+                    alert("密碼錯誤，拒絕存取！");
+                    return;
+                } else {
+                    return;
+                }
+            } else {
+                isEditMode = false;
+                closePanel();
+                alert("已登出，安全切換回【觀看模式】。");
+            }
+            applyAuthDOMChanges();
+        }
+
+        function applyAuthDOMChanges() {
+            const gasInput = document.getElementById('gasUrlInput');
+            const btnConnect = document.getElementById('btnConnectCloud');
+            const btnCreate = document.getElementById('btnCreateFolder');
+            const authIcon = document.getElementById('authIcon');
+            const authText = document.getElementById('authText');
+            const btnToggle = document.getElementById('btnToggleAuth');
+
+            if (isEditMode) {
+                gasInput.disabled = false;
+                btnConnect.disabled = false;
+                btnCreate.disabled = false;
+                
+                authText.innerText = "編輯模式";
+                authIcon.setAttribute('data-lucide', 'lock-open');
+                btnToggle.className = "w-full text-xs bg-emerald-600 hover:bg-emerald-700 text-white py-1.5 rounded-md font-medium transition shadow-sm flex items-center justify-center gap-1.5";
+            } else {
+                gasInput.disabled = true;
+                btnConnect.disabled = true;
+                btnCreate.disabled = true;
+
+                authText.innerText = "觀看模式";
+                authIcon.setAttribute('data-lucide', 'eye');
+                btnToggle.className = "w-full text-xs bg-[#7f5539] hover:bg-[#9c6644] text-white py-1.5 rounded-md font-medium transition shadow-sm flex items-center justify-center gap-1.5";
+            }
+            
+            renderSidebar();
+            renderTimeline();
+            renderGallery();
+            lucide.createIcons();
+        }
+
+        setInterval(() => {
+            if (!document.querySelector('.sortable-chosen') && playbackState !== 'playing') {
+                fetchCloudData();
+            }
+        }, 8000);
+
+        if (gasUrl) fetchCloudData();
+        applyAuthDOMChanges();
+    </script>
+</body>
+</html>
