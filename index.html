@@ -24,6 +24,19 @@
         body { font-family: 'Noto Sans TC', sans-serif; }
         .font-handwriting { font-family: 'Caveat', cursive, 'Noto Sans TC', sans-serif; }
 
+        /* 🌟 全域按鈕按壓互動視覺優化 (支援 iPad/手機觸控) */
+        button, .btn-interactive {
+            touch-action: manipulation;
+            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            cursor: pointer;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        button:active, .btn-interactive:active {
+            transform: scale(0.94) !important;
+            opacity: 0.85 !important;
+        }
+
         /* 修正 Leaflet 彈出視窗為暖米白色風格 */
         .leaflet-popup-content-wrapper {
             background: #fdfbf7 !important;
@@ -105,7 +118,7 @@
             background: #fff;
             padding: 8px 8px 16px 8px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.08);
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
         }
         .polaroid-card:hover {
             transform: translateY(-4px) rotate(1deg);
@@ -137,18 +150,18 @@
             
             <!-- 模式功能頁籤 -->
             <div class="grid grid-cols-3 gap-1 bg-[#dfd0c0] p-1 rounded-lg text-xs font-medium text-[#7f5539]">
-                <button id="tabFolders" onclick="switchSidebarTab('folders')" class="py-1.5 rounded-md bg-[#fdfbf7] shadow-xs text-center transition">集合</button>
-                <button id="tabTimeline" onclick="switchSidebarTab('timeline')" class="py-1.5 rounded-md hover:bg-[#fdfbf7]/50 text-center transition">時間軸</button>
-                <button id="tabGallery" onclick="switchSidebarTab('gallery')" class="py-1.5 rounded-md hover:bg-[#fdfbf7]/50 text-center transition">拍立得</button>
+                <button id="tabFolders" onclick="switchSidebarTab('folders')" class="py-1.5 rounded-md bg-[#fdfbf7] shadow-xs text-center transition hover:bg-white">集合</button>
+                <button id="tabTimeline" onclick="switchSidebarTab('timeline')" class="py-1.5 rounded-md hover:bg-[#fdfbf7]/60 text-center transition">時間軸</button>
+                <button id="tabGallery" onclick="switchSidebarTab('gallery')" class="py-1.5 rounded-md hover:bg-[#fdfbf7]/60 text-center transition">拍立得</button>
             </div>
         </div>
 
-        <!-- GAS 連線區塊 -->
+        <!-- GAS 連線區塊 (開放觀看/編輯模式隨時可貼網址連線) -->
         <div class="shrink-0 mb-3 bg-[#f5ebe0]/80 p-2 rounded-lg border border-[#ddc8b4]">
             <label class="text-[10px] text-slate-500 block font-medium mb-1">Google GAS 雲端網址</label>
             <div class="flex gap-1">
-                <input type="text" id="gasUrlInput" class="w-full text-xs p-1.5 rounded bg-white border border-[#ddc8b4] text-slate-700 focus:outline-none focus:border-[#7f5539] disabled:bg-slate-100 disabled:text-slate-400" placeholder="請貼上 GAS Web App 網址">
-                <button id="btnConnectCloud" onclick="saveGasConfig()" class="text-xs bg-[#7f5539] hover:bg-[#9c6644] text-white px-2 py-1.5 rounded-md font-medium transition whitespace-nowrap disabled:bg-slate-400">連線</button>
+                <input type="text" id="gasUrlInput" class="w-full text-xs p-1.5 rounded bg-white border border-[#ddc8b4] text-slate-700 focus:outline-none focus:border-[#7f5539]" placeholder="請貼上 GAS Web App 網址">
+                <button id="btnConnectCloud" onclick="saveGasConfig()" class="text-xs bg-[#7f5539] hover:bg-[#9c6644] active:bg-[#5c3d28] text-white px-2.5 py-1.5 rounded-md font-medium transition whitespace-nowrap shadow-xs">連線</button>
             </div>
         </div>
 
@@ -206,7 +219,7 @@
     <div id="editPanel" class="hidden w-full md:w-80 bg-[#fdfbf7] p-4 border-t md:border-t-0 md:border-l border-[#ddc8b4] md:h-full flex flex-col z-[1000] shadow-xl">
         <div class="flex justify-between items-center mb-4">
             <h3 id="panelTitle" class="font-bold text-lg text-[#7f5539]">新增景點</h3>
-            <button onclick="closePanel()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x"></i></button>
+            <button onclick="closePanel()" class="text-slate-400 hover:text-slate-600 p-1"><i data-lucide="x"></i></button>
         </div>
         
         <div class="space-y-3 flex-1 overflow-y-auto text-sm text-slate-600 pr-1">
@@ -639,11 +652,16 @@
             fetchCloudData();
         }
 
+        // 🌟 修復 iPad / 移動裝置連線問題：不論觀看或編輯模式，皆可連線
         function saveGasConfig() {
-            if (!isEditMode) return;
             gasUrl = document.getElementById('gasUrlInput').value.trim();
+            if (!gasUrl) {
+                alert("請先貼上有效的 Google GAS 網址喔！");
+                return;
+            }
             localStorage.setItem('gasUrl', gasUrl);
-            if (gasUrl) fetchCloudData();
+            fetchCloudData();
+            alert("已成功設定雲端網址並開始同步！");
         }
 
         window.changePopupImage = function(itemId, dir) {
@@ -710,8 +728,8 @@
                                 </a>
                                 ${rawImages.length > 1 ? `
                                     <span class="img-count-badge absolute top-1 right-1 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded-md z-10 pointer-events-none">1/${rawImages.length}</span>
-                                    <button onclick="event.stopPropagation(); changePopupImage('${item.id}', -1)" class="absolute left-1 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/70 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs shadow-md z-10 font-bold">❮</button>
-                                    <button onclick="event.stopPropagation(); changePopupImage('${item.id}', 1)" class="absolute right-1 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/70 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs shadow-md z-10 font-bold">❯</button>
+                                    <button onclick="event.stopPropagation(); changePopupImage('${item.id}', -1)" class="btn-interactive absolute left-1 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/70 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs shadow-md z-10 font-bold">❮</button>
+                                    <button onclick="event.stopPropagation(); changePopupImage('${item.id}', 1)" class="btn-interactive absolute right-1 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/70 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs shadow-md z-10 font-bold">❯</button>
                                 ` : ''}
                             </div>`;
                     }
@@ -773,11 +791,11 @@
                 
                 if (t === tabName) {
                     btn.classList.add('bg-[#fdfbf7]', 'shadow-xs');
-                    btn.classList.remove('hover:bg-[#fdfbf7]/50');
+                    btn.classList.remove('hover:bg-[#fdfbf7]/60');
                     view.classList.remove('hidden');
                 } else {
                     btn.classList.remove('bg-[#fdfbf7]', 'shadow-xs');
-                    btn.classList.add('hover:bg-[#fdfbf7]/50');
+                    btn.classList.add('hover:bg-[#fdfbf7]/60');
                     view.classList.add('hidden');
                 }
             });
@@ -807,7 +825,7 @@
             sortedItems.forEach((item) => {
                 const cleanDate = formatDateString(item.date);
                 timelineHtml += `
-                    <div data-id="${item.id}" id="tl_item_${item.id}" class="timeline-item relative pl-7 pr-2 py-1.5 rounded-r-lg border-l-2 border-transparent bg-white/40 mb-1 flex items-center justify-between group">
+                    <div data-id="${item.id}" id="tl_item_${item.id}" class="timeline-item btn-interactive relative pl-7 pr-2 py-1.5 rounded-r-lg border-l-2 border-transparent bg-white/40 mb-1 flex items-center justify-between group">
                         <div onclick="focusPlace('${item.lat}', '${item.lng}', '${item.id}')" class="flex-1 cursor-pointer">
                             <div class="absolute left-[9px] top-3 w-2 h-2 rounded-full bg-[#7f5539] ring-4 ring-[#f4ebe1]"></div>
                             <div class="text-[10px] text-pink-600 font-bold flex items-center gap-1">
@@ -1019,7 +1037,7 @@
                     const cleanDate = formatDateString(item.date);
 
                     cardsHtml += `
-                        <div onclick="focusPlace('${item.lat}', '${item.lng}', '${item.id}')" class="polaroid-card rounded cursor-pointer select-none flex flex-col relative">
+                        <div onclick="focusPlace('${item.lat}', '${item.lng}', '${item.id}')" class="polaroid-card btn-interactive rounded cursor-pointer select-none flex flex-col relative">
                             <div class="relative w-full h-24 bg-slate-100 rounded-xs overflow-hidden mb-1.5 shadow-inner">
                                 ${rawImages.length > 1 ? `<span class="absolute top-1 right-1 bg-black/60 text-white text-[8px] px-1 py-0.5 rounded z-10">📸 ${rawImages.length}</span>` : ''}
                                 <img src="${firstSafeImg}" class="w-full h-full object-cover" onerror="this.src='https://via.placeholder.com/150?text=圖片載入中/未公開'">
@@ -1056,8 +1074,8 @@
                 const isDefault = folderName === '行程總覽';
                 const actionButtons = (isDefault || !isEditMode) ? '' : `
                     <div class="flex gap-1.5 opacity-40 hover:opacity-100 transition ml-auto">
-                        <button onclick="event.stopPropagation(); renameFolder('${folderName}')" title="重命名" class="hover:text-blue-600"><i data-lucide="edit-3" class="w-3.5 h-3.5"></i></button>
-                        <button onclick="event.stopPropagation(); deleteFolder('${folderName}')" title="刪除" class="hover:text-red-600"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                        <button onclick="event.stopPropagation(); renameFolder('${folderName}')" title="重命名" class="hover:text-blue-600 p-0.5"><i data-lucide="edit-3" class="w-3.5 h-3.5"></i></button>
+                        <button onclick="event.stopPropagation(); deleteFolder('${folderName}')" title="刪除" class="hover:text-red-600 p-0.5"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
                     </div>
                 `;
 
@@ -1073,7 +1091,7 @@
                     </div>
                     <div id="${folderId}" class="sortable-list space-y-1 min-h-[10px]">
                         ${folderItems.map(item => `
-                            <div data-id="${item.id}" class="sortable-item text-xs bg-white/90 p-2 rounded-lg cursor-pointer hover:bg-[#f5ebe0] text-slate-700 flex justify-between items-center transition border border-slate-100 shadow-2xs">
+                            <div data-id="${item.id}" class="sortable-item btn-interactive text-xs bg-white/90 p-2 rounded-lg cursor-pointer hover:bg-[#f5ebe0] text-slate-700 flex justify-between items-center transition border border-slate-100 shadow-2xs">
                                 <span onclick="focusPlace('${item.lat}', '${item.lng}', '${item.id}')" class="flex items-center gap-1 font-medium flex-1">
                                     <span style="color: ${colorMap[item.color] || '#fff'}">●</span> ${item.title}
                                 </span>
@@ -1155,26 +1173,18 @@
         }
 
         function applyAuthDOMChanges() {
-            const gasInput = document.getElementById('gasUrlInput');
-            const btnConnect = document.getElementById('btnConnectCloud');
             const btnCreate = document.getElementById('btnCreateFolder');
             const authIcon = document.getElementById('authIcon');
             const authText = document.getElementById('authText');
             const btnToggle = document.getElementById('btnToggleAuth');
 
             if (isEditMode) {
-                gasInput.disabled = false;
-                btnConnect.disabled = false;
                 btnCreate.disabled = false;
-                
                 authText.innerText = "編輯模式";
                 authIcon.setAttribute('data-lucide', 'lock-open');
                 btnToggle.className = "w-full text-xs bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-md font-medium transition shadow-md flex items-center justify-center gap-1.5";
             } else {
-                gasInput.disabled = true;
-                btnConnect.disabled = true;
                 btnCreate.disabled = true;
-
                 authText.innerText = "觀看模式";
                 authIcon.setAttribute('data-lucide', 'eye');
                 btnToggle.className = "w-full text-xs bg-[#7f5539] hover:bg-[#9c6644] text-white py-2 rounded-md font-medium transition shadow-md flex items-center justify-center gap-1.5";
