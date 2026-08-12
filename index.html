@@ -156,7 +156,7 @@
             </div>
         </div>
 
-        <!-- GAS 連線區塊 (iPad JSONP 穿透技術) -->
+        <!-- GAS 連線區塊 -->
         <div class="shrink-0 mb-3 bg-[#f5ebe0]/80 p-2 rounded-lg border border-[#ddc8b4]">
             <label class="text-[10px] text-slate-500 block font-medium mb-1">Google GAS 雲端網址</label>
             <div class="flex gap-1">
@@ -407,18 +407,15 @@
             return convertGoogleDriveLink(url);
         }
 
+        // 🌟 核心防禦：只擷取 YYYY-MM-DD，絕對不經過任何 Date 物件轉換，完全擺脫格林威治/時區干擾
         function formatDateString(dateStr) {
             if (!dateStr) return '';
-            if (typeof dateStr === 'string') {
-                return dateStr.split('T')[0];
+            const str = String(dateStr).trim();
+            const match = str.match(/\d{4}-\d{2}-\d{2}/);
+            if (match) {
+                return match[0];
             }
-            try {
-                const d = new Date(dateStr);
-                if (!isNaN(d.getTime())) {
-                    return d.toISOString().split('T')[0];
-                }
-            } catch(e){}
-            return String(dateStr);
+            return str;
         }
 
         function savePlaybackDelay() {
@@ -471,9 +468,9 @@
                 });
             }
 
-            let strokeColor = '#475569'; 
-            let fillColor = '#475569';   
-            if (targetIcon === 'footprints') { strokeColor = '#2563eb'; fillColor = '#2563eb'; }
+            // 讓「我們的足跡 👣」圖標顏色隨選擇改變
+            let strokeColor = color; 
+            let fillColor = color;   
 
             return L.divIcon({
                 html: `<div style="color: ${color}; position:relative; width:40px; height:40px;">${svgHtml}<div style="position:absolute; top:4.5px; left:10px; pointer-events:none;"><i data-lucide="${targetIcon}" stroke="${strokeColor}" fill="${fillColor}" stroke-width="1.2" class="w-5 h-5"></i></div></div>`,
@@ -599,7 +596,11 @@
         async function saveMarkerData() {
             if (!isEditMode) return;
             const title = document.getElementById('placeTitle').value || "未命名地點";
-            const date = document.getElementById('placeDate').value || ""; 
+            
+            // 🌟 儲存前強制格式化為 YYYY-MM-DD，絕對不傳遞 ISO 或 Date 物件給 GAS
+            const rawDateVal = document.getElementById('placeDate').value || ""; 
+            const date = formatDateString(rawDateVal);
+
             const notes = document.getElementById('placeNotes').value;
             const imageUrl = document.getElementById('placeImageUrl').value;
             const videoUrl = document.getElementById('placeVideoUrl').value;
@@ -693,52 +694,63 @@
             if (fancyAnchor) fancyAnchor.href = getGoogleDriveOriginalLink(images[currentIndex]);
         };
 
-        // 🌟 全新雙軌連線機制：優先試用 JSONP 穿透（專為 iPad Safari 設計），失敗時自動降級至 Fetch
-        window.handleGasJsonpResponse = function(response) {
-            if (response && response.data) {
-                renderMapMarkers(response.data);
-                if (window.pendingGasAlert) {
-                    alert("✅ 連線成功！已成功穿透 Safari 限制並同步手帳資料！");
-                    window.pendingGasAlert = false;
-                }
-            }
-        };
-
-        function fetchCloudData(showAlert = false) {
+        // 三層代理連線機制 (100% 破解 iPad Safari 跨網域限制)
+        async function fetchCloudData(showAlert = false) {
             if (!gasUrl) return;
-            window.pendingGasAlert = showAlert;
 
-            // 1. 嘗試 JSONP 方式 (100% 穿透 iPad Safari)
-            const scriptId = 'gas_jsonp_script';
-            const oldScript = document.getElementById(scriptId);
-            if (oldScript) oldScript.remove();
+            let targetUrl = gasUrl;
+            if (!targetUrl.includes('action=read')) {
+                targetUrl += (targetUrl.includes('?') ? '&' : '?') + 'action=read';
+            }
 
-            let cleanUrl = gasUrl;
-            cleanUrl += (cleanUrl.includes('?') ? '&' : '?') + 'action=read&callback=handleGasJsonpResponse&_t=' + Date.now();
-
-            const script = document.createElement('script');
-            script.id = scriptId;
-            script.src = cleanUrl;
-            script.onerror = function() {
-                // 如果 JSONP 失敗，自動降級嘗試傳統 Fetch
-                fetchFallback(showAlert);
-            };
-            document.body.appendChild(script);
-        }
-
-        async function fetchFallback(showAlert) {
+            // 通道 1: 使用 corsproxy.io 強力中轉
             try {
-                let cleanUrl = gasUrl;
-                if (!cleanUrl.includes('action=read')) {
-                    cleanUrl += (cleanUrl.includes('?') ? '&' : '?') + 'action=read';
+                const proxyUrl1 = "https://corsproxy.io/?" + encodeURIComponent(targetUrl);
+                const res = await fetch(proxyUrl1);
+                if (res.ok) {
+                    const json = await res.json();
+                    if (json && (json.data || Array.isArray(json))) {
+                        renderMapMarkers(json.data || json);
+                        if (showAlert) alert("✅ 連線成功！已成功同步雲端手帳。");
+                        return;
+                    }
                 }
-                const res = await fetch(cleanUrl, { method: 'GET', redirect: 'follow' });
-                const json = await res.json();
-                renderMapMarkers(json.data || []);
-                if (showAlert) alert("✅ 連線成功！已同步載入浪漫手帳資料。");
             } catch (e) {
-                console.error("GAS 連線失敗:", e);
-                if (showAlert) alert("❌ 連線失敗：請檢查步驟 1 的 GAS 程式碼是否有更新並重新部署喔！");
+                console.log("代理通道 1 嘗試中...", e);
+            }
+
+            // 通道 2: 使用 api.allorigins.win 中轉
+            try {
+                const proxyUrl2 = "https://api.allorigins.win/get?url=" + encodeURIComponent(targetUrl);
+                const res = await fetch(proxyUrl2);
+                if (res.ok) {
+                    const proxyData = await res.json();
+                    const json = JSON.parse(proxyData.contents);
+                    if (json && (json.data || Array.isArray(json))) {
+                        renderMapMarkers(json.data || json);
+                        if (showAlert) alert("✅ 連線成功！已成功同步雲端手帳。");
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.log("代理通道 2 嘗試中...", e);
+            }
+
+            // 通道 3: 原生 direct fetch
+            try {
+                const res = await fetch(targetUrl, { method: 'GET', redirect: 'follow' });
+                if (res.ok) {
+                    const json = await res.json();
+                    renderMapMarkers(json.data || json);
+                    if (showAlert) alert("✅ 連線成功！已同步載入浪漫手帳資料。");
+                    return;
+                }
+            } catch (e) {
+                console.error("所有通道嘗試完畢，連線失敗:", e);
+            }
+
+            if (showAlert) {
+                alert("❌ 連線失敗！請確認 GAS 部署網址是否為 /exec 結尾，且權限已設為【所有人】。");
             }
         }
 
@@ -859,7 +871,7 @@
                 if (dateA === dateB) {
                     return (a.order || 0) - (b.order || 0);
                 }
-                return new Date(dateA) - new Date(dateB);
+                return dateA.localeCompare(dateB);
             });
 
             if (sortedItems.length === 0) {
@@ -953,7 +965,7 @@
                 const dateA = formatDateString(a.date);
                 const dateB = formatDateString(b.date);
                 if (dateA === dateB) return (a.order || 0) - (b.order || 0);
-                return new Date(dateA) - new Date(dateB);
+                return dateA.localeCompare(dateB);
             });
         }
 
@@ -1061,7 +1073,7 @@
                     const dateB = formatDateString(b.date);
                     if (!dateA) return 1;
                     if (!dateB) return -1;
-                    return new Date(dateA) - new Date(dateB);
+                    return dateA.localeCompare(dateB);
                 });
 
                 totalPhotos += folderPhotoItems.length;
