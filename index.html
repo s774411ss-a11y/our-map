@@ -37,7 +37,10 @@
             opacity: 0.85 !important;
         }
 
-        /* 修正 Leaflet 彈出視窗為暖米白色風格 */
+        /* 修正 Leaflet 彈出視窗為暖米白色風格，並預設放大照片對話框 */
+        .leaflet-popup {
+            min-width: 300px !important;
+        }
         .leaflet-popup-content-wrapper {
             background: #fdfbf7 !important;
             color: #334155 !important;
@@ -45,6 +48,13 @@
             border-radius: 0.75rem !important;
             padding: 0.2rem !important;
             box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.1) !important;
+            max-height: 80vh !important;
+            overflow-y: auto !important;
+        }
+        .leaflet-popup-content {
+            width: 320px !important;
+            max-width: 380px !important;
+            margin: 12px !important;
         }
         .leaflet-popup-tip {
             background: #fdfbf7 !important;
@@ -68,25 +78,12 @@
             word-break: break-all;
         }
 
-        /* 動態回放專屬樣式：對話框放大 30% (300px -> 390px)，照片完整顯示 */
-        body.playback-active .leaflet-popup {
-            min-width: 330px !important;
-        }
-        body.playback-active .leaflet-popup-content-wrapper {
-            max-height: 80vh !important;
-            overflow-y: auto !important;
-        }
-        body.playback-active .leaflet-popup-content {
-            width: 350px !important;
-            max-width: 390px !important;
-            margin: 12px !important;
-        }
-        body.playback-active .popup-img-container {
+        .popup-img-container {
             height: auto !important;
             max-height: 380px !important;
             background-color: #f1f5f9 !important;
         }
-        body.playback-active .popup-img-container img {
+        .popup-img-container img {
             object-fit: contain !important;
             height: auto !important;
             max-height: 360px !important;
@@ -125,12 +122,14 @@
             box-shadow: 0 8px 20px rgba(0,0,0,0.15);
         }
 
-        /* 時間軸節點動畫 */
+        /* 時間軸節點動畫與選中視覺 */
         .timeline-item {
-            transition: background-color 0.3s ease, border-color 0.3s ease;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .timeline-item.active {
-            border-left-color: #7f5539;
+        .timeline-item.active-timeline-item {
+            background-color: #fdfbf7 !important;
+            border-left: 4px solid #7f5539 !important;
+            box-shadow: 0 4px 12px rgba(127, 85, 57, 0.15) !important;
         }
 
         /* 隱藏滾動條但保持滾動 */
@@ -179,11 +178,19 @@
         <!-- 內容切換區域 2: 時間軸檢視 (Timeline) -->
         <div id="viewTimeline" class="hidden flex-1 flex flex-col min-h-0 mb-12">
             <div class="flex flex-col gap-1.5 mb-2 pb-2 border-b border-[#ddc8b4] shrink-0">
-                <div class="flex justify-between items-center">
-                    <span class="text-xs font-semibold text-[#7f5539]">回憶時間軸 (可按住拖動順序)</span>
-                    <button id="btnPlayTimeline" onclick="toggleTimelinePlayback()" class="text-xs bg-[#7f5539] text-white px-2.5 py-1 rounded-md hover:bg-[#9c6644] flex items-center gap-1 shadow-xs transition">
-                        <i data-lucide="play" class="w-3 h-3"></i>動態回放
-                    </button>
+                <div class="flex justify-between items-center gap-1">
+                    <span class="text-xs font-semibold text-[#7f5539] shrink-0">回憶時間軸</span>
+                    <div class="flex items-center gap-1">
+                        <button id="btnPrevTimeline" onclick="prevTimelinePhoto()" class="text-xs bg-white text-[#7f5539] border border-[#ddc8b4] px-2 py-1 rounded-md hover:bg-[#f5ebe0] flex items-center gap-0.5 shadow-xs transition" title="上一張">
+                            <i data-lucide="skip-back" class="w-3 h-3"></i>上一張
+                        </button>
+                        <button id="btnPlayTimeline" onclick="toggleTimelinePlayback()" class="text-xs bg-[#7f5539] text-white px-2 py-1 rounded-md hover:bg-[#9c6644] flex items-center gap-1 shadow-xs transition">
+                            <i data-lucide="play" class="w-3 h-3"></i>播放
+                        </button>
+                        <button id="btnNextTimeline" onclick="nextTimelinePhoto()" class="text-xs bg-white text-[#7f5539] border border-[#ddc8b4] px-2 py-1 rounded-md hover:bg-[#f5ebe0] flex items-center gap-0.5 shadow-xs transition" title="下一張">
+                            下一張<i data-lucide="skip-forward" class="w-3 h-3"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="flex items-center justify-between bg-[#f5ebe0]/90 p-1.5 rounded border border-[#ddc8b4]/80 text-[11px] text-slate-600">
                     <span class="flex items-center gap-1"><i data-lucide="timer" class="w-3 h-3 text-[#7f5539]"></i> 每張照片停留時間:</span>
@@ -379,6 +386,18 @@
 
         const colorMap = { red: '#ef4444', blue: '#3b82f6', green: '#10b981', yellow: '#eab308', purple: '#a855f7' };
 
+        // 🌟 對應圖 2 選單的彩色 Emoji 對照表
+        const iconEmojiMap = {
+            'map-pin': '📍',
+            'footprints': '👣',
+            'utensils': '🍴',
+            'heart': '💖',
+            'calendar': '📅',
+            'first-time': '💖',
+            'calendar-days': '📅',
+            'calendar-heart': '📅'
+        };
+
         function parseImageUrls(rawStr) {
             if (!rawStr) return [];
             return String(rawStr)
@@ -407,7 +426,6 @@
             return convertGoogleDriveLink(url);
         }
 
-        // 🌟 核心防禦：只擷取 YYYY-MM-DD，絕對不經過任何 Date 物件轉換，完全擺脫格林威治/時區干擾
         function formatDateString(dateStr) {
             if (!dateStr) return '';
             const str = String(dateStr).trim();
@@ -440,41 +458,30 @@
             return videoId ? `https://www.youtube.com/embed/${videoId}` : '';
         }
 
+        // 🌟 修正地圖標記 Icon：水滴針頭的白色圓圈內部直接嵌進圖 2 的彩色 Emoji，完美統一！
         function createCustomIcon(colorName, iconName) {
             const color = colorMap[colorName] || '#3b82f6';
+            const emoji = iconEmojiMap[iconName] || '📍';
             
-            const svgHtml = `
+            const svgPinBg = `
                 <svg width="40" height="40" viewBox="0 0 40 40" style="display:block;">
                     <path d="M20 2C13.1 2 7.5 7.6 7.5 14.5C7.5 23.2 20 37 20 37S32.5 23.2 32.5 14.5C32.5 7.6 26.9 2 20 2Z" fill="${color}"/>
                     <circle cx="20" cy="14.5" r="9" fill="white"/>
                 </svg>
             `;
 
-            let targetIcon = iconName;
-            if (iconName === 'first-time') targetIcon = 'heart';
-            if (iconName === 'calendar-days' || iconName === 'calendar-heart') targetIcon = 'calendar';
-
-            if (targetIcon === 'heart') {
-                return L.divIcon({
-                    html: `<div style="position:relative; width:40px; height:40px;">${svgHtml}<div style="position:absolute; inset:0; top:-11px; font-size:14px; pointer-events:none; display:flex; align-items:center; justify-content:center;">💖</div></div>`,
-                    className: 'custom-leaflet-icon-emoji', iconSize: [40, 40], iconAnchor: [20, 37]
-                });
-            }
-
-            if (targetIcon === 'calendar') {
-                return L.divIcon({
-                    html: `<div style="position:relative; width:40px; height:40px;">${svgHtml}<div style="position:absolute; inset:0; top:-11px; font-size:14px; pointer-events:none; display:flex; align-items:center; justify-content:center;">📅</div></div>`,
-                    className: 'custom-leaflet-icon-emoji', iconSize: [40, 40], iconAnchor: [20, 37]
-                });
-            }
-
-            // 讓「我們的足跡 👣」圖標顏色隨選擇改變
-            let strokeColor = color; 
-            let fillColor = color;   
-
             return L.divIcon({
-                html: `<div style="color: ${color}; position:relative; width:40px; height:40px;">${svgHtml}<div style="position:absolute; top:4.5px; left:10px; pointer-events:none;"><i data-lucide="${targetIcon}" stroke="${strokeColor}" fill="${fillColor}" stroke-width="1.2" class="w-5 h-5"></i></div></div>`,
-                className: 'custom-leaflet-icon', iconSize: [40, 40], iconAnchor: [20, 37]
+                html: `
+                    <div style="position:relative; width:40px; height:40px;">
+                        ${svgPinBg}
+                        <div style="position:absolute; top:3.5px; left:0; width:40px; height:22px; display:flex; align-items:center; justify-content:center; font-size:13px; line-height:1; pointer-events:none; user-select:none;">
+                            ${emoji}
+                        </div>
+                    </div>
+                `,
+                className: 'custom-leaflet-icon-emoji',
+                iconSize: [40, 40],
+                iconAnchor: [20, 37]
             });
         }
 
@@ -489,6 +496,28 @@
                 lucide.createIcons();
             }
         });
+
+        function openEditPanelForItem(item) {
+            if (!isEditMode || !item) return;
+            
+            activeId = item.id;
+            currentLatLng = { lat: parseFloat(item.lat), lng: parseFloat(item.lng) };
+            
+            openPanel(false);
+            
+            document.getElementById('placeTitle').value = item.title || '';
+            document.getElementById('placeDate').value = formatDateString(item.date) || '';
+            document.getElementById('placeNotes').value = item.notes || '';
+            document.getElementById('placeImageUrl').value = item.image_url || '';
+            document.getElementById('placeVideoUrl').value = item.video_url || '';
+            document.getElementById('placeColor').value = item.color || 'blue';
+            document.getElementById('placeIcon').value = item.icon || 'map-pin';
+            
+            const folderSelect = document.getElementById('placeFolder');
+            if (folderSelect && item.folder_name) {
+                folderSelect.value = item.folder_name;
+            }
+        }
 
         function openPanel(isNew = false) {
             if (!isEditMode) return;
@@ -516,6 +545,7 @@
                 map.removeLayer(currentMarker);
                 currentMarker = null;
             }
+            activeId = null;
         }
 
         function updateFolderSelect() {
@@ -597,9 +627,11 @@
             if (!isEditMode) return;
             const title = document.getElementById('placeTitle').value || "未命名地點";
             
-            // 🌟 儲存前強制格式化為 YYYY-MM-DD，絕對不傳遞 ISO 或 Date 物件給 GAS
             const rawDateVal = document.getElementById('placeDate').value || ""; 
             const date = formatDateString(rawDateVal);
+
+            const existingItem = activeId ? markersData.find(m => m.id === activeId) : null;
+            const inTimeline = existingItem ? (existingItem.in_timeline || 'yes') : 'yes';
 
             const notes = document.getElementById('placeNotes').value;
             const imageUrl = document.getElementById('placeImageUrl').value;
@@ -614,8 +646,9 @@
 
             const folderItems = markersData.filter(m => m.folder_name === folder);
             const maxOrder = folderItems.reduce((max, item) => (item.order > max ? item.order : max), Date.now());
+            const itemOrder = existingItem && existingItem.order !== undefined ? existingItem.order : (maxOrder + 1000);
 
-            const dataItem = { id, title, date, lat, lng, notes, video_url: videoUrl, image_url: imageUrl, color, icon, folder_name: folder, order: maxOrder + 1000 };
+            const dataItem = { id, title, date, in_timeline: inTimeline, lat, lng, notes, video_url: videoUrl, image_url: imageUrl, color, icon, folder_name: folder, order: itemOrder };
 
             if (gasUrl) {
                 try {
@@ -684,6 +717,7 @@
             if (currentIndex >= images.length) currentIndex = 0;
             
             container.setAttribute('data-index', currentIndex);
+            currentPlaybackImgIndex = currentIndex;
             
             const imgEl = container.querySelector('img');
             const countEl = container.querySelector('.img-count-badge');
@@ -694,7 +728,6 @@
             if (fancyAnchor) fancyAnchor.href = getGoogleDriveOriginalLink(images[currentIndex]);
         };
 
-        // 三層代理連線機制 (100% 破解 iPad Safari 跨網域限制)
         async function fetchCloudData(showAlert = false) {
             if (!gasUrl) return;
 
@@ -703,7 +736,6 @@
                 targetUrl += (targetUrl.includes('?') ? '&' : '?') + 'action=read';
             }
 
-            // 通道 1: 使用 corsproxy.io 強力中轉
             try {
                 const proxyUrl1 = "https://corsproxy.io/?" + encodeURIComponent(targetUrl);
                 const res = await fetch(proxyUrl1);
@@ -715,11 +747,8 @@
                         return;
                     }
                 }
-            } catch (e) {
-                console.log("代理通道 1 嘗試中...", e);
-            }
+            } catch (e) {}
 
-            // 通道 2: 使用 api.allorigins.win 中轉
             try {
                 const proxyUrl2 = "https://api.allorigins.win/get?url=" + encodeURIComponent(targetUrl);
                 const res = await fetch(proxyUrl2);
@@ -732,11 +761,8 @@
                         return;
                     }
                 }
-            } catch (e) {
-                console.log("代理通道 2 嘗試中...", e);
-            }
+            } catch (e) {}
 
-            // 通道 3: 原生 direct fetch
             try {
                 const res = await fetch(targetUrl, { method: 'GET', redirect: 'follow' });
                 if (res.ok) {
@@ -745,9 +771,7 @@
                     if (showAlert) alert("✅ 連線成功！已同步載入浪漫手帳資料。");
                     return;
                 }
-            } catch (e) {
-                console.error("所有通道嘗試完畢，連線失敗:", e);
-            }
+            } catch (e) {}
 
             if (showAlert) {
                 alert("❌ 連線失敗！請確認 GAS 部署網址是否為 /exec 結尾，且權限已設為【所有人】。");
@@ -808,26 +832,23 @@
                 popupHtml += '</div>';
                 
                 marker.bindPopup(popupHtml, { 
-                    minWidth: 220, 
+                    minWidth: 300, 
                     maxWidth: 390,
                     autoPan: false
                 });
 
                 marker.on('click', (e) => {
-                    if (!isEditMode) return;
+                    const sortedItems = getSortedTimelineItems();
+                    const idx = sortedItems.findIndex(m => m.id === item.id);
+                    if (idx !== -1) {
+                        currentPlaybackItemIndex = idx;
+                        currentPlaybackImgIndex = 0;
+                        updateTimelineHighlight(item.id);
+                    }
 
-                    activeId = item.id;
-                    currentLatLng = { lat: parseFloat(item.lat), lng: parseFloat(item.lng) };
-                    
-                    openPanel(false);
-                    document.getElementById('placeTitle').value = item.title;
-                    document.getElementById('placeDate').value = formatDateString(item.date);
-                    document.getElementById('placeNotes').value = item.notes || '';
-                    document.getElementById('placeImageUrl').value = item.image_url || '';
-                    document.getElementById('placeVideoUrl').value = item.video_url || '';
-                    document.getElementById('placeColor').value = item.color;
-                    document.getElementById('placeIcon').value = item.icon;
-                    document.getElementById('placeFolder').value = item.folder_name;
+                    if (isEditMode) {
+                        openEditPanelForItem(item);
+                    }
                 });
             });
 
@@ -836,6 +857,8 @@
             renderGallery();
             updateFolderSelect();
             
+            lucide.createIcons();
+
             Fancybox.bind("[data-fancybox]", {
                 Hash: false, Thumbs: false,
                 Toolbar: { display: { left: ["infobar"], middle: [], right: ["zoomIn", "zoomOut", "close"] } }
@@ -861,16 +884,60 @@
             lucide.createIcons();
         }
 
+        function getSortedTimelineItems() {
+            return markersData.filter(m => formatDateString(m.date) && m.in_timeline !== 'no').sort((a, b) => {
+                const dateA = formatDateString(a.date);
+                const dateB = formatDateString(b.date);
+                if (dateA === dateB) return (a.order || 0) - (b.order || 0);
+                return dateA.localeCompare(dateB);
+            });
+        }
+
+        async function toggleItemTimelineStatus(id) {
+            if (!isEditMode) return;
+            const item = markersData.find(m => m.id === id);
+            if (!item) return;
+
+            item.in_timeline = (item.in_timeline === 'no') ? 'yes' : 'no';
+
+            if (gasUrl) {
+                try {
+                    await fetch(gasUrl, {
+                        method: 'POST', mode: 'no-cors',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: 'save', data: item })
+                    });
+                } catch(e) { console.error(e); }
+            }
+
+            renderTimeline();
+        }
+
+        function updateTimelineHighlight(id) {
+            document.querySelectorAll('.timeline-item').forEach(el => {
+                el.classList.remove('active-timeline-item');
+                el.classList.add('bg-white/40');
+            });
+            const tlEl = document.getElementById(`tl_item_${id}`);
+            if (tlEl) {
+                tlEl.classList.remove('bg-white/40');
+                tlEl.classList.add('active-timeline-item');
+                tlEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }
+
         function renderTimeline() {
             const container = document.getElementById('timelineContainer');
             container.innerHTML = '';
 
-            const sortedItems = markersData.filter(m => formatDateString(m.date)).sort((a, b) => {
+            const sortedItems = markersData.filter(m => {
+                if (!formatDateString(m.date)) return false;
+                if (!isEditMode && m.in_timeline === 'no') return false;
+                return true;
+            }).sort((a, b) => {
                 const dateA = formatDateString(a.date);
                 const dateB = formatDateString(b.date);
-                if (dateA === dateB) {
-                    return (a.order || 0) - (b.order || 0);
-                }
+                if (dateA === dateB) return (a.order || 0) - (b.order || 0);
                 return dateA.localeCompare(dateB);
             });
 
@@ -883,17 +950,30 @@
 
             sortedItems.forEach((item) => {
                 const cleanDate = formatDateString(item.date);
+                const isHidden = item.in_timeline === 'no';
+                const cardStyle = isHidden ? 'opacity-40 bg-slate-200/60 grayscale' : 'bg-white/40';
+
+                const toggleBtn = isEditMode ? `
+                    <button onclick="event.stopPropagation(); toggleItemTimelineStatus('${item.id}')" title="${isHidden ? '點擊取消隱藏（加入時間軸）' : '點擊隱藏（不進入時間軸）'}" class="p-1 rounded hover:bg-slate-200/80 transition text-slate-500 mr-1">
+                        <i data-lucide="${isHidden ? 'eye-off' : 'eye'}" class="w-3.5 h-3.5 ${isHidden ? 'text-slate-500' : 'text-emerald-600'}"></i>
+                    </button>
+                ` : '';
+
                 timelineHtml += `
-                    <div data-id="${item.id}" id="tl_item_${item.id}" class="timeline-item btn-interactive relative pl-7 pr-2 py-1.5 rounded-r-lg border-l-2 border-transparent bg-white/40 mb-1 flex items-center justify-between group">
+                    <div data-id="${item.id}" id="tl_item_${item.id}" class="timeline-item btn-interactive relative pl-7 pr-2 py-1.5 rounded-r-lg border-l-2 border-transparent ${cardStyle} mb-1 flex items-center justify-between group">
                         <div onclick="focusPlace('${item.lat}', '${item.lng}', '${item.id}')" class="flex-1 cursor-pointer">
-                            <div class="absolute left-[9px] top-3 w-2 h-2 rounded-full bg-[#7f5539] ring-4 ring-[#f4ebe1]"></div>
-                            <div class="text-[10px] text-pink-600 font-bold flex items-center gap-1">
+                            <div class="absolute left-[9px] top-3 w-2 h-2 rounded-full ${isHidden ? 'bg-slate-400' : 'bg-[#7f5539]'} ring-4 ring-[#f4ebe1]"></div>
+                            <div class="text-[10px] ${isHidden ? 'text-slate-500' : 'text-pink-600'} font-bold flex items-center gap-1">
                                 <i data-lucide="calendar" class="w-2.5 h-2.5"></i> ${cleanDate}
+                                ${isHidden ? '<span class="text-[9px] bg-slate-300 text-slate-600 px-1 rounded ml-1 font-normal">已隱藏</span>' : ''}
                             </div>
-                            <div class="text-xs font-bold text-slate-700 leading-tight">${item.title}</div>
-                            ${item.notes ? `<div class="text-[10px] text-slate-500 line-clamp-1">${item.notes}</div>` : ''}
+                            <div class="text-xs font-bold ${isHidden ? 'text-slate-500 line-through' : 'text-slate-700'} leading-tight">${item.title}</div>
+                            ${item.notes ? `<div class="text-[10px] text-slate-400 line-clamp-1">${item.notes}</div>` : ''}
                         </div>
-                        <i data-lucide="menu" class="w-3.5 h-3.5 text-slate-400 ${isEditMode ? 'cursor-grab active:cursor-grabbing' : 'opacity-0 pointer-events-none'} ml-1"></i>
+                        <div class="flex items-center gap-1">
+                            ${toggleBtn}
+                            <i data-lucide="menu" class="w-3.5 h-3.5 text-slate-400 ${isEditMode ? 'cursor-grab active:cursor-grabbing' : 'opacity-0 pointer-events-none'}"></i>
+                        </div>
                     </div>
                 `;
             });
@@ -946,46 +1026,35 @@
             if (!btn) return;
             if (state === 'playing') {
                 btn.innerHTML = '<i data-lucide="pause" class="w-3 h-3"></i>暫停';
-                btn.className = "text-xs bg-amber-600 text-white px-2.5 py-1 rounded-md hover:bg-amber-700 flex items-center gap-1 shadow-xs transition";
+                btn.className = "text-xs bg-amber-600 text-white px-2 py-1 rounded-md hover:bg-amber-700 flex items-center gap-1 shadow-xs transition";
             } else if (state === 'paused') {
-                btn.innerHTML = '<i data-lucide="play" class="w-3 h-3"></i>繼續';
-                btn.className = "text-xs bg-emerald-600 text-white px-2.5 py-1 rounded-md hover:bg-emerald-700 flex items-center gap-1 shadow-xs transition";
+                btn.innerHTML = '<i data-lucide="play" class="w-3 h-3"></i>播放';
+                btn.className = "text-xs bg-emerald-600 text-white px-2 py-1 rounded-md hover:bg-emerald-700 flex items-center gap-1 shadow-xs transition";
             } else if (state === 'ended') {
                 btn.innerHTML = '<i data-lucide="rotate-ccw" class="w-3 h-3"></i>重播';
-                btn.className = "text-xs bg-[#7f5539] text-white px-2.5 py-1 rounded-md hover:bg-[#9c6644] flex items-center gap-1 shadow-xs transition";
+                btn.className = "text-xs bg-[#7f5539] text-white px-2 py-1 rounded-md hover:bg-[#9c6644] flex items-center gap-1 shadow-xs transition";
             } else {
-                btn.innerHTML = '<i data-lucide="play" class="w-3 h-3"></i>動態回放';
-                btn.className = "text-xs bg-[#7f5539] text-white px-2.5 py-1 rounded-md hover:bg-[#9c6644] flex items-center gap-1 shadow-xs transition";
+                btn.innerHTML = '<i data-lucide="play" class="w-3 h-3"></i>播放';
+                btn.className = "text-xs bg-[#7f5539] text-white px-2 py-1 rounded-md hover:bg-[#9c6644] flex items-center gap-1 shadow-xs transition";
             }
             lucide.createIcons();
         }
 
-        function getSortedTimelineItems() {
-            return markersData.filter(m => formatDateString(m.date)).sort((a, b) => {
-                const dateA = formatDateString(a.date);
-                const dateB = formatDateString(b.date);
-                if (dateA === dateB) return (a.order || 0) - (b.order || 0);
-                return dateA.localeCompare(dateB);
-            });
-        }
-
         function startTimelinePlayback() {
             playbackState = 'playing';
-            document.body.classList.add('playback-active');
             updatePlaybackButtonUI('playing');
             
-            currentPlaybackItemIndex = 0;
-            currentPlaybackImgIndex = 0;
-
             const sortedItems = getSortedTimelineItems();
-            Object.values(markerInstances).forEach(m => map.removeLayer(m));
+            if (currentPlaybackItemIndex < 0 || currentPlaybackItemIndex >= sortedItems.length) {
+                currentPlaybackItemIndex = 0;
+            }
 
+            Object.values(markerInstances).forEach(m => map.removeLayer(m));
             runPlaybackLoop();
         }
 
         function resumeTimelinePlayback() {
             playbackState = 'playing';
-            document.body.classList.add('playback-active');
             updatePlaybackButtonUI('playing');
             runPlaybackLoop();
         }
@@ -999,8 +1068,90 @@
         function stopTimelinePlayback(isEnded = false) {
             playbackState = isEnded ? 'ended' : 'stopped';
             if (playbackTimer) clearTimeout(playbackTimer);
-            document.body.classList.remove('playback-active');
             updatePlaybackButtonUI(playbackState);
+        }
+
+        function showCurrentTimelineStep() {
+            const sortedItems = getSortedTimelineItems();
+            if (sortedItems.length === 0) return;
+
+            if (currentPlaybackItemIndex < 0) currentPlaybackItemIndex = 0;
+            if (currentPlaybackItemIndex >= sortedItems.length) currentPlaybackItemIndex = sortedItems.length - 1;
+
+            const item = sortedItems[currentPlaybackItemIndex];
+            const marker = markerInstances[item.id];
+            const rawImages = parseImageUrls(item.image_url);
+
+            if (marker) {
+                marker.addTo(map);
+                const targetLatLng = L.latLng(parseFloat(item.lat), parseFloat(item.lng));
+                const targetZoom = 15;
+
+                const targetPoint = map.project(targetLatLng, targetZoom);
+                const offsetPoint = L.point(targetPoint.x, targetPoint.y - 200); 
+                const centerLatLng = map.unproject(offsetPoint, targetZoom);
+
+                map.setView(centerLatLng, targetZoom, { animate: true, duration: 0.5 });
+                marker.openPopup();
+
+                updateTimelineHighlight(item.id);
+
+                if (rawImages.length > 0) {
+                    if (currentPlaybackImgIndex >= rawImages.length) currentPlaybackImgIndex = rawImages.length - 1;
+                    if (currentPlaybackImgIndex < 0) currentPlaybackImgIndex = 0;
+
+                    const container = document.getElementById(`popup_img_box_${item.id}`);
+                    if (container) {
+                        container.setAttribute('data-index', currentPlaybackImgIndex);
+                        const imgEl = container.querySelector('img');
+                        const countEl = container.querySelector('.img-count-badge');
+                        const fancyAnchor = container.querySelector('a');
+                        
+                        if (imgEl) imgEl.src = convertGoogleDriveLink(rawImages[currentPlaybackImgIndex]);
+                        if (countEl) countEl.innerText = `${currentPlaybackImgIndex + 1}/${rawImages.length}`;
+                        if (fancyAnchor) fancyAnchor.href = getGoogleDriveOriginalLink(rawImages[currentPlaybackImgIndex]);
+                    }
+                }
+            }
+        }
+
+        function nextTimelinePhoto() {
+            const sortedItems = getSortedTimelineItems();
+            if (sortedItems.length === 0) return;
+
+            if (playbackState === 'playing') pauseTimelinePlayback();
+
+            const item = sortedItems[currentPlaybackItemIndex];
+            const rawImages = parseImageUrls(item ? item.image_url : '');
+
+            currentPlaybackImgIndex++;
+            if (currentPlaybackImgIndex >= Math.max(1, rawImages.length)) {
+                currentPlaybackItemIndex++;
+                currentPlaybackImgIndex = 0;
+                if (currentPlaybackItemIndex >= sortedItems.length) {
+                    currentPlaybackItemIndex = 0;
+                }
+            }
+            showCurrentTimelineStep();
+        }
+
+        function prevTimelinePhoto() {
+            const sortedItems = getSortedTimelineItems();
+            if (sortedItems.length === 0) return;
+
+            if (playbackState === 'playing') pauseTimelinePlayback();
+
+            currentPlaybackImgIndex--;
+            if (currentPlaybackImgIndex < 0) {
+                currentPlaybackItemIndex--;
+                if (currentPlaybackItemIndex < 0) {
+                    currentPlaybackItemIndex = sortedItems.length - 1;
+                }
+                const prevItem = sortedItems[currentPlaybackItemIndex];
+                const prevRawImages = parseImageUrls(prevItem ? prevItem.image_url : '');
+                currentPlaybackImgIndex = Math.max(0, prevRawImages.length - 1);
+            }
+            showCurrentTimelineStep();
         }
 
         function runPlaybackLoop() {
@@ -1017,27 +1168,7 @@
             const rawImages = parseImageUrls(item.image_url);
 
             if (marker) {
-                marker.addTo(map);
-                const targetLatLng = L.latLng(parseFloat(item.lat), parseFloat(item.lng));
-                const targetZoom = 15;
-
-                const targetPoint = map.project(targetLatLng, targetZoom);
-                const offsetPoint = L.point(targetPoint.x, targetPoint.y - 260); 
-                const centerLatLng = map.unproject(offsetPoint, targetZoom);
-
-                map.setView(centerLatLng, targetZoom, { animate: true, duration: 0.6 });
-                marker.openPopup();
-
-                document.querySelectorAll('.timeline-item').forEach(el => el.classList.remove('bg-[#fdfbf7]', 'shadow-xs', 'active'));
-                const tlEl = document.getElementById(`tl_item_${item.id}`);
-                if (tlEl) {
-                    tlEl.classList.add('bg-[#fdfbf7]', 'shadow-xs', 'active');
-                    tlEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                }
-
-                if (currentPlaybackImgIndex > 0) {
-                    window.changePopupImage(item.id, 1);
-                }
+                showCurrentTimelineStep();
 
                 playbackTimer = setTimeout(() => {
                     if (playbackState !== 'playing') return;
@@ -1152,7 +1283,7 @@
                         ${folderItems.map(item => `
                             <div data-id="${item.id}" class="sortable-item btn-interactive text-xs bg-white/90 p-2 rounded-lg cursor-pointer hover:bg-[#f5ebe0] text-slate-700 flex justify-between items-center transition border border-slate-100 shadow-2xs">
                                 <span onclick="focusPlace('${item.lat}', '${item.lng}', '${item.id}')" class="flex items-center gap-1 font-medium flex-1">
-                                    <span style="color: ${colorMap[item.color] || '#fff'}">●</span> ${item.title}
+                                    <span style="color: ${colorMap[item.color] || '#fff'}">●</span> ${iconEmojiMap[item.icon] || '📍'} ${item.title}
                                 </span>
                                 <i data-lucide="menu" class="w-3.5 h-3.5 text-slate-300 ${isEditMode ? 'cursor-grab active:cursor-grabbing' : 'opacity-0 pointer-events-none'} ml-2"></i>
                             </div>
@@ -1199,16 +1330,36 @@
             const targetLat = parseFloat(lat);
             const targetLng = parseFloat(lng);
             
+            const sortedItems = getSortedTimelineItems();
+            const foundIdx = sortedItems.findIndex(m => m.id === id);
+            if (foundIdx !== -1) {
+                currentPlaybackItemIndex = foundIdx;
+                currentPlaybackImgIndex = 0;
+            }
+
+            updateTimelineHighlight(id);
+
+            const item = markersData.find(m => m.id === id);
+
             const marker = markerInstances[id];
             if (marker) {
                 marker.addTo(map);
+                
+                const targetLatLng = L.latLng(targetLat, targetLng);
+                const targetZoom = Math.max(map.getZoom(), 15);
+                const targetPoint = map.project(targetLatLng, targetZoom);
+                const offsetPoint = L.point(targetPoint.x, targetPoint.y - 200); 
+                const centerLatLng = map.unproject(offsetPoint, targetZoom);
+
+                map.setView(centerLatLng, targetZoom, { animate: true, duration: 0.5 });
                 marker.openPopup();
-                if (isEditMode) {
-                    marker.fire('click');
-                }
+            } else {
+                map.panTo([targetLat, targetLng], { animate: true, duration: 0.5 });
             }
-            
-            map.panTo([targetLat, targetLng], { animate: true, duration: 0.5 });
+
+            if (isEditMode && item) {
+                openEditPanelForItem(item);
+            }
         }
 
         function toggleAuthMode() {
