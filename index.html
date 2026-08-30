@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- 解除 Google 圖片與雲端相片防盜鏈限制 -->
+    <meta name="referrer" content="no-referrer">
     <title>質感生活同步互動地圖 - 回憶手帳版</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -101,7 +103,7 @@
             color: #334155 !important;
         }
 
-        /* 拖曳時被選中項目的樣式樣式 */
+        /* 拖曳時被選中項目的樣式 */
         .sortable-ghost {
             opacity: 0.4;
             background-color: #ede0d4 !important;
@@ -225,7 +227,7 @@
     <!-- 景點編輯與新增面板 -->
     <div id="editPanel" class="hidden w-full md:w-80 bg-[#fdfbf7] p-4 border-t md:border-t-0 md:border-l border-[#ddc8b4] md:h-full flex flex-col z-[1000] shadow-xl">
         <div class="flex justify-between items-center mb-4">
-            <h3 id="panelTitle" class="font-bold text-lg text-[#7f5539]">新增景點</h3>
+            <h3 id="panelTitle" class="font-bold text-lg text-[#7f5539]">編輯手帳細節</h3>
             <button onclick="closePanel()" class="text-slate-400 hover:text-slate-600 p-1"><i data-lucide="x"></i></button>
         </div>
         
@@ -274,7 +276,7 @@
                 <input type="text" id="placeImageUrl" class="w-full p-2 rounded-md bg-white border border-slate-200 text-slate-800 focus:outline-none focus:border-[#7f5539]" placeholder="網址1, 網址2...">
             </div>
             <div>
-                <label class="block text-xs font-medium text-slate-500 mb-1">YouTube 影片網址</label>
+                <label class="block text-xs font-medium text-slate-500 mb-1">影片網址 (YouTube / Google Drive / MP4)</label>
                 <input type="text" id="placeVideoUrl" class="w-full p-2 rounded-md bg-white border border-slate-200 text-slate-800 focus:outline-none focus:border-[#7f5539]" placeholder="https://...">
             </div>
             <div>
@@ -386,7 +388,6 @@
 
         const colorMap = { red: '#ef4444', blue: '#3b82f6', green: '#10b981', yellow: '#eab308', purple: '#a855f7' };
 
-        // 🌟 對應圖 2 選單的彩色 Emoji 對照表
         const iconEmojiMap = {
             'map-pin': '📍',
             'footprints': '👣',
@@ -398,6 +399,24 @@
             'calendar-heart': '📅'
         };
 
+        function getLocKey(lat, lng) {
+            const nLat = parseFloat(lat);
+            const nLng = parseFloat(lng);
+            if (isNaN(nLat) || isNaN(nLng)) return null;
+            return `${nLat.toFixed(5)},${nLng.toFixed(5)}`;
+        }
+
+        function getGroupedItems() {
+            const groups = {};
+            markersData.forEach(item => {
+                const key = getLocKey(item.lat, item.lng);
+                if (!key) return;
+                if (!groups[key]) groups[key] = [];
+                groups[key].push(item);
+            });
+            return groups;
+        }
+
         function parseImageUrls(rawStr) {
             if (!rawStr) return [];
             return String(rawStr)
@@ -408,6 +427,7 @@
 
         function convertGoogleDriveLink(url) {
             if (!url) return '';
+            url = String(url).trim();
             if (url.includes('drive.google.com')) {
                 let id = '';
                 if (url.includes('/d/')) {
@@ -428,7 +448,18 @@
 
         function formatDateString(dateStr) {
             if (!dateStr) return '';
-            const str = String(dateStr).trim();
+            let str = String(dateStr).trim();
+
+            if (str.includes('T')) {
+                let d = new Date(str);
+                if (!isNaN(d.getTime())) {
+                    let year = d.getFullYear();
+                    let month = String(d.getMonth() + 1).padStart(2, '0');
+                    let day = String(d.getDate()).padStart(2, '0');
+                    return `${year}-${month}-${day}`;
+                }
+            }
+
             const match = str.match(/\d{4}-\d{2}-\d{2}/);
             if (match) {
                 return match[0];
@@ -442,8 +473,26 @@
             localStorage.setItem('playbackDelay', val);
         }
 
-        function getYouTubeEmbedUrl(url) {
+        function getVideoEmbedHtml(url) {
             if (!url) return '';
+            url = url.trim();
+
+            if (url.includes('drive.google.com')) {
+                let fileId = '';
+                if (url.includes('/file/d/')) {
+                    fileId = url.split('/file/d/')[1].split('/')[0];
+                } else if (url.includes('id=')) {
+                    fileId = url.split('id=')[1].split('&')[0];
+                }
+                if (fileId) {
+                    return `<iframe class="w-full h-full" src="https://drive.google.com/file/d/${fileId}/preview" frameborder="0" allow="fullscreen"></iframe>`;
+                }
+            }
+
+            if (url.match(/\.(mp4|webm|ogg)($|\?)/i)) {
+                return `<video class="w-full h-full object-contain" controls muted playsinline preload="metadata"><source src="${url}"></video>`;
+            }
+
             let videoId = '';
             if (url.includes('youtu.be/')) {
                 videoId = url.split('youtu.be/')[1].split('?')[0].split('/')[0];
@@ -455,10 +504,14 @@
             } else if (url.includes('youtube.com/shorts/')) {
                 videoId = url.split('youtube.com/shorts/')[1].split('?')[0];
             }
-            return videoId ? `https://www.youtube.com/embed/${videoId}` : '';
+
+            if (videoId) {
+                return `<iframe class="w-full h-full" src="https://www.youtube.com/embed/${videoId}?mute=1&autoplay=0" title="YouTube video player" frameborder="0" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`;
+            }
+
+            return '';
         }
 
-        // 🌟 修正地圖標記 Icon：水滴針頭的白色圓圈內部直接嵌進圖 2 的彩色 Emoji，完美統一！
         function createCustomIcon(colorName, iconName) {
             const color = colorMap[colorName] || '#3b82f6';
             const emoji = iconEmojiMap[iconName] || '📍';
@@ -677,7 +730,7 @@
                     await fetch(gasUrl, {
                         method: 'POST', mode: 'no-cors',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ action: 'delete', id: activeId })
+                        body: JSON.stringify({ action: 'save', data: { id: activeId, action: 'delete' } })
                     });
                 } catch(e){}
             }
@@ -703,42 +756,66 @@
             fetchCloudData(true);
         }
 
-        window.changePopupImage = function(itemId, dir) {
+        window.changePopupMedia = function(itemId, dir = 0) {
             const container = document.getElementById(`popup_img_box_${itemId}`);
             if (!container) return;
             
-            const raw = container.getAttribute('data-images');
-            if (!raw) return;
-            const images = parseImageUrls(raw);
+            const rawMedia = container.getAttribute('data-media');
+            if (!rawMedia) return;
+            
+            let mediaList = [];
+            try {
+                mediaList = JSON.parse(decodeURIComponent(rawMedia));
+            } catch(e) { return; }
+            if (mediaList.length === 0) return;
+
             let currentIndex = parseInt(container.getAttribute('data-index')) || 0;
-            
             currentIndex += dir;
-            if (currentIndex < 0) currentIndex = images.length - 1;
-            if (currentIndex >= images.length) currentIndex = 0;
-            
+            if (currentIndex < 0) currentIndex = mediaList.length - 1;
+            if (currentIndex >= mediaList.length) currentIndex = 0;
+
             container.setAttribute('data-index', currentIndex);
             currentPlaybackImgIndex = currentIndex;
-            
-            const imgEl = container.querySelector('img');
+
+            const contentArea = container.querySelector('.media-content-area');
             const countEl = container.querySelector('.img-count-badge');
-            const fancyAnchor = container.querySelector('a');
             
-            if (imgEl) imgEl.src = convertGoogleDriveLink(images[currentIndex]);
-            if (countEl) countEl.innerText = `${currentIndex + 1}/${images.length}`;
-            if (fancyAnchor) fancyAnchor.href = getGoogleDriveOriginalLink(images[currentIndex]);
+            const item = mediaList[currentIndex];
+            const itemTitle = container.getAttribute('data-title') || '';
+            const galleryGroup = `gallery_${itemId}`;
+
+            if (contentArea) {
+                if (item.type === 'image') {
+                    const safeImg = convertGoogleDriveLink(item.url);
+                    contentArea.innerHTML = `
+                        <a href="${getGoogleDriveOriginalLink(item.url)}" data-caption="${itemTitle}" data-fancybox="${galleryGroup}" class="w-full h-full flex items-center justify-center">
+                            <img src="${safeImg}" class="w-full h-full object-cover map-thumb" onerror="this.parentElement.parentElement.innerHTML='<span class=\\'text-[10px] text-slate-400\\'>圖片載入中/未公開</span>'">
+                        </a>`;
+                } else if (item.type === 'video') {
+                    const videoHtml = getVideoEmbedHtml(item.url);
+                    contentArea.innerHTML = `<div class="w-full h-full bg-black flex items-center justify-center">${videoHtml}</div>`;
+                }
+            }
+
+            if (countEl) {
+                const icon = item.type === 'video' ? '🎬 ' : '';
+                countEl.innerText = `${icon}${currentIndex + 1}/${mediaList.length}`;
+            }
+
+            Fancybox.bind("[data-fancybox]", {
+                Hash: false, Thumbs: false,
+                Toolbar: { display: { left: ["infobar"], middle: [], right: ["zoomIn", "zoomOut", "close"] } }
+            });
         };
 
         async function fetchCloudData(showAlert = false) {
             if (!gasUrl) return;
 
-            let targetUrl = gasUrl;
-            if (!targetUrl.includes('action=read')) {
-                targetUrl += (targetUrl.includes('?') ? '&' : '?') + 'action=read';
-            }
+            let cleanUrl = gasUrl.split('?')[0];
+            let targetUrl = cleanUrl + '?action=read&_t=' + Date.now();
 
             try {
-                const proxyUrl1 = "https://corsproxy.io/?" + encodeURIComponent(targetUrl);
-                const res = await fetch(proxyUrl1);
+                const res = await fetch(targetUrl, { method: 'GET', redirect: 'follow' });
                 if (res.ok) {
                     const json = await res.json();
                     if (json && (json.data || Array.isArray(json))) {
@@ -747,11 +824,13 @@
                         return;
                     }
                 }
-            } catch (e) {}
+            } catch (e) {
+                console.warn("直連嘗試失敗，切換至備用代理：", e);
+            }
 
             try {
-                const proxyUrl2 = "https://api.allorigins.win/get?url=" + encodeURIComponent(targetUrl);
-                const res = await fetch(proxyUrl2);
+                const proxyUrl = "https://api.allorigins.win/get?url=" + encodeURIComponent(targetUrl);
+                const res = await fetch(proxyUrl);
                 if (res.ok) {
                     const proxyData = await res.json();
                     const json = JSON.parse(proxyData.contents);
@@ -761,22 +840,156 @@
                         return;
                     }
                 }
-            } catch (e) {}
-
-            try {
-                const res = await fetch(targetUrl, { method: 'GET', redirect: 'follow' });
-                if (res.ok) {
-                    const json = await res.json();
-                    renderMapMarkers(json.data || json);
-                    if (showAlert) alert("✅ 連線成功！已同步載入浪漫手帳資料。");
-                    return;
-                }
-            } catch (e) {}
+            } catch (e) {
+                console.error("備用代理連線失敗：", e);
+            }
 
             if (showAlert) {
-                alert("❌ 連線失敗！請確認 GAS 部署網址是否為 /exec 結尾，且權限已設為【所有人】。");
+                alert("❌ 連線失敗！請確認 GAS 網址是否正確。");
             }
         }
+
+        /* 🌟 需求 2 修正：同地點手帳依日期舊到新排序 (最新排在最下面) */
+        window.showGroupListInPopup = function(locKey) {
+            const marker = markerInstances[locKey];
+            if (!marker) return;
+
+            const groups = getGroupedItems();
+            let items = groups[locKey] || [];
+            if (items.length === 0) return;
+
+            // 依日期舊➔新排序 (最新的在最下面)
+            items = [...items].sort((a, b) => {
+                const dateA = formatDateString(a.date) || '9999-99-99';
+                const dateB = formatDateString(b.date) || '9999-99-99';
+                if (dateA === dateB) return (a.order || 0) - (b.order || 0);
+                return dateA.localeCompare(dateB);
+            });
+
+            let listHtml = `<div class="p-1 min-w-[240px] text-slate-700">`;
+            listHtml += `<div class="font-bold text-sm text-[#7f5539] mb-2 pb-1 border-b border-[#ddc8b4] flex justify-between items-center">`;
+            listHtml += `<span class="flex items-center gap-1"><i data-lucide="layers" class="w-4 h-4 text-[#b7b7a4]"></i> 地點手帳列表 (${items.length})</span>`;
+            
+            if (isEditMode) {
+                listHtml += `<button onclick="addNewEntryAtLocation('${locKey}')" class="text-[11px] bg-[#7f5539] text-white px-2 py-0.5 rounded-md hover:bg-[#9c6644] transition shadow-2xs font-medium">+ 新增手帳</button>`;
+            }
+            listHtml += `</div>`;
+
+            listHtml += `<div class="space-y-1.5 max-h-[260px] overflow-y-auto pr-1">`;
+            items.forEach(item => {
+                const cleanDate = formatDateString(item.date) || '未設定日期';
+                listHtml += `
+                    <div onclick="showItemDetailInPopup('${locKey}', '${item.id}', true, 0)" class="btn-interactive p-2 rounded-lg bg-white/90 border border-slate-200/80 hover:border-[#7f5539] hover:bg-[#fdfbf7] cursor-pointer transition flex items-center justify-between shadow-2xs">
+                        <div>
+                            <div class="font-bold text-xs text-slate-800">${item.title}</div>
+                            <div class="text-[10px] text-pink-600 font-medium flex items-center gap-1 mt-0.5">📅 ${cleanDate}</div>
+                        </div>
+                        <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+                    </div>
+                `;
+            });
+            listHtml += `</div></div>`;
+
+            marker.bindPopup(listHtml, { minWidth: 260, maxWidth: 360, autoPan: false }).openPopup();
+            lucide.createIcons();
+        };
+
+        window.showItemDetailInPopup = function(locKey, itemId, showBackBtn = false, initialMediaIndex = 0) {
+            const marker = markerInstances[locKey];
+            if (!marker) return;
+
+            const item = markersData.find(m => m.id === itemId);
+            if (!item) return;
+
+            const rawImages = parseImageUrls(item.image_url);
+            const videoUrl = item.video_url ? item.video_url.trim() : '';
+            const cleanDate = formatDateString(item.date);
+
+            const mediaList = [];
+            rawImages.forEach(img => mediaList.push({ type: 'image', url: img }));
+            if (videoUrl) mediaList.push({ type: 'video', url: videoUrl });
+
+            let validIndex = parseInt(initialMediaIndex) || 0;
+            if (validIndex < 0) validIndex = 0;
+            if (validIndex >= mediaList.length) validIndex = Math.max(0, mediaList.length - 1);
+
+            currentPlaybackImgIndex = validIndex;
+
+            let popupHtml = '<div class="p-1 min-w-[200px] text-slate-700">';
+
+            if (showBackBtn) {
+                popupHtml += `
+                    <button onclick="showGroupListInPopup('${locKey}')" class="text-xs text-[#7f5539] hover:underline mb-1.5 font-bold flex items-center gap-1 btn-interactive">
+                        ❮ 返回列表
+                    </button>
+                `;
+            }
+
+            popupHtml += `
+                <div class="font-bold text-sm text-[#7f5539] mb-0.5 flex items-center justify-between gap-1">
+                    <span>${item.title}</span>
+                    ${videoUrl ? '<span class="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-medium border border-amber-200 shrink-0">🎥 內含影片</span>' : ''}
+                </div>`;
+
+            if (cleanDate) {
+                popupHtml += `<div class="text-[11px] text-pink-600 font-medium mb-1.5 flex items-center gap-1">📅 ${cleanDate}</div>`;
+            }
+
+            if (mediaList.length > 0) {
+                const currentItem = mediaList[validIndex];
+                const encodedMediaList = encodeURIComponent(JSON.stringify(mediaList));
+                const galleryGroup = `gallery_${item.id}`;
+
+                let contentHtml = '';
+                if (currentItem.type === 'image') {
+                    const safeImg = convertGoogleDriveLink(currentItem.url);
+                    contentHtml = `
+                        <a href="${getGoogleDriveOriginalLink(currentItem.url)}" data-caption="${item.title}" data-fancybox="${galleryGroup}" class="w-full h-full flex items-center justify-center">
+                            <img src="${safeImg}" class="w-full h-full object-cover map-thumb" onerror="this.parentElement.parentElement.innerHTML='<span class=\\'text-[10px] text-slate-400\\'>圖片載入中/未公開</span>'">
+                        </a>`;
+                } else if (currentItem.type === 'video') {
+                    const videoHtml = getVideoEmbedHtml(currentItem.url);
+                    contentHtml = `<div class="w-full h-full bg-black flex items-center justify-center">${videoHtml}</div>`;
+                }
+
+                const iconPrefix = currentItem.type === 'video' ? '🎬 ' : '';
+
+                popupHtml += `
+                    <div id="popup_img_box_${item.id}" data-media="${encodedMediaList}" data-title="${item.title}" data-index="${validIndex}" class="popup-img-container relative w-full h-36 rounded-lg overflow-hidden bg-slate-100 flex items-center justify-center mt-1 mb-1.5 shadow-sm group select-none">
+                        <div class="media-content-area w-full h-full flex items-center justify-center">
+                            ${contentHtml}
+                        </div>
+                        ${mediaList.length > 1 ? `
+                            <span class="img-count-badge absolute top-1 right-1 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded-md z-10 pointer-events-none">${iconPrefix}${validIndex + 1}/${mediaList.length}</span>
+                            <button onclick="event.stopPropagation(); changePopupMedia('${item.id}', -1)" class="btn-interactive absolute left-1 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/70 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs shadow-md z-10 font-bold">❮</button>
+                            <button onclick="event.stopPropagation(); changePopupMedia('${item.id}', 1)" class="btn-interactive absolute right-1 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/70 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs shadow-md z-10 font-bold">❯</button>
+                        ` : ''}
+                    </div>`;
+            }
+
+            if (item.notes) {
+                popupHtml += '<div class="text-[12px] text-slate-600 popup-notes mt-1 border-t border-slate-100 pt-1.5 leading-relaxed">' + item.notes + '</div>';
+            }
+
+            if (isEditMode) {
+                popupHtml += `
+                    <div class="mt-2 pt-1.5 border-t border-slate-200 flex justify-between items-center">
+                        <button onclick="addNewEntryAtLocation('${locKey}')" class="text-xs text-[#7f5539] hover:underline font-medium">+ 在此新增手帳</button>
+                        <button onclick="openEditPanelForItemById('${item.id}')" class="text-xs bg-[#7f5539] text-white px-2 py-1 rounded hover:bg-[#9c6644] font-medium transition shadow-2xs">編輯此手帳</button>
+                    </div>
+                `;
+            }
+
+            popupHtml += '</div>';
+
+            marker.bindPopup(popupHtml, { minWidth: 300, maxWidth: 390, autoPan: false }).openPopup();
+
+            if (isEditMode) {
+                openEditPanelForItem(item);
+            }
+
+            lucide.createIcons();
+        };
 
         function renderMapMarkers(data) {
             markersData = data || [];
@@ -787,69 +1000,46 @@
             });
             markerInstances = {};
 
-            markersData.forEach(item => {
-                const marker = L.marker([parseFloat(item.lat), parseFloat(item.lng)], { icon: createCustomIcon(item.color, item.icon) }).addTo(map);
-                markerInstances[item.id] = marker; 
-                
-                const rawImages = parseImageUrls(item.image_url);
-                const embedVideoUrl = getYouTubeEmbedUrl(item.video_url);
-                const cleanDate = formatDateString(item.date);
+            const groups = getGroupedItems();
 
-                let popupHtml = '<div class="p-1 min-w-[200px] text-slate-700">';
-                popupHtml += '<div class="font-bold text-sm text-[#7f5539] mb-0.5">' + item.title + '</div>';
-                
-                if (cleanDate) {
-                    popupHtml += `<div class="text-[11px] text-pink-600 font-medium mb-1.5 flex items-center gap-1">📅 ${cleanDate}</div>`;
-                }
-                
-                if (rawImages.length > 0) {
-                    const firstSafeImg = convertGoogleDriveLink(rawImages[0]);
-                    const galleryGroup = `gallery_${item.id}`;
-                    
-                    popupHtml += `
-                        <div id="popup_img_box_${item.id}" data-images="${rawImages.join(',')}" data-index="0" class="popup-img-container relative w-full h-32 rounded-lg overflow-hidden bg-slate-100 flex items-center justify-center mt-1 mb-1.5 shadow-sm group select-none">
-                            <a href="${getGoogleDriveOriginalLink(rawImages[0])}" data-caption="${item.title}" data-fancybox="${galleryGroup}" class="w-full h-full flex items-center justify-center">
-                                <img src="${firstSafeImg}" class="w-full h-full object-cover map-thumb" onerror="this.parentElement.parentElement.innerHTML='<span class=\'text-[10px] text-slate-400\'>圖片載入中/未公開</span>'">
-                            </a>
-                            ${rawImages.length > 1 ? `
-                                <span class="img-count-badge absolute top-1 right-1 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded-md z-10 pointer-events-none">1/${rawImages.length}</span>
-                                <button onclick="event.stopPropagation(); changePopupImage('${item.id}', -1)" class="btn-interactive absolute left-1 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/70 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs shadow-md z-10 font-bold">❮</button>
-                                <button onclick="event.stopPropagation(); changePopupImage('${item.id}', 1)" class="btn-interactive absolute right-1 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/70 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs shadow-md z-10 font-bold">❯</button>
-                            ` : ''}
-                        </div>`;
-                }
-                
-                if (embedVideoUrl) {
-                    popupHtml += `
-                        <div class="w-full h-28 rounded-lg overflow-hidden bg-black mt-1 mb-1.5 shadow-sm">
-                            <iframe class="w-full h-full" src="${embedVideoUrl}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
-                        </div>`;
-                }
+            Object.keys(groups).forEach(locKey => {
+                const items = groups[locKey];
+                if (!items || items.length === 0) return;
+                const primaryItem = items[0];
 
-                if (item.notes) {
-                    popupHtml += '<div class="text-[12px] text-slate-600 popup-notes mt-1 border-t border-slate-100 pt-1.5 leading-relaxed">' + item.notes + '</div>';
-                }
-                popupHtml += '</div>';
+                const lat = parseFloat(primaryItem.lat);
+                const lng = parseFloat(primaryItem.lng);
                 
-                marker.bindPopup(popupHtml, { 
-                    minWidth: 300, 
-                    maxWidth: 390,
-                    autoPan: false
-                });
+                if (isNaN(lat) || isNaN(lng) || lat === 0 || lng === 0) return;
 
-                marker.on('click', (e) => {
-                    const sortedItems = getSortedTimelineItems();
-                    const idx = sortedItems.findIndex(m => m.id === item.id);
-                    if (idx !== -1) {
-                        currentPlaybackItemIndex = idx;
-                        currentPlaybackImgIndex = 0;
-                        updateTimelineHighlight(item.id);
-                    }
+                try {
+                    const marker = L.marker([lat, lng], { 
+                        icon: createCustomIcon(primaryItem.color, primaryItem.icon) 
+                    }).addTo(map);
 
-                    if (isEditMode) {
-                        openEditPanelForItem(item);
-                    }
-                });
+                    markerInstances[locKey] = marker;
+
+                    /* 🌟 需求 1 修正：點擊地圖上的標記時，畫面自動對焦置中 */
+                    marker.on('click', () => {
+                        const targetLatLng = L.latLng(lat, lng);
+                        const targetZoom = Math.max(map.getZoom(), 15);
+                        const targetPoint = map.project(targetLatLng, targetZoom);
+                        const offsetPoint = L.point(targetPoint.x, targetPoint.y - 200); 
+                        const centerLatLng = map.unproject(offsetPoint, targetZoom);
+
+                        map.setView(centerLatLng, targetZoom, { animate: true, duration: 0.5 });
+
+                        const currentGroups = getGroupedItems();
+                        const currentItems = currentGroups[locKey] || [];
+                        if (currentItems.length > 1) {
+                            showGroupListInPopup(locKey);
+                        } else if (currentItems.length === 1) {
+                            showItemDetailInPopup(locKey, currentItems[0].id, false, 0);
+                        }
+                    });
+                } catch (err) {
+                    console.error("地圖標記繪製跳過：", primaryItem, err);
+                }
             });
 
             renderSidebar();
@@ -1049,7 +1239,6 @@
                 currentPlaybackItemIndex = 0;
             }
 
-            Object.values(markerInstances).forEach(m => map.removeLayer(m));
             runPlaybackLoop();
         }
 
@@ -1079,8 +1268,9 @@
             if (currentPlaybackItemIndex >= sortedItems.length) currentPlaybackItemIndex = sortedItems.length - 1;
 
             const item = sortedItems[currentPlaybackItemIndex];
-            const marker = markerInstances[item.id];
-            const rawImages = parseImageUrls(item.image_url);
+            const locKey = getLocKey(item.lat, item.lng);
+            if (!locKey) return;
+            const marker = markerInstances[locKey];
 
             if (marker) {
                 marker.addTo(map);
@@ -1092,26 +1282,12 @@
                 const centerLatLng = map.unproject(offsetPoint, targetZoom);
 
                 map.setView(centerLatLng, targetZoom, { animate: true, duration: 0.5 });
-                marker.openPopup();
-
+                
+                const groups = getGroupedItems();
+                const items = groups[locKey] || [];
+                
+                showItemDetailInPopup(locKey, item.id, items.length > 1, currentPlaybackImgIndex);
                 updateTimelineHighlight(item.id);
-
-                if (rawImages.length > 0) {
-                    if (currentPlaybackImgIndex >= rawImages.length) currentPlaybackImgIndex = rawImages.length - 1;
-                    if (currentPlaybackImgIndex < 0) currentPlaybackImgIndex = 0;
-
-                    const container = document.getElementById(`popup_img_box_${item.id}`);
-                    if (container) {
-                        container.setAttribute('data-index', currentPlaybackImgIndex);
-                        const imgEl = container.querySelector('img');
-                        const countEl = container.querySelector('.img-count-badge');
-                        const fancyAnchor = container.querySelector('a');
-                        
-                        if (imgEl) imgEl.src = convertGoogleDriveLink(rawImages[currentPlaybackImgIndex]);
-                        if (countEl) countEl.innerText = `${currentPlaybackImgIndex + 1}/${rawImages.length}`;
-                        if (fancyAnchor) fancyAnchor.href = getGoogleDriveOriginalLink(rawImages[currentPlaybackImgIndex]);
-                    }
-                }
             }
         }
 
@@ -1123,9 +1299,11 @@
 
             const item = sortedItems[currentPlaybackItemIndex];
             const rawImages = parseImageUrls(item ? item.image_url : '');
+            const hasVideo = item && item.video_url && item.video_url.trim() ? 1 : 0;
+            const totalMedia = rawImages.length + hasVideo;
 
             currentPlaybackImgIndex++;
-            if (currentPlaybackImgIndex >= Math.max(1, rawImages.length)) {
+            if (currentPlaybackImgIndex >= Math.max(1, totalMedia)) {
                 currentPlaybackItemIndex++;
                 currentPlaybackImgIndex = 0;
                 if (currentPlaybackItemIndex >= sortedItems.length) {
@@ -1149,7 +1327,9 @@
                 }
                 const prevItem = sortedItems[currentPlaybackItemIndex];
                 const prevRawImages = parseImageUrls(prevItem ? prevItem.image_url : '');
-                currentPlaybackImgIndex = Math.max(0, prevRawImages.length - 1);
+                const prevHasVideo = prevItem && prevItem.video_url && prevItem.video_url.trim() ? 1 : 0;
+                const prevTotalMedia = prevRawImages.length + prevHasVideo;
+                currentPlaybackImgIndex = Math.max(0, prevTotalMedia - 1);
             }
             showCurrentTimelineStep();
         }
@@ -1164,8 +1344,11 @@
             }
 
             const item = sortedItems[currentPlaybackItemIndex];
-            const marker = markerInstances[item.id];
+            const locKey = getLocKey(item.lat, item.lng);
+            const marker = locKey ? markerInstances[locKey] : null;
             const rawImages = parseImageUrls(item.image_url);
+            const hasVideo = item.video_url && item.video_url.trim() ? 1 : 0;
+            const totalMedia = rawImages.length + hasVideo;
 
             if (marker) {
                 showCurrentTimelineStep();
@@ -1174,7 +1357,7 @@
                     if (playbackState !== 'playing') return;
 
                     currentPlaybackImgIndex++;
-                    if (currentPlaybackImgIndex >= Math.max(1, rawImages.length)) {
+                    if (currentPlaybackImgIndex >= Math.max(1, totalMedia)) {
                         currentPlaybackItemIndex++;
                         currentPlaybackImgIndex = 0;
                     }
@@ -1187,68 +1370,54 @@
             }
         }
 
+        /* 🌟 需求 3 & 4 修正：取消拍立得集合分塊 + 日期字體放大 + 由舊到新排序 */
         function renderGallery() {
             const container = document.getElementById('galleryContainer');
             container.innerHTML = '';
 
-            const allFolders = Array.from(new Set([...folders, ...markersData.map(m => m.folder_name).filter(Boolean)]));
-            let totalPhotos = 0;
+            // 篩選出所有有圖片的手帳項目
+            const photoItems = markersData.filter(m => m.image_url && parseImageUrls(m.image_url).length > 0);
 
-            allFolders.forEach(folderName => {
-                const folderPhotoItems = markersData.filter(m => m.folder_name === folderName && m.image_url);
+            if (photoItems.length === 0) {
+                container.innerHTML = '<div class="text-xs text-slate-400 text-center py-6">尚未上傳相片...</div>';
+                return;
+            }
 
-                if (folderPhotoItems.length === 0) return;
-
-                folderPhotoItems.sort((a, b) => {
-                    const dateA = formatDateString(a.date);
-                    const dateB = formatDateString(b.date);
-                    if (!dateA) return 1;
-                    if (!dateB) return -1;
-                    return dateA.localeCompare(dateB);
-                });
-
-                totalPhotos += folderPhotoItems.length;
-
-                const folderDiv = document.createElement('div');
-                folderDiv.className = "bg-[#f5ebe0]/60 rounded-xl p-2.5 border border-[#ddc8b4]/60 shadow-sm";
-                
-                let cardsHtml = `<div class="font-bold text-xs text-[#7f5539] flex items-center gap-1 mb-2 select-none">
-                    <i data-lucide="folder" class="w-3.5 h-3.5 text-[#b7b7a4]"></i> 
-                    <span>${folderName} (${folderPhotoItems.length})</span>
-                </div>`;
-
-                cardsHtml += `<div class="grid grid-cols-2 gap-2">`;
-
-                folderPhotoItems.forEach(item => {
-                    const rawImages = parseImageUrls(item.image_url);
-                    if (rawImages.length === 0) return;
-
-                    const firstSafeImg = convertGoogleDriveLink(rawImages[0]);
-                    const cleanDate = formatDateString(item.date);
-
-                    cardsHtml += `
-                        <div onclick="focusPlace('${item.lat}', '${item.lng}', '${item.id}')" class="polaroid-card btn-interactive rounded cursor-pointer select-none flex flex-col relative">
-                            <div class="relative w-full h-24 bg-slate-100 rounded-xs overflow-hidden mb-1.5 shadow-inner">
-                                ${rawImages.length > 1 ? `<span class="absolute top-1 right-1 bg-black/60 text-white text-[8px] px-1 py-0.5 rounded z-10">📸 ${rawImages.length}</span>` : ''}
-                                <img src="${firstSafeImg}" class="w-full h-full object-cover" onerror="this.src='https://via.placeholder.com/150?text=圖片載入中/未公開'">
-                            </div>
-                            <div class="text-[11px] font-bold text-slate-800 line-clamp-1 leading-snug">${item.title}</div>
-                            <div class="text-[9px] font-handwriting text-slate-500 mt-auto pt-1 flex justify-between items-center">
-                                <span>${cleanDate || 'Memory'}</span>
-                                <span class="text-pink-500">💖</span>
-                            </div>
-                        </div>
-                    `;
-                });
-
-                cardsHtml += `</div>`;
-                folderDiv.innerHTML = cardsHtml;
-                container.appendChild(folderDiv);
+            // 依時間順序由舊到新排序 (最舊的排最上面，最新的排最下面)
+            photoItems.sort((a, b) => {
+                const dateA = formatDateString(a.date) || '9999-99-99';
+                const dateB = formatDateString(b.date) || '9999-99-99';
+                if (dateA === dateB) return (a.order || 0) - (b.order || 0);
+                return dateA.localeCompare(dateB);
             });
 
-            if (totalPhotos === 0) {
-                container.innerHTML = '<div class="text-xs text-slate-400 text-center py-6">尚未上傳相片...</div>';
-            }
+            let cardsHtml = `<div class="grid grid-cols-2 gap-2">`;
+
+            photoItems.forEach(item => {
+                const rawImages = parseImageUrls(item.image_url);
+                if (rawImages.length === 0) return;
+
+                const firstSafeImg = convertGoogleDriveLink(rawImages[0]);
+                const cleanDate = formatDateString(item.date);
+
+                cardsHtml += `
+                    <div onclick="focusPlace('${item.lat}', '${item.lng}', '${item.id}')" class="polaroid-card btn-interactive rounded cursor-pointer select-none flex flex-col relative">
+                        <div class="relative w-full h-24 bg-slate-100 rounded-xs overflow-hidden mb-1.5 shadow-inner">
+                            ${rawImages.length > 1 ? `<span class="absolute top-1 right-1 bg-black/60 text-white text-[8px] px-1 py-0.5 rounded z-10">📸 ${rawImages.length}</span>` : ''}
+                            <img src="${firstSafeImg}" class="w-full h-full object-cover" onerror="this.src='https://via.placeholder.com/150?text=圖片載入中/未公開'">
+                        </div>
+                        <div class="text-[11px] font-bold text-slate-800 line-clamp-1 leading-snug">${item.title}</div>
+                        <!-- 🌟 需求 3 修正：字體大小調至 11px 與主旨一致 -->
+                        <div class="text-[11px] font-handwriting text-slate-500 mt-auto pt-1 flex justify-between items-center">
+                            <span>${cleanDate || 'Memory'}</span>
+                            <span class="text-pink-500">💖</span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            cardsHtml += `</div>`;
+            container.innerHTML = cardsHtml;
             lucide.createIcons();
         }
 
@@ -1329,6 +1498,9 @@
         function focusPlace(lat, lng, id) {
             const targetLat = parseFloat(lat);
             const targetLng = parseFloat(lng);
+            if (isNaN(targetLat) || isNaN(targetLng)) return;
+
+            const locKey = getLocKey(targetLat, targetLng);
             
             const sortedItems = getSortedTimelineItems();
             const foundIdx = sortedItems.findIndex(m => m.id === id);
@@ -1340,8 +1512,8 @@
             updateTimelineHighlight(id);
 
             const item = markersData.find(m => m.id === id);
+            const marker = locKey ? markerInstances[locKey] : null;
 
-            const marker = markerInstances[id];
             if (marker) {
                 marker.addTo(map);
                 
@@ -1352,7 +1524,10 @@
                 const centerLatLng = map.unproject(offsetPoint, targetZoom);
 
                 map.setView(centerLatLng, targetZoom, { animate: true, duration: 0.5 });
-                marker.openPopup();
+
+                const groups = getGroupedItems();
+                const items = groups[locKey] || [];
+                showItemDetailInPopup(locKey, id, items.length > 1, 0);
             } else {
                 map.panTo([targetLat, targetLng], { animate: true, duration: 0.5 });
             }
@@ -1388,6 +1563,8 @@
             const authText = document.getElementById('authText');
             const btnToggle = document.getElementById('btnToggleAuth');
 
+            map.closePopup();
+
             if (isEditMode) {
                 btnCreate.disabled = false;
                 authText.innerText = "編輯模式";
@@ -1398,6 +1575,7 @@
                 authText.innerText = "觀看模式";
                 authIcon.setAttribute('data-lucide', 'eye');
                 btnToggle.className = "w-full text-xs bg-[#7f5539] hover:bg-[#9c6644] text-white py-2 rounded-md font-medium transition shadow-md flex items-center justify-center gap-1.5";
+                closePanel();
             }
             
             renderSidebar();
@@ -1407,7 +1585,10 @@
         }
 
         setInterval(() => {
-            if (!document.querySelector('.sortable-chosen') && playbackState !== 'playing') {
+            const isPopupOpen = map._popup && map.hasLayer(map._popup);
+            const isEditPanelOpen = !document.getElementById('editPanel').classList.contains('hidden');
+
+            if (!isPopupOpen && !isEditPanelOpen && !document.querySelector('.sortable-chosen') && playbackState !== 'playing') {
                 fetchCloudData();
             }
         }, 8000);
