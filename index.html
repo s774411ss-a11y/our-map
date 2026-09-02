@@ -50,16 +50,25 @@
             animation: bubblePop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
         }
 
-        /* 滿版照片緩慢推進效果 (Ken Burns) */
-        @keyframes kenBurns {
-            0% { transform: scale(1); }
-            100% { transform: scale(1.05); }
+        /* 切換動效 1：同地點相片切換 (IG Story 快速淡入) */
+        @keyframes photoFade {
+            0% { opacity: 0.3; transform: scale(0.985); }
+            100% { opacity: 1; transform: scale(1); }
         }
-        .animate-ken-burns {
-            animation: kenBurns 6s ease-out forwards;
+        .animate-photo-fade {
+            animation: photoFade 0.22s cubic-bezier(0.25, 1, 0.5, 1) forwards;
         }
 
-        /* 🌟 心脈躍動微幅跳躍動畫 (Micro-Jump Heartbeat) */
+        /* 切換動效 2：跨地點景點切換 (卡片滑移+縮放) */
+        @keyframes locationShift {
+            0% { opacity: 0; transform: translateX(35px) scale(0.96); }
+            100% { opacity: 1; transform: translateX(0) scale(1); }
+        }
+        .animate-location-shift {
+            animation: locationShift 0.38s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        /* 心脈躍動微幅跳躍動畫 (Micro-Jump Heartbeat) */
         @keyframes heartbeat {
             0% { transform: translate(-50%, -50%) scale(1); }
             30% { transform: translate(-50%, -50%) scale(1.35); }
@@ -71,29 +80,30 @@
             animation: heartbeat 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
 
-        /* 🌟 時間軸焦點大光點平滑移動動畫 */
+        /* 時間軸焦點大光點平滑移動動畫 */
         #timelineActiveCursor {
             transition: left 0.38s cubic-bezier(0.34, 1.56, 0.64, 1), transform 0.38s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
 
-        /* Leaflet 彈出視窗 */
+        /* Leaflet 地圖彈出對話視窗尺寸 */
         .leaflet-popup {
-            min-width: 260px !important;
-            max-width: 88vw !important;
+            min-width: 320px !important;
+            max-width: 90vw !important;
         }
         .leaflet-popup-content-wrapper {
             background: #fdfbf7 !important;
             color: #334155 !important;
             border: 1px solid #e2e8f0 !important;
-            border-radius: 0.75rem !important;
+            border-radius: 0.85rem !important;
             padding: 0.2rem !important;
-            box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.15) !important;
-            max-height: 60dvh !important;
+            box-shadow: 0 12px 28px -5px rgba(0, 0, 0, 0.18) !important;
+            max-height: 80dvh !important;
             overflow-y: auto !important;
         }
         .leaflet-popup-content {
-            width: 100% !important;
-            margin: 10px !important;
+            width: auto !important;
+            min-width: 290px !important;
+            margin: 12px !important;
         }
 
         .popup-notes {
@@ -103,13 +113,13 @@
 
         .popup-img-container {
             height: auto !important;
-            max-height: 240px !important;
+            max-height: 320px !important;
             background-color: #f1f5f9 !important;
         }
         .popup-img-container img {
             object-fit: contain !important;
             height: auto !important;
-            max-height: 230px !important;
+            max-height: 310px !important;
         }
 
         .leaflet-control-geocoder {
@@ -121,7 +131,7 @@
 
         .polaroid-card {
             background: #fff;
-            padding: 8px 8px 16px 8px;
+            padding: 8px 8px 12px 8px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.08);
             transition: all 0.2s ease;
         }
@@ -138,36 +148,68 @@
 </head>
 <body class="bg-[#f4ebe1] text-slate-700 h-[100dvh] w-screen flex flex-col md:flex-row font-sans relative overflow-hidden">
 
-    <!-- 側邊欄區域 -->
-    <div class="w-full md:w-80 bg-[#ede0d4] p-3 md:p-4 flex flex-col border-b md:border-b-0 md:border-r border-[#ddc8b4] h-[35dvh] md:h-full z-[1000] shadow-md shrink-0">
-        <!-- 標題與分頁切換按鈕 -->
+    <!-- 側邊欄區域 (手機版極簡極致美化) -->
+    <div class="w-full md:w-80 bg-[#ede0d4] p-3 md:p-4 flex flex-col border-b md:border-b-0 md:border-r border-[#ddc8b4] shrink-0 z-[1000] shadow-md max-h-[45dvh] md:max-h-none md:h-full">
+        
+        <!-- 標題與分頁切換按鈕 (手機版預設僅顯示此區) -->
         <div class="shrink-0 mb-2">
-            <h1 class="text-lg md:text-xl font-bold flex items-center gap-2 mb-1.5 text-[#7f5539]">
-                <i data-lucide="heart-handshake" class="text-[#b7b7a4]"></i> 浪漫足跡手帳
-            </h1>
+            <div class="flex justify-between items-center mb-1.5">
+                <h1 class="text-lg md:text-xl font-bold flex items-center gap-2 text-[#7f5539]">
+                    <i data-lucide="heart-handshake" class="text-[#b7b7a4]"></i> 浪漫足跡手帳
+                </h1>
+                <!-- 手機版工具收納按鈕 -->
+                <button onclick="toggleMobileControlPanel()" class="md:hidden text-xs bg-[#f5ebe0] text-[#7f5539] p-1.5 rounded-lg border border-[#ddc8b4] flex items-center gap-1 font-medium active:scale-95 transition">
+                    <i data-lucide="settings-2" class="w-4 h-4"></i>
+                </button>
+            </div>
             
-            <!-- 模式功能頁籤 -->
-            <div class="grid grid-cols-3 gap-1 bg-[#dfd0c0] p-1 rounded-lg text-xs font-medium text-[#7f5539]">
-                <button id="tabFolders" onclick="switchSidebarTab('folders')" class="py-1 rounded-md bg-[#fdfbf7] shadow-xs text-center transition hover:bg-white">集合</button>
-                <button id="tabTimeline" onclick="switchSidebarTab('timeline')" class="py-1 rounded-md hover:bg-[#fdfbf7]/60 text-center transition">時間軸</button>
-                <button id="tabGallery" onclick="switchSidebarTab('gallery')" class="py-1 rounded-md hover:bg-[#fdfbf7]/60 text-center transition">拍立得</button>
+            <!-- 3 大主要分頁按鈕 -->
+            <div class="grid grid-cols-3 gap-1 bg-[#dfd0c0] p-1 rounded-xl text-xs font-bold text-[#7f5539] shadow-inner">
+                <button id="tabFolders" onclick="switchSidebarTab('folders')" class="py-1.5 rounded-lg bg-[#fdfbf7] shadow-xs text-center transition hover:bg-white">集合</button>
+                <button id="tabTimeline" onclick="switchSidebarTab('timeline')" class="py-1.5 rounded-lg hover:bg-[#fdfbf7]/60 text-center transition">時間軸</button>
+                <button id="tabGallery" onclick="switchSidebarTab('gallery')" class="py-1.5 rounded-lg hover:bg-[#fdfbf7]/60 text-center transition">拍立得</button>
             </div>
         </div>
 
-        <!-- GAS 連線區塊 -->
-        <div class="shrink-0 mb-2 bg-[#f5ebe0]/80 p-2 rounded-lg border border-[#ddc8b4]">
-            <label class="text-[10px] text-slate-500 block font-medium mb-1">Google GAS 雲端網址</label>
-            <div class="flex gap-1">
-                <input type="text" id="gasUrlInput" class="w-full text-xs p-1.5 rounded bg-white border border-[#ddc8b4] text-slate-700 focus:outline-none focus:border-[#7f5539]" placeholder="請貼上 GAS Web App 網址">
-                <button id="btnConnectCloud" onclick="saveGasConfig()" class="text-xs bg-[#7f5539] hover:bg-[#9c6644] active:bg-[#5c3d28] text-white px-2.5 py-1.5 rounded-md font-medium transition whitespace-nowrap shadow-xs">連線</button>
+        <!-- 可收折控制選單 (手機版預設隱藏，桌機版常駐) -->
+        <div id="collapsibleControlPanel" class="hidden md:block shrink-0 space-y-2 mb-2">
+            <!-- GAS 連線區塊 -->
+            <div class="bg-[#f5ebe0]/80 p-2 rounded-lg border border-[#ddc8b4]">
+                <label class="text-[10px] text-slate-500 block font-medium mb-1">Google GAS 雲端網址</label>
+                <div class="flex gap-1">
+                    <input type="text" id="gasUrlInput" class="w-full text-xs p-1.5 rounded bg-white border border-[#ddc8b4] text-slate-700 focus:outline-none focus:border-[#7f5539]" placeholder="請貼上 GAS Web App 網址">
+                    <button id="btnConnectCloud" onclick="saveGasConfig()" class="text-xs bg-[#7f5539] hover:bg-[#9c6644] text-white px-2.5 py-1.5 rounded-md font-medium whitespace-nowrap shadow-xs">連線</button>
+                </div>
             </div>
+
+            <!-- 播放控制備用按鈕 -->
+            <div id="timelineControlsArea" class="hidden flex flex-col gap-1 p-2 bg-[#f5ebe0]/90 rounded-lg border border-[#ddc8b4]">
+                <div class="flex justify-between items-center gap-1">
+                    <span class="text-xs font-semibold text-[#7f5539]">🎬 回憶故事放映</span>
+                    <div class="flex items-center gap-1">
+                        <button id="btnPrevTimeline" onclick="prevTimelinePhoto()" class="text-xs bg-white text-[#7f5539] border border-[#ddc8b4] px-1.5 py-0.5 rounded hover:bg-[#f5ebe0]"><i data-lucide="skip-back" class="w-3 h-3"></i></button>
+                        <button id="btnPlayTimeline" onclick="toggleTimelinePlayback()" class="text-xs bg-[#7f5539] text-white px-2 py-0.5 rounded hover:bg-[#9c6644]">播放</button>
+                        <button id="btnNextTimeline" onclick="nextTimelinePhoto()" class="text-xs bg-white text-[#7f5539] border border-[#ddc8b4] px-1.5 py-0.5 rounded hover:bg-[#f5ebe0]"><i data-lucide="skip-forward" class="w-3 h-3"></i></button>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between text-[10px] text-slate-600 mt-1">
+                    <span>停留秒數:</span>
+                    <input type="number" id="playbackDelayInput" min="1" max="10" step="0.5" value="3.5" onchange="savePlaybackDelay()" class="w-10 text-center p-0.5 rounded border border-[#ddc8b4] bg-white text-xs">
+                </div>
+            </div>
+
+            <!-- 權限切換按鈕 -->
+            <button id="btnToggleAuth" onclick="toggleAuthMode()" class="w-full text-xs bg-[#7f5539] hover:bg-[#9c6644] text-white py-1.5 rounded-md font-medium transition shadow-sm flex items-center justify-center gap-1.5">
+                <i id="authIcon" data-lucide="eye" class="w-3.5 h-3.5"></i>
+                <span id="authText">觀看模式</span>
+            </button>
         </div>
 
         <!-- 內容切換區域 1: 我的景點集合 -->
-        <div id="viewFolders" class="flex-1 overflow-y-auto min-h-0 space-y-2 pr-1 mb-2">
+        <div id="viewFolders" class="flex-1 overflow-y-auto min-h-0 space-y-2 pr-1 mb-1">
             <div class="flex justify-between items-center">
-                <h2 class="text-xs font-semibold text-[#7f5539] uppercase tracking-wider">景點集合</h2>
-                <button id="btnCreateFolder" onclick="createNewFolder()" class="text-xs text-[#9c6644] flex items-center gap-1 hover:underline font-medium disabled:opacity-30 disabled:no-underline disabled:cursor-not-allowed">
+                <h2 class="text-xs font-bold text-[#7f5539] uppercase tracking-wider">景點集合</h2>
+                <button id="btnCreateFolder" onclick="createNewFolder()" class="text-xs text-[#9c6644] flex items-center gap-1 hover:underline font-bold disabled:opacity-30 disabled:no-underline disabled:cursor-not-allowed">
                     <i data-lucide="folder-plus" class="w-3.5 h-3.5"></i>新增集合
                 </button>
             </div>
@@ -175,72 +217,35 @@
         </div>
 
         <!-- 內容切換區域 2: 時間軸檢視 (Timeline) -->
-        <div id="viewTimeline" class="hidden flex-1 flex flex-col min-h-0 mb-2">
-            <div class="flex flex-col gap-1 mb-1.5 pb-1.5 border-b border-[#ddc8b4] shrink-0">
-                <div class="flex justify-between items-center gap-1">
-                    <span class="text-xs font-semibold text-[#7f5539] shrink-0">🎬 回憶故事放映</span>
-                    <div class="flex items-center gap-1">
-                        <button id="btnPrevTimeline" onclick="prevTimelinePhoto()" class="text-xs bg-white text-[#7f5539] border border-[#ddc8b4] px-1.5 py-0.5 rounded-md hover:bg-[#f5ebe0] flex items-center gap-0.5 shadow-xs transition" title="上一張">
-                            <i data-lucide="skip-back" class="w-3 h-3"></i>上一張
-                        </button>
-                        <button id="btnPlayTimeline" onclick="toggleTimelinePlayback()" class="text-xs bg-[#7f5539] text-white px-1.5 py-0.5 rounded-md hover:bg-[#9c6644] flex items-center gap-1 shadow-xs transition">
-                            <i data-lucide="play" class="w-3 h-3"></i>播放
-                        </button>
-                        <button id="btnNextTimeline" onclick="nextTimelinePhoto()" class="text-xs bg-white text-[#7f5539] border border-[#ddc8b4] px-1.5 py-0.5 rounded-md hover:bg-[#f5ebe0] flex items-center gap-0.5 shadow-xs transition" title="下一張">
-                            下一張<i data-lucide="skip-forward" class="w-3 h-3"></i>
-                        </button>
-                    </div>
-                </div>
-                <div class="flex items-center justify-between bg-[#f5ebe0]/90 p-1 rounded border border-[#ddc8b4]/80 text-[10px] text-slate-600">
-                    <span class="flex items-center gap-1"><i data-lucide="timer" class="w-3 h-3 text-[#7f5539]"></i> 自動播放停留:</span>
-                    <div class="flex items-center gap-1">
-                        <input type="number" id="playbackDelayInput" min="1" max="10" step="0.5" value="3.5" onchange="savePlaybackDelay()" class="w-10 text-center p-0.5 rounded border border-[#ddc8b4] bg-white text-slate-800 text-xs focus:outline-none">
-                        <span>秒</span>
-                    </div>
-                </div>
-            </div>
+        <div id="viewTimeline" class="hidden flex-1 flex flex-col min-h-0 mb-1">
             <div id="timelineContainer" class="flex-1 overflow-y-auto min-h-0 space-y-2 pr-1 no-scrollbar relative">
                 <!-- 動態注入時間軸節點 -->
             </div>
         </div>
 
         <!-- 內容切換區域 3: 拍立得相片牆 -->
-        <div id="viewGallery" class="hidden flex-1 overflow-y-auto min-h-0 space-y-3 pr-1 mb-2">
-            <div id="galleryContainer" class="space-y-3"></div>
-        </div>
-
-        <!-- 底部權限切換按鈕 -->
-        <div class="shrink-0 pt-2 border-t border-[#ddc8b4]/80">
-            <button id="btnToggleAuth" onclick="toggleAuthMode()" class="w-full text-xs bg-[#7f5539] hover:bg-[#9c6644] text-white py-1.5 md:py-2 rounded-md font-medium transition shadow-sm flex items-center justify-center gap-1.5">
-                <i id="authIcon" data-lucide="eye" class="w-3.5 h-3.5"></i>
-                <span id="authText">觀看模式</span>
-            </button>
+        <div id="viewGallery" class="hidden flex-1 overflow-y-auto min-h-0 space-y-2 pr-1 mb-1">
+            <div id="galleryContainer" class="space-y-2"></div>
         </div>
     </div>
 
     <!-- 主展示舞台 (地圖與星塵脈衝時間軸放映室) -->
-    <div class="flex-1 h-[65dvh] md:h-full relative overflow-hidden bg-slate-900">
+    <div class="flex-1 h-[55dvh] md:h-full relative overflow-hidden bg-slate-900">
         <!-- 1. Leaflet 地圖容器 -->
         <div id="map" class="w-full h-full z-[1]"></div>
 
-        <!-- 🌟 2. 故事放映舞台：採用 Flex 縱向不覆蓋彈性佈局 -->
+        <!-- 2. 故事放映舞台：採用 IG Story 沉浸放映模式 -->
         <div id="storyStage" class="hidden absolute inset-0 z-[500] bg-slate-950 flex flex-col justify-between items-center p-3 md:p-4 select-none overflow-hidden">
             <!-- 毛玻璃背景模糊底圖 -->
             <div id="storyBgBlur" class="absolute inset-0 bg-cover bg-center blur-2xl opacity-40 scale-110 transition-all duration-700 pointer-events-none"></div>
             <div class="absolute inset-0 bg-gradient-to-b from-black/80 via-transparent to-black/90 pointer-events-none"></div>
 
-            <!-- 🌟 區塊一：頂部極簡時間軌道 (shrink-0 固釘上方) -->
+            <!-- 區塊一：頂部極簡時間軌道 -->
             <div class="w-full max-w-xl md:max-w-2xl z-40 shrink-0 mb-2">
                 <div id="storyOverviewTrack" class="relative w-full pt-3 pb-5 px-5 bg-slate-950/85 backdrop-blur-md rounded-2xl border border-white/10 text-white shadow-2xl flex flex-col justify-center select-none">
-                    <!-- 微縮基準軌道細線 (0% ~ 100%) -->
                     <div class="relative w-full h-[2px] bg-white/20 rounded-full my-2 flex items-center">
-                        <!-- 月份刻度層 -->
                         <div id="timelineMonthTicks" class="absolute inset-0 pointer-events-none"></div>
-                        
-                        <!-- 🌟 嚴格依時間順序繪製的光點層 -->
                         <div id="timelineDateNodes" class="absolute inset-0 pointer-events-auto"></div>
-                        
-                        <!-- 焦點大光點 (微幅跳躍 Cursor) -->
                         <div id="timelineActiveCursor" class="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-pink-500 ring-4 ring-pink-300/40 shadow-[0_0_15px_#f472b6] z-20 pointer-events-none">
                             <div class="w-full h-full rounded-full bg-white animate-ping opacity-30"></div>
                         </div>
@@ -248,46 +253,49 @@
                 </div>
             </div>
 
-            <!-- 左右導覽切換點擊區 (z-20) -->
-            <div onclick="prevTimelinePhoto()" class="absolute top-28 bottom-28 left-0 w-[22%] z-20 cursor-pointer"></div>
-            <div onclick="nextTimelinePhoto()" class="absolute top-28 bottom-28 right-0 w-[22%] z-20 cursor-pointer"></div>
-
-            <!-- 🌟 區塊二：中央主體內容區 (標題 + 照片容器，自動伸縮不被下方遮擋) -->
+            <!-- 區塊二：中央主體內容區 (標題 + 標題後面的半透明指示點點 + IG Story 展演舞台) -->
             <div class="relative z-30 w-full max-w-xl md:max-w-2xl flex-1 min-h-0 flex flex-col items-start my-1 overflow-hidden">
-                <!-- 主旨與愛心圖示 (位於照片上方) -->
-                <div class="flex items-center gap-2 mb-1.5 drop-shadow-md shrink-0">
+                <!-- 標題與小圓點排版 -->
+                <div class="flex items-center gap-2 mb-2 drop-shadow-md shrink-0 w-full overflow-hidden">
                     <div class="w-7 h-7 md:w-8 md:h-8 rounded-full bg-gradient-to-tr from-amber-400 via-pink-500 to-rose-500 p-0.5 shadow-md flex items-center justify-center shrink-0">
-                        <div class="w-full h-full bg-slate-900 rounded-full flex items-center justify-center text-xs">💖</div>
+                        <div id="storyHeaderIcon" class="w-full h-full bg-slate-900 rounded-full flex items-center justify-center text-xs">💖</div>
                     </div>
-                    <div id="storyHeaderTitle" class="text-base md:text-lg font-extrabold text-white tracking-wide font-rounded drop-shadow-md">
-                        景點名稱
+                    
+                    <div id="storyHeaderTitle" class="flex items-center gap-2 overflow-hidden flex-1">
+                        <!-- 主旨與地點 -->
+                    </div>
+
+                    <!-- 半透明小圓點 (放在標題後面) -->
+                    <div id="storyHeaderDots" class="flex items-center gap-1 shrink-0 ml-auto bg-black/30 backdrop-blur-md px-2 py-1 rounded-full border border-white/10">
                     </div>
                 </div>
 
-                <!-- 🌟 照片/影片大容器：flex-1 自動依剩餘高度調配，絕不蓋到文字框 -->
-                <div id="storyMediaBox" class="w-full flex-1 min-h-0 flex items-center justify-center relative rounded-2xl overflow-hidden shadow-2xl border border-white/15 bg-slate-950/70 backdrop-blur-xs">
-                    <!-- 動態注入照片/影片 -->
+                <!-- IG Story 模式容器 (修復影片點擊與播放區域) -->
+                <div id="storyMediaBox" class="w-full flex-1 min-h-0 flex flex-col items-center justify-center relative rounded-2xl overflow-hidden shadow-2xl border border-white/15 bg-slate-950/80 backdrop-blur-xs select-none">
+                    
+                    <!-- 🌟 變更 1：點擊切換感應區僅保留兩側 20%，中央 60% 區域留給影片播放控制鈕點擊 -->
+                    <div onclick="prevTimelinePhoto()" class="absolute inset-y-0 left-0 w-1/5 z-30 cursor-pointer flex items-center justify-start pl-2 opacity-0 hover:opacity-100 transition"><span class="bg-black/50 text-white rounded-full p-1.5 shadow-md"><i data-lucide="chevron-left" class="w-5 h-5"></i></span></div>
+                    <div onclick="nextTimelinePhoto()" class="absolute inset-y-0 right-0 w-1/5 z-30 cursor-pointer flex items-center justify-end pr-2 opacity-0 hover:opacity-100 transition"><span class="bg-black/50 text-white rounded-full p-1.5 shadow-md"><i data-lucide="chevron-right" class="w-5 h-5"></i></span></div>
+
+                    <!-- 照片/影片內容顯示區域 -->
+                    <div id="storyMediaContent" class="w-full h-full flex items-center justify-center overflow-hidden p-1">
+                    </div>
                 </div>
             </div>
 
-            <!-- 🌟 區塊三：下方筆記手帳對話氣泡 (shrink-0 靜態縱向排列，絕對不覆蓋照片) -->
+            <!-- 區塊三：下方筆記手帳對話氣泡 -->
             <div class="w-full max-w-xl md:max-w-2xl z-30 shrink-0 mt-2 pointer-events-auto">
                 <div id="storyBubble" class="animate-bubble-pop bg-white/95 backdrop-blur-md p-3 md:p-3.5 rounded-2xl shadow-2xl border-2 border-pink-200/80 text-slate-800">
-                    <div class="flex items-center justify-between gap-2 mb-1 border-b border-pink-100 pb-1">
-                        <div class="flex items-center gap-2 overflow-hidden">
-                            <span id="storyBubbleLocation" class="text-xs font-bold text-[#7f5539] flex items-center gap-1 font-rounded shrink-0">
-                                <i data-lucide="map-pin" class="w-3.5 h-3.5 text-pink-500"></i> 景點名稱
-                            </span>
-                            <span id="storyBubbleDate" class="text-[11px] text-pink-500 font-medium font-rounded shrink-0">
-                                📅 2026-02-27
-                            </span>
-                        </div>
-                        <span id="storyBubbleFolder" class="text-[9px] bg-pink-50 text-pink-600 px-1.5 py-0.5 rounded-full font-semibold border border-pink-200 shrink-0">
+                    <!-- 🌟 變更 2：地點拿掉、日期前移、右上角所屬集合字體放大 -->
+                    <div class="flex items-center justify-between gap-2 mb-1.5 border-b border-pink-100 pb-1">
+                        <span id="storyBubbleDate" class="text-xs md:text-sm text-pink-600 font-bold font-rounded shrink-0 flex items-center gap-1">
+                            📅 2026-02-27
+                        </span>
+                        <span id="storyBubbleFolder" class="text-xs md:text-sm bg-pink-50 text-pink-600 px-2.5 py-0.5 rounded-full font-bold border border-pink-200 shrink-0">
                             我們的旅程
                         </span>
                     </div>
-                    <!-- 俏皮筆記與顏文字 -->
-                    <div id="storyBubbleNotes" class="text-xs text-slate-700 leading-relaxed font-rounded popup-notes max-h-20 overflow-y-auto pr-1">
+                    <div id="storyBubbleNotes" class="text-xs md:text-sm text-slate-700 leading-relaxed font-rounded popup-notes max-h-20 overflow-y-auto pr-1">
                         這裡會顯示滿滿的俏皮筆記跟顏文字喔！(*´∀`)~♥
                     </div>
                 </div>
@@ -304,8 +312,13 @@
         
         <div class="space-y-3 flex-1 overflow-y-auto text-sm text-slate-600 pr-1">
             <div>
-                <label class="block text-xs font-medium text-slate-500 mb-1">地點名稱 (主旨)</label>
-                <input type="text" id="placeTitle" class="w-full p-2 rounded-md bg-white border border-slate-200 text-slate-800 focus:outline-none focus:border-[#7f5539]">
+                <label class="block text-xs font-medium text-slate-500 mb-1">主旨</label>
+                <input type="text" id="placeTitle" class="w-full p-2 rounded-md bg-white border border-slate-200 text-slate-800 focus:outline-none focus:border-[#7f5539]" placeholder="例如：卡地亞 part1!!">
+            </div>
+
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1">地點名稱</label>
+                <input type="text" id="placeLocation" class="w-full p-2 rounded-md bg-white border border-slate-200 text-slate-800 focus:outline-none focus:border-[#7f5539]" placeholder="例如：卡地亞 / 月津港">
             </div>
             
             <div>
@@ -432,6 +445,7 @@
             
             openPanel(true);
             document.getElementById('placeTitle').value = name;
+            document.getElementById('placeLocation').value = name;
             lucide.createIcons();
         })
         .addTo(map);
@@ -469,6 +483,11 @@
             'calendar-heart': '📅'
         };
 
+        function toggleMobileControlPanel() {
+            const panel = document.getElementById('collapsibleControlPanel');
+            panel.classList.toggle('hidden');
+        }
+
         function getLocKey(lat, lng) {
             const nLat = parseFloat(lat);
             const nLng = parseFloat(lng);
@@ -500,10 +519,12 @@
             url = String(url).trim();
             if (url.includes('drive.google.com')) {
                 let id = '';
-                if (url.includes('/d/')) {
-                    id = url.split('/d/')[1].split('/')[0];
+                if (url.includes('/file/d/')) {
+                    id = url.split('/file/d/')[1].split('/')[0];
                 } else if (url.includes('id=')) {
                     id = url.split('id=')[1].split('&')[0];
+                } else if (url.includes('/d/')) {
+                    id = url.split('/d/')[1].split('/')[0];
                 }
                 if (id) {
                     return "https://lh3.googleusercontent.com/d/" + id;
@@ -543,24 +564,29 @@
             localStorage.setItem('playbackDelay', val);
         }
 
+        /* 🌟 變更 1：修復影片播放 (修復 Google Drive / YouTube iframe 嵌入) */
         function getVideoEmbedHtml(url) {
             if (!url) return '';
             url = url.trim();
 
+            let fileId = '';
             if (url.includes('drive.google.com')) {
-                let fileId = '';
                 if (url.includes('/file/d/')) {
                     fileId = url.split('/file/d/')[1].split('/')[0];
                 } else if (url.includes('id=')) {
                     fileId = url.split('id=')[1].split('&')[0];
+                } else if (url.includes('/d/')) {
+                    fileId = url.split('/d/')[1].split('/')[0];
                 }
                 if (fileId) {
-                    return `<iframe class="w-full h-full rounded-2xl" src="https://drive.google.com/file/d/${fileId}/preview" frameborder="0" allow="autoplay; fullscreen"></iframe>`;
+                    return `<iframe class="w-full h-full min-h-[200px] max-h-[55dvh] rounded-xl z-20 pointer-events-auto" src="https://drive.google.com/file/d/${fileId}/preview" frameborder="0" allow="autoplay; fullscreen" allowfullscreen></iframe>`;
                 }
             }
 
             if (url.match(/\.(mp4|webm|ogg)($|\?)/i)) {
-                return `<video class="w-full h-full object-contain rounded-2xl" controls muted playsinline preload="metadata"><source src="${url}"></video>`;
+                return `<video class="w-full max-h-[55dvh] object-contain rounded-xl z-20 pointer-events-auto" controls playsinline webkit-playsinline preload="metadata">
+                            <source src="${url}">
+                        </video>`;
             }
 
             let videoId = '';
@@ -576,10 +602,10 @@
             }
 
             if (videoId) {
-                return `<iframe class="w-full h-full rounded-2xl" src="https://www.youtube.com/embed/${videoId}?autoplay=0&enablejsapi=1" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`;
+                return `<iframe class="w-full aspect-video max-h-[55dvh] rounded-xl z-20 pointer-events-auto" src="https://www.youtube.com/embed/${videoId}?autoplay=0&playsinline=1&enablejsapi=1" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`;
             }
 
-            return `<iframe class="w-full h-full rounded-2xl" src="${url}" frameborder="0" allow="fullscreen"></iframe>`;
+            return `<iframe class="w-full h-full rounded-xl z-20 pointer-events-auto" src="${url}" frameborder="0" allow="fullscreen"></iframe>`;
         }
 
         function createCustomIcon(colorName, iconName) {
@@ -620,6 +646,32 @@
             }
         });
 
+        window.addNewEntryAtLocation = function(locKey) {
+            if (!isEditMode) {
+                alert("請先解鎖【編輯模式】才能新增手帳喔！");
+                return;
+            }
+            const parts = locKey.split(',');
+            if (parts.length === 2) {
+                const lat = parseFloat(parts[0]);
+                const lng = parseFloat(parts[1]);
+                activeId = null;
+                currentLatLng = { lat, lng };
+                if (currentMarker) map.removeLayer(currentMarker);
+                currentMarker = L.marker([lat, lng], { icon: createCustomIcon('blue', 'map-pin') }).addTo(map);
+                openPanel(true);
+                lucide.createIcons();
+            }
+        };
+
+        window.openEditPanelForItemById = function(itemId) {
+            if (!isEditMode) return;
+            const item = markersData.find(m => m.id === itemId);
+            if (item) {
+                openEditPanelForItem(item);
+            }
+        };
+
         function openEditPanelForItem(item) {
             if (!isEditMode || !item) return;
             
@@ -629,6 +681,7 @@
             openPanel(false);
             
             document.getElementById('placeTitle').value = item.title || '';
+            document.getElementById('placeLocation').value = item.location || '';
             document.getElementById('placeDate').value = formatDateString(item.date) || '';
             document.getElementById('placeNotes').value = item.notes || '';
             document.getElementById('placeImageUrl').value = item.image_url || '';
@@ -649,6 +702,7 @@
             if (isNew) {
                 document.getElementById('panelTitle').innerText = "新增浪漫景點";
                 document.getElementById('placeTitle').value = "";
+                document.getElementById('placeLocation').value = "";
                 document.getElementById('placeDate').value = new Date().toISOString().split('T')[0];
                 document.getElementById('placeNotes').value = "";
                 document.getElementById('placeImageUrl').value = "";
@@ -748,7 +802,8 @@
 
         async function saveMarkerData() {
             if (!isEditMode) return;
-            const title = document.getElementById('placeTitle').value || "未命名地點";
+            const title = document.getElementById('placeTitle').value || "未命名主旨";
+            const location = document.getElementById('placeLocation').value || "";
             
             const rawDateVal = document.getElementById('placeDate').value || ""; 
             const date = formatDateString(rawDateVal);
@@ -771,7 +826,7 @@
             const maxOrder = folderItems.reduce((max, item) => (item.order > max ? item.order : max), Date.now());
             const itemOrder = existingItem && existingItem.order !== undefined ? existingItem.order : (maxOrder + 1000);
 
-            const dataItem = { id, title, date, in_timeline: inTimeline, lat, lng, notes, video_url: videoUrl, image_url: imageUrl, color, icon, folder_name: folder, order: itemOrder };
+            const dataItem = { id, title, location, date, in_timeline: inTimeline, lat, lng, notes, video_url: videoUrl, image_url: imageUrl, color, icon, folder_name: folder, order: itemOrder };
 
             if (gasUrl) {
                 try {
@@ -993,9 +1048,11 @@
                 `;
             }
 
+            const locationTag = item.location ? `<span class="text-xs font-normal text-slate-500">📍 ${item.location}</span>` : '';
+
             popupHtml += `
                 <div class="font-bold text-sm text-[#7f5539] mb-0.5 flex items-center justify-between gap-1">
-                    <span>${item.title}</span>
+                    <span class="flex items-center gap-1.5">${item.title} ${locationTag}</span>
                     ${videoUrl ? '<span class="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-medium border border-amber-200 shrink-0">🎥 內含影片</span>' : ''}
                 </div>`;
 
@@ -1023,7 +1080,7 @@
                 const iconPrefix = currentItem.type === 'video' ? '🎬 ' : '';
 
                 popupHtml += `
-                    <div id="popup_img_box_${item.id}" data-media="${encodedMediaList}" data-title="${item.title}" data-index="${validIndex}" class="popup-img-container relative w-full h-32 md:h-36 rounded-lg overflow-hidden bg-slate-100 flex items-center justify-center mt-1 mb-1.5 shadow-sm group select-none">
+                    <div id="popup_img_box_${item.id}" data-media="${encodedMediaList}" data-title="${item.title}" data-index="${validIndex}" class="popup-img-container relative w-full rounded-lg overflow-hidden bg-slate-100 flex items-center justify-center mt-1 mb-1.5 shadow-sm group select-none">
                         <div class="media-content-area w-full h-full flex items-center justify-center">
                             ${contentHtml}
                         </div>
@@ -1225,19 +1282,24 @@
                 ` : '';
 
                 timelineHtml += `
-                    <div data-id="${item.id}" id="tl_item_${item.id}" class="timeline-item btn-interactive relative pl-7 pr-2 py-1.5 rounded-r-lg border-l-2 border-transparent ${cardStyle} mb-1 flex items-center justify-between group">
-                        <div onclick="focusPlace('${item.lat}', '${item.lng}', '${item.id}')" class="flex-1 cursor-pointer">
-                            <div class="absolute left-[9px] top-3 w-2 h-2 rounded-full ${isHidden ? 'bg-slate-400' : 'bg-[#7f5539]'} ring-4 ring-[#f4ebe1]"></div>
+                    <div data-id="${item.id}" id="tl_item_${item.id}" class="timeline-item btn-interactive relative pl-7 pr-2 py-2 rounded-r-lg border-l-2 border-transparent ${cardStyle} mb-1.5 flex items-center justify-between group">
+                        <div onclick="focusPlace('${item.lat}', '${item.lng}', '${item.id}')" class="flex-1 cursor-pointer overflow-hidden">
+                            <div class="absolute left-[9px] top-3.5 w-2 h-2 rounded-full ${isHidden ? 'bg-slate-400' : 'bg-[#7f5539]'} ring-4 ring-[#f4ebe1]"></div>
                             <div class="text-[10px] ${isHidden ? 'text-slate-500' : 'text-pink-600'} font-bold flex items-center gap-1">
                                 <i data-lucide="calendar" class="w-2.5 h-2.5"></i> ${cleanDate}
                                 ${isHidden ? '<span class="text-[9px] bg-slate-300 text-slate-600 px-1 rounded ml-1 font-normal">已隱藏</span>' : ''}
                             </div>
-                            <div class="text-xs font-bold ${isHidden ? 'text-slate-500 line-through' : 'text-slate-700'} leading-tight">${item.title}</div>
-                            ${item.notes ? `<div class="text-[10px] text-slate-400 line-clamp-1">${item.notes}</div>` : ''}
+                            <div class="text-xs ${isHidden ? 'text-slate-500 line-through' : 'text-slate-800'} leading-snug flex items-baseline gap-1.5 mt-0.5">
+                                <span class="font-bold shrink-0 text-sm md:text-xs">${item.title}</span>
+                                <span class="text-[10px] text-slate-500 flex items-center gap-0.5 truncate font-normal">
+                                    ${iconEmojiMap[item.icon] || '📍'} ${item.location || ''}
+                                </span>
+                            </div>
+                            ${item.notes ? `<div class="text-[10px] text-slate-400 line-clamp-1 mt-0.5">${item.notes}</div>` : ''}
                         </div>
                         <div class="flex items-center gap-1">
                             ${toggleBtn}
-                            <i data-lucide="menu" class="w-3.5 h-3.5 text-slate-400 ${isEditMode ? 'cursor-grab active:cursor-grabbing' : 'opacity-0 pointer-events-none'}"></i>
+                            <i data-lucide="menu" class="w-3.5 h-3.5 text-slate-400 ${isEditMode ? 'cursor-grab active:cursor-grabbing' : 'opacity-0 pointer-events-none'} ml-1"></i>
                         </div>
                     </div>
                 `;
@@ -1278,7 +1340,7 @@
 
         function openStoryStage() {
             document.getElementById('storyStage').classList.remove('hidden');
-            showCurrentTimelineStep();
+            showCurrentTimelineStep(true);
         }
 
         function closeStoryStage() {
@@ -1300,19 +1362,10 @@
             const btn = document.getElementById('btnPlayTimeline');
             if (!btn) return;
             if (state === 'playing') {
-                btn.innerHTML = '<i data-lucide="pause" class="w-3 h-3"></i>暫停';
-                btn.className = "text-xs bg-amber-600 text-white px-1.5 py-0.5 rounded-md hover:bg-amber-700 flex items-center gap-1 shadow-xs transition";
-            } else if (state === 'paused') {
-                btn.innerHTML = '<i data-lucide="play" class="w-3 h-3"></i>播放';
-                btn.className = "text-xs bg-emerald-600 text-white px-1.5 py-0.5 rounded-md hover:bg-emerald-700 flex items-center gap-1 shadow-xs transition";
-            } else if (state === 'ended') {
-                btn.innerHTML = '<i data-lucide="rotate-ccw" class="w-3 h-3"></i>重播';
-                btn.className = "text-xs bg-[#7f5539] text-white px-1.5 py-0.5 rounded-md hover:bg-[#9c6644] flex items-center gap-1 shadow-xs transition";
+                btn.innerHTML = '暫停';
             } else {
-                btn.innerHTML = '<i data-lucide="play" class="w-3 h-3"></i>播放';
-                btn.className = "text-xs bg-[#7f5539] text-white px-1.5 py-0.5 rounded-md hover:bg-[#9c6644] flex items-center gap-1 shadow-xs transition";
+                btn.innerHTML = '播放';
             }
-            lucide.createIcons();
         }
 
         function startTimelinePlayback() {
@@ -1347,7 +1400,6 @@
             updatePlaybackButtonUI(playbackState);
         }
 
-        /* 🌟 點擊極簡星塵小光點跳轉至特定地點 */
         window.jumpToItem = function(itemId) {
             const sortedItems = getSortedTimelineItems();
             const targetIndex = sortedItems.findIndex(m => m.id === itemId);
@@ -1355,15 +1407,13 @@
                 if (playbackState === 'playing') pauseTimelinePlayback();
                 currentPlaybackItemIndex = targetIndex;
                 currentPlaybackImgIndex = 0;
-                showCurrentTimelineStep();
+                showCurrentTimelineStep(true);
             }
         };
 
-        /* 🌟 需求 2 核心算法：100% 嚴格依時間先後順序排前後 (Strict Monotonic Chronological Order) */
         function renderOverviewTrack(sortedItems, currentItem) {
             if (!sortedItems || sortedItems.length === 0) return;
 
-            // 1. 整理所有年份與月份 (YYYY-MM)，並按時間升冪排序
             const monthSet = new Set();
             sortedItems.forEach(item => {
                 const dStr = formatDateString(item.date);
@@ -1377,7 +1427,6 @@
 
             const totalMonths = uniqueMonths.length;
 
-            // 2. 繪製月份刻度與放大版標籤 (25/01, 25/02...)
             const ticksBox = document.getElementById('timelineMonthTicks');
             if (ticksBox) {
                 ticksBox.innerHTML = uniqueMonths.map((ym, idx) => {
@@ -1388,13 +1437,12 @@
                     return `
                         <div class="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 flex flex-col items-center pointer-events-none" style="left: ${pct}%;">
                             <div class="w-[1.5px] h-3 bg-white/30"></div>
-                            <span class="text-xs md:text-sm font-mono font-bold text-slate-200 tracking-tight select-none mt-1.5 drop-shadow">${ymLabel}</span>
+                            <span class="text-[9px] font-mono text-slate-300 tracking-tight select-none mt-1.5 drop-shadow">${ymLabel}</span>
                         </div>
                     `;
                 }).join('');
             }
 
-            // 3. 按日期分組，以計算同日景點的微幅微調 offset
             const dateGroups = {};
             sortedItems.forEach(item => {
                 const dStr = formatDateString(item.date);
@@ -1405,11 +1453,8 @@
 
             let nodesHtml = '';
             let activeItemPos = { pct: 0, offsetY: 0 };
-
-            // Y 軸微妙錯開 pattern，增加層次質感
             const yPattern = [0, -3, 3, -2, 2];
 
-            // 🌟 嚴格計算每個景點光點的位置 (絕不顛倒時間順序)
             sortedItems.forEach((item) => {
                 const dStr = formatDateString(item.date);
                 if (!dStr) return;
@@ -1427,14 +1472,11 @@
                 const itemIndexInDay = group.indexOf(item);
                 const countInDay = group.length;
 
-                // 該月份的總天數 (例如 28, 30, 31)
                 const daysInMonth = new Date(year, month, 0).getDate();
 
-                // 🌟 月份區塊起點 % 與寬度 %
                 const mStartPct = (mIdx / totalMonths) * 100;
                 const mWidthPct = 100 / totalMonths;
 
-                // 🌟 日期與同日多地點微幅線性偏移 (嚴格保證 pct 單調遞增，永不逆序)
                 const dayFraction = (day - 1 + (itemIndexInDay / Math.max(1, countInDay))) / daysInMonth;
                 let pct = mStartPct + (mWidthPct * dayFraction);
                 pct = Math.max(0, Math.min(100, pct));
@@ -1459,7 +1501,6 @@
             const nodesBox = document.getElementById('timelineDateNodes');
             if (nodesBox) nodesBox.innerHTML = nodesHtml;
 
-            // 4. 焦點大光點移動與躍動動畫
             const cursor = document.getElementById('timelineActiveCursor');
             if (cursor) {
                 cursor.style.left = `${activeItemPos.pct}%`;
@@ -1471,8 +1512,7 @@
             }
         }
 
-        /* 🌟 更新放映台畫面與對話氣泡 */
-        function showCurrentTimelineStep() {
+        function showCurrentTimelineStep(isNewLocation = true) {
             const sortedItems = getSortedTimelineItems();
             if (sortedItems.length === 0) return;
 
@@ -1482,13 +1522,9 @@
             const item = sortedItems[currentPlaybackItemIndex];
             const cleanDate = formatDateString(item.date);
 
-            // 1. 渲染頂部極簡動態時間軌道 (嚴格時間順序)
             renderOverviewTrack(sortedItems, item);
 
-            // 2. 更新照片正上方的景點主旨標題
-            document.getElementById('storyHeaderTitle').innerText = item.title || '浪漫足跡手帳';
-
-            // 3. 處理媒體內容 (影片可直接點擊播放)
+            // 1. 解析多媒體列表 (照片 + 影片)
             const rawImages = parseImageUrls(item.image_url);
             const videoUrl = item.video_url ? item.video_url.trim() : '';
             const mediaList = [];
@@ -1496,33 +1532,73 @@
             if (videoUrl) mediaList.push({ type: 'video', url: videoUrl });
 
             if (currentPlaybackImgIndex >= mediaList.length) currentPlaybackImgIndex = 0;
-            const currentMedia = mediaList[currentPlaybackImgIndex] || { type: 'image', url: 'https://via.placeholder.com/600x800?text=無照片' };
 
-            const mediaBox = document.getElementById('storyMediaBox');
-            const bgBlur = document.getElementById('storyBgBlur');
+            // 2. 更新頂部標題
+            document.getElementById('storyHeaderIcon').innerText = iconEmojiMap[item.icon] || '📍';
+            
+            const locationSpan = item.location 
+                ? `<span class="text-xs md:text-sm font-normal text-slate-300 truncate font-rounded">📍 ${item.location}</span>` 
+                : '';
+                
+            document.getElementById('storyHeaderTitle').innerHTML = `
+                <span class="text-base md:text-lg font-extrabold text-white tracking-wide font-rounded drop-shadow-md shrink-0">${item.title || '手帳主旨'}</span>
+                ${locationSpan}
+            `;
 
-            if (currentMedia.type === 'image') {
-                const safeImgUrl = convertGoogleDriveLink(currentMedia.url);
-                bgBlur.style.backgroundImage = `url('${safeImgUrl}')`;
-                mediaBox.innerHTML = `
-                    <div class="relative w-full h-full flex items-center justify-center overflow-hidden rounded-2xl shadow-2xl border border-white/10">
-                        <img src="${safeImgUrl}" class="w-full h-full object-contain animate-ken-burns" onerror="this.src='https://via.placeholder.com/600x800?text=圖片載入中/未公開'">
-                    </div>
-                `;
+            // 3. 生成標題後方的半透明小圓點
+            const dotsBox = document.getElementById('storyHeaderDots');
+            if (mediaList.length > 1) {
+                dotsBox.classList.remove('hidden');
+                dotsBox.innerHTML = mediaList.map((_, idx) => {
+                    const isActive = (idx === currentPlaybackImgIndex);
+                    return `<span class="w-2 h-2 rounded-full transition-all duration-300 ${isActive ? 'bg-pink-400 scale-125 shadow-[0_0_8px_#f472b6]' : 'bg-white/30'}"></span>`;
+                }).join('');
             } else {
-                bgBlur.style.backgroundImage = 'none';
-                bgBlur.style.backgroundColor = '#0f172a';
-                const videoHtml = getVideoEmbedHtml(currentMedia.url);
-                mediaBox.innerHTML = `<div class="w-full h-full rounded-2xl overflow-hidden shadow-2xl border border-white/10 bg-black flex items-center justify-center">${videoHtml}</div>`;
+                dotsBox.classList.add('hidden');
             }
 
-            // 4. 更新詳細卡片對話氣泡（地點與日期）
-            const bubble = document.getElementById('storyBubble');
-            bubble.classList.remove('animate-bubble-pop');
-            void bubble.offsetWidth;
-            bubble.classList.add('animate-bubble-pop');
+            const mediaBox = document.getElementById('storyMediaBox');
+            const mediaContent = document.getElementById('storyMediaContent');
+            const bgBlur = document.getElementById('storyBgBlur');
 
-            document.getElementById('storyBubbleLocation').innerHTML = `<i data-lucide="map-pin" class="w-3.5 h-3.5 text-pink-500"></i> ${item.title || '地點手帳'}`;
+            // 4. 渲染媒體內容
+            if (mediaList.length === 0) {
+                bgBlur.style.backgroundImage = 'none';
+                bgBlur.style.backgroundColor = '#0f172a';
+                mediaContent.innerHTML = `<div class="text-xs text-slate-400">尚無上傳照片...</div>`;
+            } else {
+                const activeMedia = mediaList[currentPlaybackImgIndex];
+                
+                if (activeMedia.type === 'image') {
+                    const safeImgUrl = convertGoogleDriveLink(activeMedia.url);
+                    bgBlur.style.backgroundImage = `url('${safeImgUrl}')`;
+                    mediaContent.innerHTML = `
+                        <img src="${safeImgUrl}" class="w-full h-full object-contain pointer-events-none" onerror="this.src='https://via.placeholder.com/600x800?text=圖片載入中/未公開'">
+                    `;
+                } else {
+                    bgBlur.style.backgroundImage = 'none';
+                    bgBlur.style.backgroundColor = '#0f172a';
+                    mediaContent.innerHTML = getVideoEmbedHtml(activeMedia.url);
+                }
+            }
+
+            // 5. 動畫切換處理
+            if (isNewLocation) {
+                mediaBox.classList.remove('animate-location-shift', 'animate-photo-fade');
+                void mediaBox.offsetWidth;
+                mediaBox.classList.add('animate-location-shift');
+
+                const bubble = document.getElementById('storyBubble');
+                bubble.classList.remove('animate-bubble-pop');
+                void bubble.offsetWidth;
+                bubble.classList.add('animate-bubble-pop');
+            } else {
+                mediaContent.classList.remove('animate-photo-fade');
+                void mediaContent.offsetWidth;
+                mediaContent.classList.add('animate-photo-fade');
+            }
+
+            // 6. 🌟 變更 2：對話氣泡內容更新 (日期前移、集合放大，無地點)
             document.getElementById('storyBubbleDate').innerText = cleanDate ? `📅 ${cleanDate}` : '';
             document.getElementById('storyBubbleFolder').innerText = item.folder_name || '我們的旅程';
             document.getElementById('storyBubbleNotes').innerText = item.notes ? item.notes : '這一天也留下了甜甜的回憶～ (´∀`)';
@@ -1543,14 +1619,18 @@
             const totalMedia = rawImages.length + hasVideo;
 
             currentPlaybackImgIndex++;
+            let isNewLocation = false;
+
             if (currentPlaybackImgIndex >= Math.max(1, totalMedia)) {
                 currentPlaybackItemIndex++;
                 currentPlaybackImgIndex = 0;
+                isNewLocation = true;
                 if (currentPlaybackItemIndex >= sortedItems.length) {
                     currentPlaybackItemIndex = 0;
                 }
             }
-            showCurrentTimelineStep();
+
+            showCurrentTimelineStep(isNewLocation);
         }
 
         function prevTimelinePhoto() {
@@ -1560,8 +1640,11 @@
             if (playbackState === 'playing') pauseTimelinePlayback();
 
             currentPlaybackImgIndex--;
+            let isNewLocation = false;
+
             if (currentPlaybackImgIndex < 0) {
                 currentPlaybackItemIndex--;
+                isNewLocation = true;
                 if (currentPlaybackItemIndex < 0) {
                     currentPlaybackItemIndex = sortedItems.length - 1;
                 }
@@ -1571,7 +1654,8 @@
                 const prevTotalMedia = prevRawImages.length + prevHasVideo;
                 currentPlaybackImgIndex = Math.max(0, prevTotalMedia - 1);
             }
-            showCurrentTimelineStep();
+
+            showCurrentTimelineStep(isNewLocation);
         }
 
         function runPlaybackLoop() {
@@ -1588,16 +1672,24 @@
             const hasVideo = item.video_url && item.video_url.trim() ? 1 : 0;
             const totalMedia = rawImages.length + hasVideo;
 
-            showCurrentTimelineStep();
-
             playbackTimer = setTimeout(() => {
                 if (playbackState !== 'playing') return;
 
                 currentPlaybackImgIndex++;
+                let isNewLocation = false;
+
                 if (currentPlaybackImgIndex >= Math.max(1, totalMedia)) {
                     currentPlaybackItemIndex++;
                     currentPlaybackImgIndex = 0;
+                    isNewLocation = true;
                 }
+
+                if (currentPlaybackItemIndex >= sortedItems.length) {
+                    stopTimelinePlayback(true);
+                    return;
+                }
+
+                showCurrentTimelineStep(isNewLocation);
                 runPlaybackLoop();
             }, playbackDelay * 1000);
         }
@@ -1630,15 +1722,16 @@
                 const cleanDate = formatDateString(item.date);
 
                 cardsHtml += `
-                    <div onclick="focusPlace('${item.lat}', '${item.lng}', '${item.id}')" class="polaroid-card btn-interactive rounded cursor-pointer select-none flex flex-col relative">
-                        <div class="relative w-full h-20 md:h-24 bg-slate-100 rounded-xs overflow-hidden mb-1.5 shadow-inner">
-                            ${rawImages.length > 1 ? `<span class="absolute top-1 right-1 bg-black/60 text-white text-[8px] px-1 py-0.5 rounded z-10">📸 ${rawImages.length}</span>` : ''}
+                    <div onclick="focusPlace('${item.lat}', '${item.lng}', '${item.id}')" class="polaroid-card btn-interactive rounded-xl cursor-pointer select-none flex flex-col relative border border-slate-200/80 p-2 bg-white shadow-xs">
+                        <div class="relative w-full h-24 md:h-28 bg-slate-100 rounded-lg overflow-hidden mb-1.5 shadow-inner">
+                            ${rawImages.length > 1 ? `<span class="absolute top-1 right-1 bg-black/60 text-white text-[8px] px-1.5 py-0.5 rounded-full z-10 font-bold">📸 ${rawImages.length}</span>` : ''}
+                            ${cleanDate ? `<span class="absolute bottom-1 right-1 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded z-10 font-mono">${cleanDate}</span>` : ''}
                             <img src="${firstSafeImg}" class="w-full h-full object-cover" onerror="this.src='https://via.placeholder.com/150?text=圖片載入中/未公開'">
                         </div>
-                        <div class="text-[11px] font-bold text-slate-800 line-clamp-1 leading-snug">${item.title}</div>
-                        <div class="text-[11px] font-handwriting text-slate-500 mt-auto pt-1 flex justify-between items-center">
-                            <span>${cleanDate || 'Memory'}</span>
-                            <span class="text-pink-500">💖</span>
+                        <div class="text-xs font-bold text-slate-800 line-clamp-1 leading-snug">${item.title}</div>
+                        <div class="text-[10px] text-slate-500 mt-0.5 flex items-center gap-1 line-clamp-1">
+                            <span>${iconEmojiMap[item.icon] || '📍'}</span>
+                            <span class="truncate">${item.location || ''}</span>
                         </div>
                     </div>
                 `;
@@ -1669,18 +1762,22 @@
                 const folderId = 'folder_' + btoa(encodeURIComponent(folderName)).replace(/=/g, '');
 
                 const folderDiv = document.createElement('div');
-                folderDiv.className = "bg-[#f5ebe0]/60 rounded-xl p-2 border border-[#ddc8b4]/60 mb-2 shadow-sm";
+                folderDiv.className = "bg-[#f5ebe0]/80 rounded-xl p-2.5 border border-[#ddc8b4]/80 mb-2 shadow-xs";
                 folderDiv.innerHTML = `
-                    <div class="font-bold text-xs text-[#7f5539] flex items-center gap-1 mb-1.5 select-none">
+                    <div class="font-bold text-xs text-[#7f5539] flex items-center gap-1.5 mb-1.5 select-none">
                         <i data-lucide="folder" class="w-3.5 h-3.5 text-[#b7b7a4]"></i> 
-                        <span>${folderName} (${folderItems.length})</span>
+                        <span class="text-xs md:text-xs font-bold">${folderName} (${folderItems.length})</span>
                         ${actionButtons}
                     </div>
-                    <div id="${folderId}" class="sortable-list space-y-1 min-h-[10px]">
+                    <div id="${folderId}" class="sortable-list space-y-1.5 min-h-[10px]">
                         ${folderItems.map(item => `
-                            <div data-id="${item.id}" class="sortable-item btn-interactive text-xs bg-white/90 p-1.5 rounded-lg cursor-pointer hover:bg-[#f5ebe0] text-slate-700 flex justify-between items-center transition border border-slate-100 shadow-2xs">
-                                <span onclick="focusPlace('${item.lat}', '${item.lng}', '${item.id}')" class="flex items-center gap-1 font-medium flex-1">
-                                    <span style="color: ${colorMap[item.color] || '#fff'}">●</span> ${iconEmojiMap[item.icon] || '📍'} ${item.title}
+                            <div data-id="${item.id}" class="sortable-item btn-interactive text-xs bg-white p-2 rounded-lg cursor-pointer hover:bg-[#f5ebe0] text-slate-800 flex justify-between items-center transition border border-slate-200/60 shadow-2xs">
+                                <span onclick="focusPlace('${item.lat}', '${item.lng}', '${item.id}')" class="flex items-center gap-1.5 font-medium flex-1 overflow-hidden">
+                                    <span style="color: ${colorMap[item.color] || '#3b82f6'}" class="shrink-0">●</span>
+                                    <span class="font-bold text-slate-800 shrink-0 text-xs">${item.title}</span>
+                                    <span class="text-[10px] text-slate-500 flex items-center gap-0.5 truncate">
+                                        ${iconEmojiMap[item.icon] || '📍'} ${item.location || ''}
+                                    </span>
                                 </span>
                                 <i data-lucide="menu" class="w-3.5 h-3.5 text-slate-300 ${isEditMode ? 'cursor-grab active:cursor-grabbing' : 'opacity-0 pointer-events-none'} ml-2"></i>
                             </div>
