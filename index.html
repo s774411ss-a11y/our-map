@@ -148,32 +148,40 @@
 </head>
 <body class="bg-[#f4ebe1] text-slate-700 h-[100dvh] w-screen flex flex-col md:flex-row font-sans relative overflow-hidden">
 
-    <!-- 側邊欄區域 (手機版極簡極致美化) -->
-    <div class="w-full md:w-80 bg-[#ede0d4] p-3 md:p-4 flex flex-col border-b md:border-b-0 md:border-r border-[#ddc8b4] shrink-0 z-[1000] shadow-md max-h-[45dvh] md:max-h-none md:h-full">
+    <!-- 側邊欄區域 (手機版極簡極致美化 + 支援全頁地圖收折) -->
+    <div id="sidebarPanel" class="w-full md:w-80 bg-[#ede0d4] p-3 md:p-4 flex flex-col border-b md:border-b-0 md:border-r border-[#ddc8b4] shrink-0 z-[1000] shadow-md transition-all duration-300 max-h-[42dvh] md:max-h-none md:h-full">
         
-        <!-- 標題與分頁切換按鈕 (手機版預設僅顯示此區) -->
-        <div class="shrink-0 mb-2">
-            <div class="flex justify-between items-center mb-1.5">
-                <h1 class="text-lg md:text-xl font-bold flex items-center gap-2 text-[#7f5539]">
+        <!-- 標題與分頁切換按鈕 -->
+        <div class="shrink-0 mb-1.5">
+            <div class="flex justify-between items-center mb-1">
+                <h1 class="text-base md:text-xl font-bold flex items-center gap-1.5 text-[#7f5539]">
                     <i data-lucide="heart-handshake" class="text-[#b7b7a4]"></i> 浪漫足跡手帳
                 </h1>
-                <!-- 手機版工具收納按鈕 -->
-                <button onclick="toggleMobileControlPanel()" class="md:hidden text-xs bg-[#f5ebe0] text-[#7f5539] p-1.5 rounded-lg border border-[#ddc8b4] flex items-center gap-1 font-medium active:scale-95 transition">
-                    <i data-lucide="settings-2" class="w-4 h-4"></i>
-                </button>
+                
+                <div class="flex items-center gap-1">
+                    <!-- 🌟 變更 1：手機版展開/收起清單開關 -->
+                    <button id="btnToggleList" onclick="toggleMobileList()" class="md:hidden text-[11px] bg-[#f5ebe0] text-[#7f5539] px-2 py-1 rounded-lg border border-[#ddc8b4] flex items-center gap-1 font-bold active:scale-95 transition shadow-2xs">
+                        <i id="toggleListIcon" data-lucide="chevron-up" class="w-3.5 h-3.5"></i>
+                        <span id="toggleListText">收起列表</span>
+                    </button>
+                    
+                    <!-- 手機版工具收納按鈕 -->
+                    <button onclick="toggleMobileControlPanel()" class="md:hidden text-xs bg-[#f5ebe0] text-[#7f5539] p-1 rounded-lg border border-[#ddc8b4] flex items-center gap-1 font-medium active:scale-95 transition">
+                        <i data-lucide="settings-2" class="w-3.5 h-3.5"></i>
+                    </button>
+                </div>
             </div>
             
             <!-- 3 大主要分頁按鈕 -->
             <div class="grid grid-cols-3 gap-1 bg-[#dfd0c0] p-1 rounded-xl text-xs font-bold text-[#7f5539] shadow-inner">
-                <button id="tabFolders" onclick="switchSidebarTab('folders')" class="py-1.5 rounded-lg bg-[#fdfbf7] shadow-xs text-center transition hover:bg-white">集合</button>
-                <button id="tabTimeline" onclick="switchSidebarTab('timeline')" class="py-1.5 rounded-lg hover:bg-[#fdfbf7]/60 text-center transition">時間軸</button>
-                <button id="tabGallery" onclick="switchSidebarTab('gallery')" class="py-1.5 rounded-lg hover:bg-[#fdfbf7]/60 text-center transition">拍立得</button>
+                <button id="tabFolders" onclick="switchSidebarTab('folders')" class="py-1 rounded-lg bg-[#fdfbf7] shadow-xs text-center transition hover:bg-white">集合</button>
+                <button id="tabTimeline" onclick="switchSidebarTab('timeline')" class="py-1 rounded-lg hover:bg-[#fdfbf7]/60 text-center transition">時間軸</button>
+                <button id="tabGallery" onclick="switchSidebarTab('gallery')" class="py-1 rounded-lg hover:bg-[#fdfbf7]/60 text-center transition">拍立得</button>
             </div>
         </div>
 
-        <!-- 可收折控制選單 (手機版預設隱藏，桌機版常駐) -->
+        <!-- 可收折控制選單 -->
         <div id="collapsibleControlPanel" class="hidden md:block shrink-0 space-y-2 mb-2">
-            <!-- GAS 連線區塊 -->
             <div class="bg-[#f5ebe0]/80 p-2 rounded-lg border border-[#ddc8b4]">
                 <label class="text-[10px] text-slate-500 block font-medium mb-1">Google GAS 雲端網址</label>
                 <div class="flex gap-1">
@@ -182,7 +190,6 @@
                 </div>
             </div>
 
-            <!-- 播放控制備用按鈕 -->
             <div id="timelineControlsArea" class="hidden flex flex-col gap-1 p-2 bg-[#f5ebe0]/90 rounded-lg border border-[#ddc8b4]">
                 <div class="flex justify-between items-center gap-1">
                     <span class="text-xs font-semibold text-[#7f5539]">🎬 回憶故事放映</span>
@@ -198,47 +205,58 @@
                 </div>
             </div>
 
-            <!-- 權限切換按鈕 -->
             <button id="btnToggleAuth" onclick="toggleAuthMode()" class="w-full text-xs bg-[#7f5539] hover:bg-[#9c6644] text-white py-1.5 rounded-md font-medium transition shadow-sm flex items-center justify-center gap-1.5">
                 <i id="authIcon" data-lucide="eye" class="w-3.5 h-3.5"></i>
                 <span id="authText">觀看模式</span>
             </button>
         </div>
 
-        <!-- 內容切換區域 1: 我的景點集合 -->
-        <div id="viewFolders" class="flex-1 overflow-y-auto min-h-0 space-y-2 pr-1 mb-1">
-            <div class="flex justify-between items-center">
-                <h2 class="text-xs font-bold text-[#7f5539] uppercase tracking-wider">景點集合</h2>
-                <button id="btnCreateFolder" onclick="createNewFolder()" class="text-xs text-[#9c6644] flex items-center gap-1 hover:underline font-bold disabled:opacity-30 disabled:no-underline disabled:cursor-not-allowed">
-                    <i data-lucide="folder-plus" class="w-3.5 h-3.5"></i>新增集合
-                </button>
+        <!-- 可動態收折的清單內容區塊容器 -->
+        <div id="listContentWrapper" class="flex-1 flex flex-col min-h-0 overflow-hidden">
+            <!-- 內容切換區域 1: 我的景點集合 -->
+            <div id="viewFolders" class="flex-1 overflow-y-auto min-h-0 space-y-2 pr-1 mb-1">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xs font-bold text-[#7f5539] uppercase tracking-wider">景點集合</h2>
+                    <button id="btnCreateFolder" onclick="createNewFolder()" class="text-xs text-[#9c6644] flex items-center gap-1 hover:underline font-bold disabled:opacity-30 disabled:no-underline disabled:cursor-not-allowed">
+                        <i data-lucide="folder-plus" class="w-3.5 h-3.5"></i>新增集合
+                    </button>
+                </div>
+                <div id="folderContainer" class="space-y-2"></div>
             </div>
-            <div id="folderContainer" class="space-y-2"></div>
-        </div>
 
-        <!-- 內容切換區域 2: 時間軸檢視 (Timeline) -->
-        <div id="viewTimeline" class="hidden flex-1 flex flex-col min-h-0 mb-1">
-            <div id="timelineContainer" class="flex-1 overflow-y-auto min-h-0 space-y-2 pr-1 no-scrollbar relative">
-                <!-- 動態注入時間軸節點 -->
+            <!-- 🌟 變更 2：手機版時間軸選單完全不預留，全部呈現於放映室 (圖三風格) -->
+            <div id="viewTimeline" class="hidden flex-1 flex flex-col min-h-0 mb-1">
+                <div id="timelineContainer" class="hidden md:block flex-1 overflow-y-auto min-h-0 space-y-2 pr-1 no-scrollbar relative">
+                    <!-- 桌機版時間軸備用 -->
+                </div>
             </div>
-        </div>
 
-        <!-- 內容切換區域 3: 拍立得相片牆 -->
-        <div id="viewGallery" class="hidden flex-1 overflow-y-auto min-h-0 space-y-2 pr-1 mb-1">
-            <div id="galleryContainer" class="space-y-2"></div>
+            <!-- 內容切換區域 3: 拍立得相片牆 -->
+            <div id="viewGallery" class="hidden flex-1 overflow-y-auto min-h-0 space-y-2 pr-1 mb-1">
+                <div id="galleryContainer" class="space-y-2"></div>
+            </div>
         </div>
     </div>
 
     <!-- 主展示舞台 (地圖與星塵脈衝時間軸放映室) -->
-    <div class="flex-1 h-[55dvh] md:h-full relative overflow-hidden bg-slate-900">
+    <div class="flex-1 h-full relative overflow-hidden bg-slate-900">
         <!-- 1. Leaflet 地圖容器 -->
         <div id="map" class="w-full h-full z-[1]"></div>
 
-        <!-- 2. 故事放映舞台：採用 IG Story 沉浸放映模式 -->
+        <!-- 2. 故事放映舞台：採用 IG Story 沉浸放映模式 (圖三樣式) -->
         <div id="storyStage" class="hidden absolute inset-0 z-[500] bg-slate-950 flex flex-col justify-between items-center p-3 md:p-4 select-none overflow-hidden">
             <!-- 毛玻璃背景模糊底圖 -->
             <div id="storyBgBlur" class="absolute inset-0 bg-cover bg-center blur-2xl opacity-40 scale-110 transition-all duration-700 pointer-events-none"></div>
             <div class="absolute inset-0 bg-gradient-to-b from-black/80 via-transparent to-black/90 pointer-events-none"></div>
+
+            <!-- 🌟 變更 2：時間軸放映室頂部快捷分頁切換列 (手機版無縫切換) -->
+            <div class="w-full max-w-xl md:max-w-2xl z-50 shrink-0 mb-1 flex justify-center md:hidden">
+                <div class="grid grid-cols-3 gap-1 bg-slate-900/90 backdrop-blur-md p-1 rounded-xl text-xs font-bold text-slate-300 border border-white/10 shadow-lg w-full max-w-xs">
+                    <button onclick="switchSidebarTab('folders')" class="py-1 rounded-lg hover:bg-white/10 text-center transition">集合</button>
+                    <button onclick="switchSidebarTab('timeline')" class="py-1 rounded-lg bg-pink-500 text-white shadow-xs text-center transition">時間軸</button>
+                    <button onclick="switchSidebarTab('gallery')" class="py-1 rounded-lg hover:bg-white/10 text-center transition">拍立得</button>
+                </div>
+            </div>
 
             <!-- 區塊一：頂部極簡時間軌道 -->
             <div class="w-full max-w-xl md:max-w-2xl z-40 shrink-0 mb-2">
@@ -270,10 +288,10 @@
                     </div>
                 </div>
 
-                <!-- IG Story 模式容器 (修復影片點擊與播放區域) -->
+                <!-- IG Story 模式容器 (帶有兩側點擊切換感應區) -->
                 <div id="storyMediaBox" class="w-full flex-1 min-h-0 flex flex-col items-center justify-center relative rounded-2xl overflow-hidden shadow-2xl border border-white/15 bg-slate-950/80 backdrop-blur-xs select-none">
                     
-                    <!-- 🌟 變更 1：點擊切換感應區僅保留兩側 20%，中央 60% 區域留給影片播放控制鈕點擊 -->
+                    <!-- 點擊切換感應區 (僅兩側 20%，中央留給影片播放) -->
                     <div onclick="prevTimelinePhoto()" class="absolute inset-y-0 left-0 w-1/5 z-30 cursor-pointer flex items-center justify-start pl-2 opacity-0 hover:opacity-100 transition"><span class="bg-black/50 text-white rounded-full p-1.5 shadow-md"><i data-lucide="chevron-left" class="w-5 h-5"></i></span></div>
                     <div onclick="nextTimelinePhoto()" class="absolute inset-y-0 right-0 w-1/5 z-30 cursor-pointer flex items-center justify-end pr-2 opacity-0 hover:opacity-100 transition"><span class="bg-black/50 text-white rounded-full p-1.5 shadow-md"><i data-lucide="chevron-right" class="w-5 h-5"></i></span></div>
 
@@ -286,7 +304,6 @@
             <!-- 區塊三：下方筆記手帳對話氣泡 -->
             <div class="w-full max-w-xl md:max-w-2xl z-30 shrink-0 mt-2 pointer-events-auto">
                 <div id="storyBubble" class="animate-bubble-pop bg-white/95 backdrop-blur-md p-3 md:p-3.5 rounded-2xl shadow-2xl border-2 border-pink-200/80 text-slate-800">
-                    <!-- 🌟 變更 2：地點拿掉、日期前移、右上角所屬集合字體放大 -->
                     <div class="flex items-center justify-between gap-2 mb-1.5 border-b border-pink-100 pb-1">
                         <span id="storyBubbleDate" class="text-xs md:text-sm text-pink-600 font-bold font-rounded shrink-0 flex items-center gap-1">
                             📅 2026-02-27
@@ -466,6 +483,7 @@
         let timelineSortable = null;
         let folders = JSON.parse(localStorage.getItem('mapFolders')) || ['行程總覽', '美食口袋名單', '住宿備忘'];
         let isEditMode = false;
+        let isMobileListCollapsed = false;
 
         document.getElementById('gasUrlInput').value = gasUrl;
         document.getElementById('playbackDelayInput').value = playbackDelay;
@@ -482,6 +500,35 @@
             'calendar-days': '📅',
             'calendar-heart': '📅'
         };
+
+        /* 🌟 變更 1：手機版切換看全部照片與收起顯示地圖邏輯 */
+        function toggleMobileList(forceState = null) {
+            const listWrapper = document.getElementById('listContentWrapper');
+            const icon = document.getElementById('toggleListIcon');
+            const text = document.getElementById('toggleListText');
+            const sidebar = document.getElementById('sidebarPanel');
+
+            if (forceState !== null) {
+                isMobileListCollapsed = forceState;
+            } else {
+                isMobileListCollapsed = !isMobileListCollapsed;
+            }
+
+            if (isMobileListCollapsed) {
+                listWrapper.classList.add('hidden');
+                sidebar.classList.remove('max-h-[42dvh]');
+                sidebar.classList.add('max-h-none');
+                if (icon) icon.setAttribute('data-lucide', 'chevron-down');
+                if (text) text.innerText = '展開列表';
+            } else {
+                listWrapper.classList.remove('hidden');
+                sidebar.classList.add('max-h-[42dvh]');
+                if (icon) icon.setAttribute('data-lucide', 'chevron-up');
+                if (text) text.innerText = '收起列表';
+            }
+            lucide.createIcons();
+            setTimeout(() => map.invalidateSize(), 300);
+        }
 
         function toggleMobileControlPanel() {
             const panel = document.getElementById('collapsibleControlPanel');
@@ -564,7 +611,6 @@
             localStorage.setItem('playbackDelay', val);
         }
 
-        /* 🌟 變更 1：修復影片播放 (修復 Google Drive / YouTube iframe 嵌入) */
         function getVideoEmbedHtml(url) {
             if (!url) return '';
             url = url.trim();
@@ -1180,6 +1226,7 @@
             });
         }
 
+        /* 🌟 變更 2：切換至時間軸時自動開啟圖三放映舞台，並展開/顯示列表 */
         function switchSidebarTab(tabName) {
             const tabs = ['folders', 'timeline', 'gallery'];
             tabs.forEach(t => {
@@ -1201,6 +1248,7 @@
                 openStoryStage();
             } else {
                 closeStoryStage();
+                toggleMobileList(false); // 切換至集合或拍立得時預設為展開狀態
             }
 
             lucide.createIcons();
@@ -1598,7 +1646,7 @@
                 mediaContent.classList.add('animate-photo-fade');
             }
 
-            // 6. 🌟 變更 2：對話氣泡內容更新 (日期前移、集合放大，無地點)
+            // 6. 對話氣泡內容更新
             document.getElementById('storyBubbleDate').innerText = cleanDate ? `📅 ${cleanDate}` : '';
             document.getElementById('storyBubbleFolder').innerText = item.folder_name || '我們的旅程';
             document.getElementById('storyBubbleNotes').innerText = item.notes ? item.notes : '這一天也留下了甜甜的回憶～ (´∀`)';
@@ -1820,6 +1868,7 @@
             lucide.createIcons();
         }
 
+        /* 🌟 變更 1：點選項目後在手機自動收起選單，呈現滿版地圖 */
         function focusPlace(lat, lng, id) {
             const targetLat = parseFloat(lat);
             const targetLng = parseFloat(lng);
@@ -1836,6 +1885,12 @@
                 openStoryStage();
             } else if (!isNaN(targetLat) && !isNaN(targetLng)) {
                 closeStoryStage();
+                
+                // 在手機版選擇照片或集合後，自動收起清單以最大化地圖區域
+                if (window.innerWidth < 768) {
+                    toggleMobileList(true);
+                }
+
                 const locKey = getLocKey(targetLat, targetLng);
                 const marker = locKey ? markerInstances[locKey] : null;
 
