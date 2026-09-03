@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <!-- 解除 Google 圖片與雲端相片防盜鏈限制 -->
     <meta name="referrer" content="no-referrer">
     <title>質感生活同步互動地圖 - 回憶手帳版</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
@@ -19,15 +18,13 @@
 
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 
-    <!-- Google 字體：手寫風與俏皮圓體字型 -->
+    <!-- Google 字體 -->
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=M+PLUS+Rounded+1c:wght@500;700;800&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
 
     <style>
         body { font-family: 'Noto Sans TC', sans-serif; }
-        .font-handwriting { font-family: 'Caveat', cursive, 'Noto Sans TC', sans-serif; }
         .font-rounded { font-family: 'M PLUS Rounded 1c', 'Noto Sans TC', sans-serif; }
 
-        /* 全域按鈕按壓互動視覺優化 */
         button, .btn-interactive {
             touch-action: manipulation;
             transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1) !important;
@@ -40,7 +37,125 @@
             opacity: 0.85 !important;
         }
 
-        /* 彈跳對話氣泡動畫 */
+        /* 軟木相片牆背景 */
+        .corkboard-bg {
+            background-color: #cb9b51;
+            background-image: 
+                radial-gradient(rgba(120, 75, 30, 0.22) 15%, transparent 16%),
+                radial-gradient(rgba(90, 50, 15, 0.22) 15%, transparent 16%);
+            background-size: 16px 16px;
+            background-position: 0 0, 8px 8px;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.3);
+        }
+
+        /* 3D 翻轉卡片效果 */
+        .perspective-1000 { perspective: 1000px; }
+        .preserve-3d { transform-style: preserve-3d; }
+        .backface-hidden { 
+            backface-visibility: hidden !important; 
+            -webkit-backface-visibility: hidden !important; 
+        }
+        .flip-card-inner { 
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); 
+            transform-style: preserve-3d;
+        }
+        .flip-card-inner.is-flipped { transform: rotateY(180deg); }
+
+        /* 地圖標記粉色脈衝光暈動效 */
+        @keyframes pinkPulseGlow {
+            0% { transform: scale(1); filter: drop-shadow(0 0 2px rgba(244, 114, 182, 0.9)); }
+            50% { transform: scale(1.3); filter: drop-shadow(0 0 16px rgba(244, 114, 182, 1)); }
+            100% { transform: scale(1); filter: drop-shadow(0 0 2px rgba(244, 114, 182, 0.9)); }
+        }
+        .marker-pink-pulse {
+            animation: pinkPulseGlow 1.2s infinite ease-in-out !important;
+            z-index: 1000 !important;
+        }
+
+        /* 3D 擬真信封樣式 */
+        .envelope-top-flap {
+            clip-path: polygon(0 0, 100% 0, 50% 100%);
+            transform-origin: top center;
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), z-index 0.2s;
+            z-index: 25 !important;
+        }
+        .envelope-pocket-front {
+            clip-path: polygon(0 0, 50% 45%, 100% 0, 100% 100%, 0 100%);
+            z-index: 20 !important;
+        }
+
+        /* 信紙視覺 */
+        .vintage-letter-paper {
+            background-color: #fcf9f2 !important;
+            border: 1px solid #d4c5b2;
+            box-shadow: 0 8px 22px rgba(0, 0, 0, 0.25);
+            position: relative;
+            opacity: 1 !important;
+        }
+
+        .letter-kraft-paper {
+            background-color: #e2ceb1 !important;
+            border: 1px solid #bd9c71;
+            box-shadow: 0 8px 22px rgba(0, 0, 0, 0.28);
+            opacity: 1 !important;
+        }
+
+        .letter-locked-paper {
+            background-color: #eee7dc !important;
+            border: 1px solid #c7bba8;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+            opacity: 1 !important;
+        }
+
+        .letter-lace-border {
+            border: 2px dashed #b89b72;
+            border-radius: 8px;
+            padding: 8px;
+        }
+
+        .letter-dashed-lines {
+            background-image: linear-gradient(to bottom, transparent 23px, #c3a886 24px, transparent 25px);
+            background-size: 100% 25px;
+        }
+
+        /* 紙張三階段動態 */
+        .paper-card {
+            pointer-events: none;
+            transition: transform 0.45s cubic-bezier(0.34, 1.45, 0.64, 1), box-shadow 0.3s ease;
+            transform-origin: bottom center;
+            z-index: 5 !important;
+        }
+
+        .envelope-flap-open .envelope-top-flap {
+            transform: rotateX(180deg);
+            z-index: 1 !important;
+        }
+
+        .envelope-papers-out .paper-card {
+            pointer-events: auto;
+            z-index: 30 !important;
+        }
+        
+        .envelope-papers-out .paper-1 { transform: translateY(-125px) rotate(6deg) translateX(42px) scale(0.98); }
+        .envelope-papers-out .paper-2 { transform: translateY(-110px) rotate(-2deg) translateX(-15px) scale(0.98); }
+        .envelope-papers-out .paper-3 { transform: translateY(-90px) rotate(-12deg) translateX(-75px) scale(0.94); }
+
+        .envelope-papers-out .paper-1.active-paper {
+            transform: translateY(-160px) rotate(6deg) translateX(42px) scale(1.03) !important;
+            z-index: 60 !important;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4) !important;
+        }
+        .envelope-papers-out .paper-2.active-paper {
+            transform: translateY(-145px) rotate(-2deg) translateX(-15px) scale(1.03) !important;
+            z-index: 60 !important;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4) !important;
+        }
+        .envelope-papers-out .paper-3.active-paper {
+            transform: translateY(-125px) rotate(-12deg) translateX(-75px) scale(0.98) !important;
+            z-index: 60 !important;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4) !important;
+        }
+
         @keyframes bubblePop {
             0% { transform: scale(0.85) translateY(8px); opacity: 0; }
             70% { transform: scale(1.02) translateY(-2px); opacity: 1; }
@@ -50,7 +165,6 @@
             animation: bubblePop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
         }
 
-        /* 切換動效 1：同地點相片切換 (IG Story 快速淡入) */
         @keyframes photoFade {
             0% { opacity: 0.3; transform: scale(0.985); }
             100% { opacity: 1; transform: scale(1); }
@@ -59,7 +173,6 @@
             animation: photoFade 0.22s cubic-bezier(0.25, 1, 0.5, 1) forwards;
         }
 
-        /* 切換動效 2：跨地點景點切換 (卡片滑移+縮放) */
         @keyframes locationShift {
             0% { opacity: 0; transform: translateX(35px) scale(0.96); }
             100% { opacity: 1; transform: translateX(0) scale(1); }
@@ -68,7 +181,6 @@
             animation: locationShift 0.38s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
 
-        /* 心脈躍動微幅跳躍動畫 (Micro-Jump Heartbeat) */
         @keyframes heartbeat {
             0% { transform: translate(-50%, -50%) scale(1); }
             30% { transform: translate(-50%, -50%) scale(1.35); }
@@ -80,46 +192,28 @@
             animation: heartbeat 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
 
-        /* 時間軸焦點大光點平滑移動動畫 */
         #timelineActiveCursor {
             transition: left 0.38s cubic-bezier(0.34, 1.56, 0.64, 1), transform 0.38s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
 
-        /* Leaflet 地圖彈出對話視窗尺寸 */
         .leaflet-popup {
-            min-width: 320px !important;
+            min-width: 290px !important;
             max-width: 90vw !important;
         }
         .leaflet-popup-content-wrapper {
-            background: #fdfbf7 !important;
-            color: #334155 !important;
-            border: 1px solid #e2e8f0 !important;
-            border-radius: 0.85rem !important;
-            padding: 0.2rem !important;
-            box-shadow: 0 12px 28px -5px rgba(0, 0, 0, 0.18) !important;
-            max-height: 80dvh !important;
-            overflow-y: auto !important;
+            background: transparent !important;
+            padding: 0 !important;
+            box-shadow: none !important;
+            border: none !important;
         }
         .leaflet-popup-content {
             width: auto !important;
-            min-width: 290px !important;
-            margin: 12px !important;
+            margin: 0 !important;
         }
 
         .popup-notes {
             white-space: pre-wrap;
             word-break: break-all;
-        }
-
-        .popup-img-container {
-            height: auto !important;
-            max-height: 320px !important;
-            background-color: #f1f5f9 !important;
-        }
-        .popup-img-container img {
-            object-fit: contain !important;
-            height: auto !important;
-            max-height: 310px !important;
         }
 
         .leaflet-control-geocoder {
@@ -129,11 +223,60 @@
             background-color: #fdfbf7 !important;
         }
 
+        /* 📸 拍立得卡片 (保留上方空間) */
         .polaroid-card {
             background: #fff;
-            padding: 8px 8px 12px 8px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+            padding: 14px 6px 12px 6px;
+            box-shadow: 0 6px 14px rgba(0,0,0,0.18);
             transition: all 0.2s ease;
+        }
+
+        /* 左上角黃色便條紙：左側加長留白空間給圖釘，絕不擋到日期 */
+        .date-note-paper-pinned {
+            background: #fef08a;
+            color: #854d0e;
+            font-family: 'M PLUS Rounded 1c', sans-serif;
+            font-weight: 700;
+            font-size: 11px;
+            padding: 2px 7px 2px 18px;
+            border-radius: 2px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            border: 1px solid #fef9c3;
+        }
+
+        /* 擬真照片捲曲折角 */
+        .real-curl-fold {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 32px;
+            height: 32px;
+            cursor: pointer;
+            z-index: 50;
+            overflow: hidden;
+            transition: all 0.2s ease;
+        }
+        .real-curl-fold::before {
+            content: '';
+            position: absolute;
+            top: 0; right: 0;
+            width: 0; height: 0;
+            border-style: solid;
+            border-width: 0 0 32px 32px;
+            border-color: transparent transparent #d1d5db transparent;
+            filter: drop-shadow(-2px -2px 3px rgba(0,0,0,0.3));
+        }
+        .real-curl-fold::after {
+            content: '↗';
+            position: absolute;
+            bottom: 3px;
+            right: 3px;
+            font-size: 11px;
+            color: #374151;
+            font-weight: bold;
+            transform: rotate(-10deg);
+            z-index: 60;
+            pointer-events: none;
         }
 
         .timeline-item.active-timeline-item {
@@ -146,12 +289,87 @@
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body class="bg-[#f4ebe1] text-slate-700 h-[100dvh] w-screen flex flex-col md:flex-row font-sans relative overflow-hidden">
+<body class="bg-[#2b1c14] text-slate-700 h-[100dvh] w-screen flex flex-col md:flex-row font-sans relative overflow-hidden">
 
-    <!-- 側邊欄區域 (手機版極簡極致美化 + 支援全頁地圖收折) -->
-    <div id="sidebarPanel" class="w-full md:w-80 bg-[#ede0d4] p-3 md:p-4 flex flex-col border-b md:border-b-0 md:border-r border-[#ddc8b4] shrink-0 z-[1000] shadow-md transition-all duration-300 max-h-[42dvh] md:max-h-none md:h-full">
-        
-        <!-- 標題與分頁切換按鈕 -->
+    <!-- 全局右下角半透明齒輪控制選單 -->
+    <div class="fixed bottom-4 right-4 z-[2500] flex flex-col items-end gap-2 pointer-events-auto">
+        <div id="floatingSettingsMenu" class="hidden bg-[#2b1c14]/90 backdrop-blur-md p-3 rounded-2xl border border-white/20 text-white shadow-2xl w-72 mb-1 space-y-2.5">
+            <div onclick="promptForEditMode()" class="text-xs font-bold text-amber-200/90 border-b border-white/10 pb-1.5 flex items-center justify-between cursor-pointer select-none">
+                <span class="flex items-center gap-1"><i data-lucide="settings-2" class="w-3.5 h-3.5"></i> 系統設定</span>
+                <button onclick="event.stopPropagation(); toggleSettingsMenu()" class="text-slate-400 hover:text-white p-0.5"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+            
+            <button id="btnToggleAuthFloating" onclick="toggleAuthMode()" class="hidden w-full text-xs bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-xl font-bold transition shadow-sm flex items-center justify-center gap-1.5">
+                <i id="authIconFloating" data-lucide="lock" class="w-4 h-4"></i>
+                <span id="authTextFloating">退出編輯模式</span>
+            </button>
+            
+            <div class="bg-black/30 p-2 rounded-xl border border-white/10 space-y-1">
+                <label class="text-[10px] text-slate-300 block font-medium">Google GAS 雲端網址</label>
+                <div class="flex gap-1">
+                    <input type="text" id="gasUrlInput" class="w-full text-xs p-1.5 rounded-lg bg-white/10 border border-white/20 text-white placeholder-slate-400 focus:outline-none focus:border-amber-400" placeholder="請貼上 GAS Web App 網址">
+                    <button onclick="saveGasConfig()" class="text-xs bg-amber-600 hover:bg-amber-700 text-white px-2.5 py-1.5 rounded-lg font-medium whitespace-nowrap shadow-xs">連線</button>
+                </div>
+            </div>
+        </div>
+
+        <button onclick="toggleSettingsMenu()" class="w-10 h-10 bg-black/40 hover:bg-black/70 backdrop-blur-md border border-white/30 text-white rounded-full flex items-center justify-center shadow-2xl opacity-60 hover:opacity-100 transition-all active:scale-90 btn-interactive">
+            <i data-lucide="settings" class="w-5 h-5"></i>
+        </button>
+    </div>
+
+    <!-- 觀看模式封面：3D 信封主舞台 -->
+    <div id="viewCoverStage" class="fixed inset-0 z-[2000] bg-[#1a0f0a]/90 backdrop-blur-md flex items-center justify-center p-4 transition-all duration-500 perspective-1000">
+        <div id="envelopeContainer" class="relative w-full max-w-md h-[290px] preserve-3d cursor-pointer group" onclick="toggle3DEnvelope()">
+            <div class="absolute inset-0 bg-[#e6ccb2] rounded-2xl shadow-2xl border border-[#ddc8b4] z-[1]"></div>
+
+            <div id="papersStack" class="absolute inset-x-10 bottom-2 z-[5] h-[260px] flex items-end justify-center">
+                <div onclick="event.stopPropagation(); handlePaperClick('locked', 3)" class="paper-card paper-3 absolute w-[200px] h-[250px] letter-locked-paper rounded-xl p-2.5 cursor-not-allowed flex flex-col justify-start select-none">
+                    <div class="w-full h-full border-2 border-dashed border-[#bdae99] rounded-lg p-2 flex flex-col items-center bg-[#eee7dc]">
+                        <div class="text-xl mb-1 text-slate-500">🔒</div>
+                        <div class="font-bold text-slate-600 text-xs text-center border-b border-slate-300 pb-1 w-full">神秘未公開</div>
+                        <div class="text-[10px] text-slate-400 mt-2 text-center">寫作中，敬請期待...</div>
+                        <div class="w-full flex-1 letter-dashed-lines mt-3 opacity-30"></div>
+                    </div>
+                </div>
+
+                <div onclick="event.stopPropagation(); handlePaperClick('gallery', 2)" class="paper-card paper-2 absolute w-[205px] h-[250px] letter-kraft-paper rounded-xl p-2.5 cursor-pointer flex flex-col justify-start select-none">
+                    <div class="w-full h-full border-2 border-dashed border-[#8c6b41] rounded-lg p-2 flex flex-col items-center bg-[#e2ceb1]">
+                        <div class="text-xl mb-1">📸</div>
+                        <div class="font-bold text-[#573d1e] text-xs text-center border-b border-[#a3835a] pb-1 w-full tracking-wider">拍立得與地圖</div>
+                        <div class="text-[10px] text-[#70522c] tracking-tight font-medium mt-2 text-center">相片牆記憶與足跡探索</div>
+                        <div class="w-full flex-1 letter-dashed-lines mt-3 opacity-60"></div>
+                        <div class="text-[8px] text-[#70522c] font-serif self-center mt-auto">Delife Paper</div>
+                    </div>
+                </div>
+
+                <div onclick="event.stopPropagation(); handlePaperClick('timeline', 1)" class="paper-card paper-1 absolute w-[205px] h-[250px] vintage-letter-paper rounded-xl p-2.5 cursor-pointer flex flex-col justify-start select-none">
+                    <div class="w-full h-full letter-lace-border flex flex-col items-center bg-[#fcf9f2]">
+                        <div class="text-xl mb-1 text-[#8c6d46]">🐇</div>
+                        <div class="font-bold text-[#6b4c27] text-xs text-center border-b border-[#c8b396] pb-1 w-full tracking-wider">故事放映室</div>
+                        <div class="text-[10px] text-[#a0825c] tracking-tight font-mono mt-2 text-center">我們的故事 ~~~~~~~~~~~~~~~~~~</div>
+                        <div class="w-full flex-1 letter-dashed-lines mt-3 opacity-60"></div>
+                        <div class="text-[8px] text-[#a0825c] font-serif self-center mt-auto">Delife Paper</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="absolute inset-0 bg-[#f5ebe0] envelope-pocket-front rounded-b-2xl shadow-lg border-t border-[#ddc8b4] pointer-events-none flex items-end justify-center pb-3">
+                <span id="envelopeHint" class="text-xs font-bold text-[#9c6644] bg-white/90 px-3.5 py-1.5 rounded-full shadow-xs border border-rose-200/80 animate-bounce">
+                    🌹 點擊撕開玫瑰信封
+                </span>
+            </div>
+
+            <div class="absolute inset-x-0 top-0 h-40 bg-[#ddc8b4] envelope-top-flap shadow-md flex items-center justify-center pointer-events-none">
+                <div class="w-10 h-10 rounded-full bg-rose-700 border-2 border-rose-300 shadow-md flex items-center justify-center text-lg text-white mb-8">
+                    🌹
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 側邊欄區域 -->
+    <div id="sidebarPanel" class="w-full md:w-80 bg-[#ede0d4] p-2.5 md:p-4 flex flex-col border-b md:border-b-0 md:border-r border-[#ddc8b4] shrink-0 z-[1000] shadow-md transition-all duration-300 max-h-[38dvh] md:max-h-none md:h-full">
         <div class="shrink-0 mb-1.5">
             <div class="flex justify-between items-center mb-1">
                 <h1 class="text-base md:text-xl font-bold flex items-center gap-1.5 text-[#7f5539]">
@@ -159,108 +377,57 @@
                 </h1>
                 
                 <div class="flex items-center gap-1">
-                    <!-- 🌟 變更 1：手機版展開/收起清單開關 -->
                     <button id="btnToggleList" onclick="toggleMobileList()" class="md:hidden text-[11px] bg-[#f5ebe0] text-[#7f5539] px-2 py-1 rounded-lg border border-[#ddc8b4] flex items-center gap-1 font-bold active:scale-95 transition shadow-2xs">
                         <i id="toggleListIcon" data-lucide="chevron-up" class="w-3.5 h-3.5"></i>
                         <span id="toggleListText">收起列表</span>
                     </button>
-                    
-                    <!-- 手機版工具收納按鈕 -->
-                    <button onclick="toggleMobileControlPanel()" class="md:hidden text-xs bg-[#f5ebe0] text-[#7f5539] p-1 rounded-lg border border-[#ddc8b4] flex items-center gap-1 font-medium active:scale-95 transition">
-                        <i data-lucide="settings-2" class="w-3.5 h-3.5"></i>
-                    </button>
                 </div>
             </div>
             
-            <!-- 3 大主要分頁按鈕 -->
-            <div class="grid grid-cols-3 gap-1 bg-[#dfd0c0] p-1 rounded-xl text-xs font-bold text-[#7f5539] shadow-inner">
+            <div id="sidebarTabsContainer" class="hidden grid grid-cols-3 gap-1 bg-[#dfd0c0] p-1 rounded-xl text-xs font-bold text-[#7f5539] shadow-inner">
                 <button id="tabFolders" onclick="switchSidebarTab('folders')" class="py-1 rounded-lg bg-[#fdfbf7] shadow-xs text-center transition hover:bg-white">集合</button>
                 <button id="tabTimeline" onclick="switchSidebarTab('timeline')" class="py-1 rounded-lg hover:bg-[#fdfbf7]/60 text-center transition">時間軸</button>
                 <button id="tabGallery" onclick="switchSidebarTab('gallery')" class="py-1 rounded-lg hover:bg-[#fdfbf7]/60 text-center transition">拍立得</button>
             </div>
         </div>
 
-        <!-- 可收折控制選單 -->
-        <div id="collapsibleControlPanel" class="hidden md:block shrink-0 space-y-2 mb-2">
-            <div class="bg-[#f5ebe0]/80 p-2 rounded-lg border border-[#ddc8b4]">
-                <label class="text-[10px] text-slate-500 block font-medium mb-1">Google GAS 雲端網址</label>
-                <div class="flex gap-1">
-                    <input type="text" id="gasUrlInput" class="w-full text-xs p-1.5 rounded bg-white border border-[#ddc8b4] text-slate-700 focus:outline-none focus:border-[#7f5539]" placeholder="請貼上 GAS Web App 網址">
-                    <button id="btnConnectCloud" onclick="saveGasConfig()" class="text-xs bg-[#7f5539] hover:bg-[#9c6644] text-white px-2.5 py-1.5 rounded-md font-medium whitespace-nowrap shadow-xs">連線</button>
-                </div>
-            </div>
-
-            <div id="timelineControlsArea" class="hidden flex flex-col gap-1 p-2 bg-[#f5ebe0]/90 rounded-lg border border-[#ddc8b4]">
-                <div class="flex justify-between items-center gap-1">
-                    <span class="text-xs font-semibold text-[#7f5539]">🎬 回憶故事放映</span>
-                    <div class="flex items-center gap-1">
-                        <button id="btnPrevTimeline" onclick="prevTimelinePhoto()" class="text-xs bg-white text-[#7f5539] border border-[#ddc8b4] px-1.5 py-0.5 rounded hover:bg-[#f5ebe0]"><i data-lucide="skip-back" class="w-3 h-3"></i></button>
-                        <button id="btnPlayTimeline" onclick="toggleTimelinePlayback()" class="text-xs bg-[#7f5539] text-white px-2 py-0.5 rounded hover:bg-[#9c6644]">播放</button>
-                        <button id="btnNextTimeline" onclick="nextTimelinePhoto()" class="text-xs bg-white text-[#7f5539] border border-[#ddc8b4] px-1.5 py-0.5 rounded hover:bg-[#f5ebe0]"><i data-lucide="skip-forward" class="w-3 h-3"></i></button>
-                    </div>
-                </div>
-                <div class="flex items-center justify-between text-[10px] text-slate-600 mt-1">
-                    <span>停留秒數:</span>
-                    <input type="number" id="playbackDelayInput" min="1" max="10" step="0.5" value="3.5" onchange="savePlaybackDelay()" class="w-10 text-center p-0.5 rounded border border-[#ddc8b4] bg-white text-xs">
-                </div>
-            </div>
-
-            <button id="btnToggleAuth" onclick="toggleAuthMode()" class="w-full text-xs bg-[#7f5539] hover:bg-[#9c6644] text-white py-1.5 rounded-md font-medium transition shadow-sm flex items-center justify-center gap-1.5">
-                <i id="authIcon" data-lucide="eye" class="w-3.5 h-3.5"></i>
-                <span id="authText">觀看模式</span>
-            </button>
-        </div>
-
-        <!-- 可動態收折的清單內容區塊容器 -->
         <div id="listContentWrapper" class="flex-1 flex flex-col min-h-0 overflow-hidden">
-            <!-- 內容切換區域 1: 我的景點集合 -->
             <div id="viewFolders" class="flex-1 overflow-y-auto min-h-0 space-y-2 pr-1 mb-1">
-                <div class="flex justify-between items-center">
-                    <h2 class="text-xs font-bold text-[#7f5539] uppercase tracking-wider">景點集合</h2>
-                    <button id="btnCreateFolder" onclick="createNewFolder()" class="text-xs text-[#9c6644] flex items-center gap-1 hover:underline font-bold disabled:opacity-30 disabled:no-underline disabled:cursor-not-allowed">
+                <div id="editFolderHeader" class="hidden flex justify-between items-center bg-emerald-100/80 p-1.5 rounded-lg border border-emerald-200 mb-1">
+                    <span class="text-xs font-bold text-emerald-800 flex items-center gap-1">✏️ 編輯模式控制</span>
+                    <button id="btnCreateFolder" onclick="createNewFolder()" class="text-xs bg-emerald-600 hover:bg-emerald-700 text-white px-2 py-0.5 rounded font-bold transition flex items-center gap-1 shadow-2xs">
                         <i data-lucide="folder-plus" class="w-3.5 h-3.5"></i>新增集合
                     </button>
                 </div>
                 <div id="folderContainer" class="space-y-2"></div>
             </div>
 
-            <!-- 🌟 變更 2：手機版時間軸選單完全不預留，全部呈現於放映室 (圖三風格) -->
             <div id="viewTimeline" class="hidden flex-1 flex flex-col min-h-0 mb-1">
-                <div id="timelineContainer" class="hidden md:block flex-1 overflow-y-auto min-h-0 space-y-2 pr-1 no-scrollbar relative">
-                    <!-- 桌機版時間軸備用 -->
-                </div>
+                <div id="timelineContainer" class="hidden md:block flex-1 overflow-y-auto min-h-0 space-y-2 pr-1 no-scrollbar relative"></div>
             </div>
 
-            <!-- 內容切換區域 3: 拍立得相片牆 -->
-            <div id="viewGallery" class="hidden flex-1 overflow-y-auto min-h-0 space-y-2 pr-1 mb-1">
-                <div id="galleryContainer" class="space-y-2"></div>
+            <!-- 📌 軟木相片牆區域 -->
+            <div id="viewGallery" class="hidden flex-1 overflow-y-auto min-h-0 mb-1 corkboard-bg p-2 pt-8 rounded-xl shadow-inner border border-[#a67c52]">
+                <div id="galleryContainer" class="space-y-2 pt-2"></div>
             </div>
         </div>
     </div>
 
-    <!-- 主展示舞台 (地圖與星塵脈衝時間軸放映室) -->
-    <div class="flex-1 h-full relative overflow-hidden bg-slate-900">
-        <!-- 1. Leaflet 地圖容器 -->
+    <!-- 主展示舞台 -->
+    <div id="mainStageArea" class="flex-1 h-full relative overflow-hidden bg-slate-900">
+        <button id="btnReturnToEnvelope" onclick="returnToEnvelope()" class="hidden absolute top-3 left-3 z-[3000] bg-white/90 backdrop-blur-md text-[#7f5539] border border-rose-200 px-3 py-1.5 rounded-full font-bold text-xs shadow-lg hover:bg-rose-50 flex items-center gap-1.5 btn-interactive">
+            <span>💌</span> 重選信封紙張
+        </button>
+
         <div id="map" class="w-full h-full z-[1]"></div>
 
-        <!-- 2. 故事放映舞台：採用 IG Story 沉浸放映模式 (圖三樣式) -->
-        <div id="storyStage" class="hidden absolute inset-0 z-[500] bg-slate-950 flex flex-col justify-between items-center p-3 md:p-4 select-none overflow-hidden">
-            <!-- 毛玻璃背景模糊底圖 -->
+        <!-- 故事放映室舞台 -->
+        <div id="storyStage" class="hidden absolute inset-0 z-[500] bg-slate-950 flex flex-col justify-between items-center p-2.5 md:p-4 select-none overflow-hidden">
             <div id="storyBgBlur" class="absolute inset-0 bg-cover bg-center blur-2xl opacity-40 scale-110 transition-all duration-700 pointer-events-none"></div>
             <div class="absolute inset-0 bg-gradient-to-b from-black/80 via-transparent to-black/90 pointer-events-none"></div>
 
-            <!-- 🌟 變更 2：時間軸放映室頂部快捷分頁切換列 (手機版無縫切換) -->
-            <div class="w-full max-w-xl md:max-w-2xl z-50 shrink-0 mb-1 flex justify-center md:hidden">
-                <div class="grid grid-cols-3 gap-1 bg-slate-900/90 backdrop-blur-md p-1 rounded-xl text-xs font-bold text-slate-300 border border-white/10 shadow-lg w-full max-w-xs">
-                    <button onclick="switchSidebarTab('folders')" class="py-1 rounded-lg hover:bg-white/10 text-center transition">集合</button>
-                    <button onclick="switchSidebarTab('timeline')" class="py-1 rounded-lg bg-pink-500 text-white shadow-xs text-center transition">時間軸</button>
-                    <button onclick="switchSidebarTab('gallery')" class="py-1 rounded-lg hover:bg-white/10 text-center transition">拍立得</button>
-                </div>
-            </div>
-
-            <!-- 區塊一：頂部極簡時間軌道 -->
-            <div class="w-full max-w-xl md:max-w-2xl z-40 shrink-0 mb-2">
-                <div id="storyOverviewTrack" class="relative w-full pt-3 pb-5 px-5 bg-slate-950/85 backdrop-blur-md rounded-2xl border border-white/10 text-white shadow-2xl flex flex-col justify-center select-none">
+            <div class="w-full max-w-xl md:max-w-3xl z-40 shrink-0 mb-1 md:mb-2 mt-8 md:mt-0">
+                <div id="storyOverviewTrack" class="relative w-full pt-2.5 pb-4 px-4 bg-slate-950/85 backdrop-blur-md rounded-2xl border border-white/10 text-white shadow-2xl flex flex-col justify-center select-none">
                     <div class="relative w-full h-[2px] bg-white/20 rounded-full my-2 flex items-center">
                         <div id="timelineMonthTicks" class="absolute inset-0 pointer-events-none"></div>
                         <div id="timelineDateNodes" class="absolute inset-0 pointer-events-auto"></div>
@@ -271,88 +438,80 @@
                 </div>
             </div>
 
-            <!-- 區塊二：中央主體內容區 (標題 + 標題後面的半透明指示點點 + IG Story 展演舞台) -->
-            <div class="relative z-30 w-full max-w-xl md:max-w-2xl flex-1 min-h-0 flex flex-col items-start my-1 overflow-hidden">
-                <!-- 標題與小圓點排版 -->
+            <div class="relative z-30 w-full max-w-xl md:max-w-3xl flex-1 min-h-0 flex flex-col items-start my-1 overflow-hidden">
                 <div class="flex items-center gap-2 mb-2 drop-shadow-md shrink-0 w-full overflow-hidden">
-                    <div class="w-7 h-7 md:w-8 md:h-8 rounded-full bg-gradient-to-tr from-amber-400 via-pink-500 to-rose-500 p-0.5 shadow-md flex items-center justify-center shrink-0">
-                        <div id="storyHeaderIcon" class="w-full h-full bg-slate-900 rounded-full flex items-center justify-center text-xs">💖</div>
+                    <div class="w-6 h-6 md:w-8 md:h-8 rounded-full bg-gradient-to-tr from-amber-400 via-pink-500 to-rose-500 p-0.5 shadow-md flex items-center justify-center shrink-0">
+                        <div id="storyHeaderIcon" class="w-full h-full bg-slate-900 rounded-full flex items-center justify-center text-[10px] md:text-xs">💖</div>
                     </div>
+                    <div id="storyHeaderTitle" class="flex items-center gap-1.5 md:gap-2.5 overflow-hidden flex-1"></div>
                     
-                    <div id="storyHeaderTitle" class="flex items-center gap-2 overflow-hidden flex-1">
-                        <!-- 主旨與地點 -->
-                    </div>
-
-                    <!-- 半透明小圓點 (放在標題後面) -->
-                    <div id="storyHeaderDots" class="flex items-center gap-1 shrink-0 ml-auto bg-black/30 backdrop-blur-md px-2 py-1 rounded-full border border-white/10">
+                    <div class="flex items-center gap-1.5 shrink-0 ml-auto">
+                        <span id="storyHeaderFolder" class="text-xs md:text-sm bg-pink-500/80 text-white px-2.5 py-0.5 rounded-full font-bold border border-pink-300/40 shadow-xs backdrop-blur-md">我們的旅程</span>
+                        <div id="storyHeaderDots" class="flex items-center gap-1 shrink-0 bg-black/30 backdrop-blur-md px-2 py-1 rounded-full border border-white/10"></div>
                     </div>
                 </div>
 
-                <!-- IG Story 模式容器 (帶有兩側點擊切換感應區) -->
                 <div id="storyMediaBox" class="w-full flex-1 min-h-0 flex flex-col items-center justify-center relative rounded-2xl overflow-hidden shadow-2xl border border-white/15 bg-slate-950/80 backdrop-blur-xs select-none">
-                    
-                    <!-- 點擊切換感應區 (僅兩側 20%，中央留給影片播放) -->
                     <div onclick="prevTimelinePhoto()" class="absolute inset-y-0 left-0 w-1/5 z-30 cursor-pointer flex items-center justify-start pl-2 opacity-0 hover:opacity-100 transition"><span class="bg-black/50 text-white rounded-full p-1.5 shadow-md"><i data-lucide="chevron-left" class="w-5 h-5"></i></span></div>
                     <div onclick="nextTimelinePhoto()" class="absolute inset-y-0 right-0 w-1/5 z-30 cursor-pointer flex items-center justify-end pr-2 opacity-0 hover:opacity-100 transition"><span class="bg-black/50 text-white rounded-full p-1.5 shadow-md"><i data-lucide="chevron-right" class="w-5 h-5"></i></span></div>
+                    
+                    <div id="storyMediaContent" class="w-full h-full flex items-center justify-center overflow-hidden p-1"></div>
 
-                    <!-- 照片/影片內容顯示區域 -->
-                    <div id="storyMediaContent" class="w-full h-full flex items-center justify-center overflow-hidden p-1">
-                    </div>
-                </div>
-            </div>
+                    <!-- 故事放映室氣泡對話框 -->
+                    <div id="storyBubble" class="absolute top-4 right-4 z-40 p-5 md:p-6 text-slate-800 cursor-move select-none max-w-[210px] md:max-w-[280px] animate-bubble-pop filter drop-shadow-xl">
+                        <svg class="absolute inset-0 w-full h-full -z-10 overflow-visible" viewBox="0 0 200 150" preserveAspectRatio="none">
+                            <path d="M 25,15 A 28,22 0 0,1 75,10 A 28,22 0 0,1 125,10 A 28,22 0 0,1 175,15 A 22,25 0 0,1 192,50 A 22,25 0 0,1 192,100 A 22,25 0 0,1 175,135 A 28,22 0 0,1 125,142 A 28,22 0 0,1 75,142 A 28,22 0 0,1 25,135 A 22,25 0 0,1 8,100 A 22,25 0 0,1 8,50 A 22,25 0 0,1 25,15 Z" 
+                                  fill="rgba(255, 255, 255, 0.96)" 
+                                  stroke="#f472b6" 
+                                  stroke-width="3.5" 
+                                  stroke-linejoin="round"
+                                  vector-effect="non-scaling-stroke"/>
+                        </svg>
 
-            <!-- 區塊三：下方筆記手帳對話氣泡 -->
-            <div class="w-full max-w-xl md:max-w-2xl z-30 shrink-0 mt-2 pointer-events-auto">
-                <div id="storyBubble" class="animate-bubble-pop bg-white/95 backdrop-blur-md p-3 md:p-3.5 rounded-2xl shadow-2xl border-2 border-pink-200/80 text-slate-800">
-                    <div class="flex items-center justify-between gap-2 mb-1.5 border-b border-pink-100 pb-1">
-                        <span id="storyBubbleDate" class="text-xs md:text-sm text-pink-600 font-bold font-rounded shrink-0 flex items-center gap-1">
-                            📅 2026-02-27
-                        </span>
-                        <span id="storyBubbleFolder" class="text-xs md:text-sm bg-pink-50 text-pink-600 px-2.5 py-0.5 rounded-full font-bold border border-pink-200 shrink-0">
-                            我們的旅程
-                        </span>
-                    </div>
-                    <div id="storyBubbleNotes" class="text-xs md:text-sm text-slate-700 leading-relaxed font-rounded popup-notes max-h-20 overflow-y-auto pr-1">
-                        這裡會顯示滿滿的俏皮筆記跟顏文字喔！(*´∀`)~♥
+                        <div id="storyBubbleNotes" class="text-[10px] md:text-xs text-slate-700 leading-relaxed font-rounded popup-notes max-h-28 md:max-h-36 overflow-y-auto pr-1">
+                            這裡會顯示滿滿的筆記與回憶喔！(*´∀`)~♥
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 景點編輯與新增面板 -->
-    <div id="editPanel" class="hidden w-full md:w-80 bg-[#fdfbf7] p-4 border-t md:border-t-0 md:border-l border-[#ddc8b4] md:h-full flex flex-col z-[1000] shadow-xl">
-        <div class="flex justify-between items-center mb-3">
-            <h3 id="panelTitle" class="font-bold text-base md:text-lg text-[#7f5539]">編輯手帳細節</h3>
+    <!-- 專屬獨立編輯面板 -->
+    <div id="editPanel" class="hidden w-full md:w-80 bg-[#f4f7f4] p-4 border-t md:border-t-0 md:border-l border-emerald-300 md:h-full flex flex-col z-[1000] shadow-2xl">
+        <div class="flex justify-between items-center mb-3 pb-2 border-b border-emerald-200">
+            <h3 id="panelTitle" class="font-bold text-base md:text-lg text-emerald-900 flex items-center gap-1.5">
+                <i data-lucide="edit" class="w-4 h-4 text-emerald-600"></i> 編輯手帳細節
+            </h3>
             <button onclick="closePanel()" class="text-slate-400 hover:text-slate-600 p-1"><i data-lucide="x"></i></button>
         </div>
         
         <div class="space-y-3 flex-1 overflow-y-auto text-sm text-slate-600 pr-1">
             <div>
-                <label class="block text-xs font-medium text-slate-500 mb-1">主旨</label>
-                <input type="text" id="placeTitle" class="w-full p-2 rounded-md bg-white border border-slate-200 text-slate-800 focus:outline-none focus:border-[#7f5539]" placeholder="例如：卡地亞 part1!!">
+                <label class="block text-xs font-medium text-slate-600 mb-1">主旨</label>
+                <input type="text" id="placeTitle" class="w-full p-2 rounded-md bg-white border border-emerald-200 text-slate-800 focus:outline-none focus:border-emerald-600" placeholder="例如：第一次牽手！">
             </div>
 
             <div>
-                <label class="block text-xs font-medium text-slate-500 mb-1">地點名稱</label>
-                <input type="text" id="placeLocation" class="w-full p-2 rounded-md bg-white border border-slate-200 text-slate-800 focus:outline-none focus:border-[#7f5539]" placeholder="例如：卡地亞 / 月津港">
+                <label class="block text-xs font-medium text-slate-600 mb-1">地點名稱</label>
+                <input type="text" id="placeLocation" class="w-full p-2 rounded-md bg-white border border-emerald-200 text-slate-800 focus:outline-none focus:border-emerald-600" placeholder="例如：台南水仙宮市場">
             </div>
             
             <div>
-                <label class="block text-xs font-medium text-[#7f5539] font-bold mb-1 flex items-center gap-1">
+                <label class="block text-xs font-medium text-emerald-800 font-bold mb-1 flex items-center gap-1">
                     <i data-lucide="calendar-heart" class="w-3.5 h-3.5 text-pink-500"></i> 紀念/踩點日期
                 </label>
-                <input type="date" id="placeDate" class="w-full p-2 rounded-md bg-white border border-slate-200 text-slate-800 focus:outline-none focus:border-[#7f5539]">
+                <input type="date" id="placeDate" class="w-full p-2 rounded-md bg-white border border-emerald-200 text-slate-800 focus:outline-none focus:border-emerald-600">
             </div>
 
             <div>
-                <label class="block text-xs font-medium text-slate-500 mb-1">所屬集合</label>
-                <select id="placeFolder" class="w-full p-2 rounded-md bg-white border border-slate-200 text-slate-800 focus:outline-none focus:border-[#7f5539]"></select>
+                <label class="block text-xs font-medium text-slate-600 mb-1">所屬集合</label>
+                <select id="placeFolder" class="w-full p-2 rounded-md bg-white border border-emerald-200 text-slate-800 focus:outline-none focus:border-emerald-600"></select>
             </div>
             <div class="grid grid-cols-2 gap-2">
                 <div>
-                    <label class="block text-xs font-medium text-slate-500 mb-1">標記顏色</label>
-                    <select id="placeColor" class="w-full p-2 rounded-md bg-white border border-slate-200 text-slate-800">
+                    <label class="block text-xs font-medium text-slate-600 mb-1">標記顏色</label>
+                    <select id="placeColor" class="w-full p-2 rounded-md bg-white border border-emerald-200 text-slate-800">
                         <option value="red">🔴 紅色</option>
                         <option value="blue">🔵 藍色</option>
                         <option value="green">🟢 綠色</option>
@@ -361,8 +520,8 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block text-xs font-medium text-slate-500 mb-1">標記圖標</label>
-                    <select id="placeIcon" class="w-full p-2 rounded-md bg-white border border-slate-200 text-slate-800">
+                    <label class="block text-xs font-medium text-slate-600 mb-1">標記圖標</label>
+                    <select id="placeIcon" class="w-full p-2 rounded-md bg-white border border-emerald-200 text-slate-800">
                         <option value="map-pin">📍 預設點</option>
                         <option value="footprints">👣 我們的足跡</option>
                         <option value="utensils">🍴 美食餐廳</option>
@@ -372,22 +531,22 @@
                 </div>
             </div>
             <div>
-                <label class="block text-xs font-medium text-slate-500 mb-1">圖片網址 (多張請用逗號 , 隔開)</label>
-                <input type="text" id="placeImageUrl" class="w-full p-2 rounded-md bg-white border border-slate-200 text-slate-800 focus:outline-none focus:border-[#7f5539]" placeholder="網址1, 網址2...">
+                <label class="block text-xs font-medium text-slate-600 mb-1">圖片網址 (多張請用逗號 , 隔開)</label>
+                <input type="text" id="placeImageUrl" class="w-full p-2 rounded-md bg-white border border-emerald-200 text-slate-800 focus:outline-none focus:border-emerald-600" placeholder="網址1, 網址2...">
             </div>
             <div>
-                <label class="block text-xs font-medium text-slate-500 mb-1">影片網址 (YouTube / Google Drive / MP4)</label>
-                <input type="text" id="placeVideoUrl" class="w-full p-2 rounded-md bg-white border border-slate-200 text-slate-800 focus:outline-none focus:border-[#7f5539]" placeholder="https://...">
+                <label class="block text-xs font-medium text-slate-600 mb-1">影片網址 (YouTube / Google Drive / MP4)</label>
+                <input type="text" id="placeVideoUrl" class="w-full p-2 rounded-md bg-white border border-emerald-200 text-slate-800 focus:outline-none focus:border-emerald-600" placeholder="https://...">
             </div>
             <div>
-                <label class="block text-xs font-medium text-slate-500 mb-1">筆記想法</label>
-                <textarea id="placeNotes" rows="3" class="w-full p-2 rounded-md bg-white border border-slate-200 text-slate-800 focus:outline-none focus:border-[#7f5539]"></textarea>
+                <label class="block text-xs font-medium text-slate-600 mb-1">筆記想法</label>
+                <textarea id="placeNotes" rows="3" class="w-full p-2 rounded-md bg-white border border-emerald-200 text-slate-800 focus:outline-none focus:border-emerald-600"></textarea>
             </div>
         </div>
 
-        <div class="pt-3 border-t border-slate-100 flex gap-2 shrink-0">
-            <button onclick="deleteMarker()" id="btnDelete" class="flex-1 py-1.5 bg-red-50 text-red-600 rounded-md hover:bg-red-100 transition font-medium text-sm">刪除</button>
-            <button onclick="saveMarkerData()" class="flex-1 py-1.5 bg-[#7f5539] text-white rounded-md hover:bg-[#9c6644] transition font-medium text-sm shadow-sm">儲存並同步</button>
+        <div class="pt-3 border-t border-emerald-200 flex gap-2 shrink-0">
+            <button onclick="deleteMarker()" id="btnDelete" class="flex-1 py-2 bg-red-50 text-red-600 rounded-md hover:bg-red-100 transition font-medium text-sm">刪除</button>
+            <button onclick="saveMarkerData()" class="flex-1 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition font-medium text-sm shadow-sm">儲存同步</button>
         </div>
     </div>
 
@@ -398,6 +557,84 @@
             attribution: '© OpenStreetMap contributors',
             maxZoom: 19
         }).addTo(map);
+
+        let isEnvelopeOpen = false;
+        let mapConnectingPolyline = null;
+
+        function toggleSettingsMenu() {
+            const menu = document.getElementById('floatingSettingsMenu');
+            menu.classList.toggle('hidden');
+        }
+
+        function toggle3DEnvelope() {
+            const container = document.getElementById('envelopeContainer');
+            const hint = document.getElementById('envelopeHint');
+            isEnvelopeOpen = !isEnvelopeOpen;
+
+            document.querySelectorAll('.paper-card').forEach(p => p.classList.remove('active-paper'));
+
+            if (isEnvelopeOpen) {
+                container.classList.add('envelope-flap-open');
+                if (hint) hint.innerText = "撕開信封中...";
+
+                setTimeout(() => {
+                    container.classList.add('envelope-papers-out');
+                    if (hint) hint.innerText = "請點擊感興趣的信紙 🌹";
+                }, 350);
+            } else {
+                container.classList.remove('envelope-papers-out');
+                setTimeout(() => {
+                    container.classList.remove('envelope-flap-open');
+                    if (hint) hint.innerText = "🌹 點擊撕開玫瑰信封";
+                }, 300);
+            }
+        }
+
+        function handlePaperClick(paperType, paperNum) {
+            if (!isEnvelopeOpen) return;
+            if (paperType === 'locked') return;
+
+            const targetPaper = document.querySelector(`.paper-${paperNum}`);
+
+            if (targetPaper.classList.contains('active-paper')) {
+                selectViewPaper(paperType);
+            } else {
+                document.querySelectorAll('.paper-card').forEach(p => p.classList.remove('active-paper'));
+                targetPaper.classList.add('active-paper');
+            }
+        }
+
+        function selectViewPaper(paperType) {
+            const coverStage = document.getElementById('viewCoverStage');
+            const btnReturn = document.getElementById('btnReturnToEnvelope');
+            
+            coverStage.classList.add('opacity-0', 'pointer-events-none');
+
+            setTimeout(() => {
+                coverStage.classList.add('hidden');
+                
+                if (!isEditMode) {
+                    btnReturn.classList.remove('hidden');
+                }
+
+                if (paperType === 'timeline') {
+                    switchSidebarTab('timeline');
+                } else if (paperType === 'gallery' || paperType === 'folders') {
+                    switchSidebarTab(paperType);
+                }
+            }, 300);
+        }
+
+        function returnToEnvelope() {
+            closeStoryStage();
+            removeConnectingLine();
+            const coverStage = document.getElementById('viewCoverStage');
+            const btnReturn = document.getElementById('btnReturnToEnvelope');
+            btnReturn.classList.add('hidden');
+            coverStage.classList.remove('hidden');
+            document.querySelectorAll('.paper-card').forEach(p => p.classList.remove('active-paper'));
+            setTimeout(() => coverStage.classList.remove('opacity-0', 'pointer-events-none'), 10);
+        }
 
         const CustomTaiwanGeocoder = {
             geocode: function(query) {
@@ -472,21 +709,21 @@
         let currentMarker = null;
         let activeId = null;
         let currentLatLng = null;
-        let gasUrl = localStorage.getItem('gasUrl') || '';
+
+        const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbxfmcmztf5KUo9RUx_2zwIwuawdd5UBzQGA0jf2P6LDxFJG8izufuBRR0sZc_3KwIb5/exec';
+        let gasUrl = localStorage.getItem('gasUrl') || DEFAULT_GAS_URL;
+        
         let playbackDelay = parseFloat(localStorage.getItem('playbackDelay')) || 3.5; 
         
         let playbackState = 'stopped';
         let currentPlaybackItemIndex = 0;
         let currentPlaybackImgIndex = 0;
-        let playbackTimer = null;
 
-        let timelineSortable = null;
         let folders = JSON.parse(localStorage.getItem('mapFolders')) || ['行程總覽', '美食口袋名單', '住宿備忘'];
         let isEditMode = false;
         let isMobileListCollapsed = false;
 
         document.getElementById('gasUrlInput').value = gasUrl;
-        document.getElementById('playbackDelayInput').value = playbackDelay;
 
         const colorMap = { red: '#ef4444', blue: '#3b82f6', green: '#10b981', yellow: '#eab308', purple: '#a855f7' };
 
@@ -495,13 +732,9 @@
             'footprints': '👣',
             'utensils': '🍴',
             'heart': '💖',
-            'calendar': '📅',
-            'first-time': '💖',
-            'calendar-days': '📅',
-            'calendar-heart': '📅'
+            'calendar': '📅'
         };
 
-        /* 🌟 變更 1：手機版切換看全部照片與收起顯示地圖邏輯 */
         function toggleMobileList(forceState = null) {
             const listWrapper = document.getElementById('listContentWrapper');
             const icon = document.getElementById('toggleListIcon');
@@ -516,23 +749,18 @@
 
             if (isMobileListCollapsed) {
                 listWrapper.classList.add('hidden');
-                sidebar.classList.remove('max-h-[42dvh]');
+                sidebar.classList.remove('max-h-[38dvh]');
                 sidebar.classList.add('max-h-none');
                 if (icon) icon.setAttribute('data-lucide', 'chevron-down');
                 if (text) text.innerText = '展開列表';
             } else {
                 listWrapper.classList.remove('hidden');
-                sidebar.classList.add('max-h-[42dvh]');
+                sidebar.classList.add('max-h-[38dvh]');
                 if (icon) icon.setAttribute('data-lucide', 'chevron-up');
                 if (text) text.innerText = '收起列表';
             }
             lucide.createIcons();
             setTimeout(() => map.invalidateSize(), 300);
-        }
-
-        function toggleMobileControlPanel() {
-            const panel = document.getElementById('collapsibleControlPanel');
-            panel.classList.toggle('hidden');
         }
 
         function getLocKey(lat, lng) {
@@ -605,12 +833,6 @@
             return str;
         }
 
-        function savePlaybackDelay() {
-            const val = parseFloat(document.getElementById('playbackDelayInput').value) || 3.5;
-            playbackDelay = val;
-            localStorage.setItem('playbackDelay', val);
-        }
-
         function getVideoEmbedHtml(url) {
             if (!url) return '';
             url = url.trim();
@@ -625,12 +847,12 @@
                     fileId = url.split('/d/')[1].split('/')[0];
                 }
                 if (fileId) {
-                    return `<iframe class="w-full h-full min-h-[200px] max-h-[55dvh] rounded-xl z-20 pointer-events-auto" src="https://drive.google.com/file/d/${fileId}/preview" frameborder="0" allow="autoplay; fullscreen" allowfullscreen></iframe>`;
+                    return `<iframe class="w-full h-full min-h-[220px] rounded-lg border-0 z-20 pointer-events-auto" src="https://drive.google.com/file/d/${fileId}/preview" frameborder="0" allow="autoplay; fullscreen" allowfullscreen></iframe>`;
                 }
             }
 
             if (url.match(/\.(mp4|webm|ogg)($|\?)/i)) {
-                return `<video class="w-full max-h-[55dvh] object-contain rounded-xl z-20 pointer-events-auto" controls playsinline webkit-playsinline preload="metadata">
+                return `<video class="w-full h-full max-h-[280px] object-contain rounded-lg z-20 pointer-events-auto" controls playsinline webkit-playsinline preload="metadata">
                             <source src="${url}">
                         </video>`;
             }
@@ -648,10 +870,10 @@
             }
 
             if (videoId) {
-                return `<iframe class="w-full aspect-video max-h-[55dvh] rounded-xl z-20 pointer-events-auto" src="https://www.youtube.com/embed/${videoId}?autoplay=0&playsinline=1&enablejsapi=1" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`;
+                return `<iframe class="w-full aspect-video rounded-lg z-20 pointer-events-auto border-0" src="https://www.youtube.com/embed/${videoId}?autoplay=0&playsinline=1&enablejsapi=1" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`;
             }
 
-            return `<iframe class="w-full h-full rounded-xl z-20 pointer-events-auto" src="${url}" frameborder="0" allow="fullscreen"></iframe>`;
+            return `<iframe class="w-full h-full rounded-lg z-20 pointer-events-auto border-0" src="${url}" frameborder="0" allow="fullscreen"></iframe>`;
         }
 
         function createCustomIcon(colorName, iconName) {
@@ -659,7 +881,7 @@
             const emoji = iconEmojiMap[iconName] || '📍';
             
             const svgPinBg = `
-                <svg width="36" height="36" viewBox="0 0 40 40" style="display:block;">
+                <svg width="36" height="36" viewBox="0 0 40 40" style="display:block; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.3));">
                     <path d="M20 2C13.1 2 7.5 7.6 7.5 14.5C7.5 23.2 20 37 20 37S32.5 23.2 32.5 14.5C32.5 7.6 26.9 2 20 2Z" fill="${color}"/>
                     <circle cx="20" cy="14.5" r="9" fill="white"/>
                 </svg>
@@ -676,11 +898,12 @@
                 `,
                 className: 'custom-leaflet-icon-emoji',
                 iconSize: [36, 36],
-                iconAnchor: [18, 33]
+                iconAnchor: [18, 35]
             });
         }
 
         map.on('click', function(e) {
+            removeConnectingLine();
             if (!isEditMode) return;
             if (e.originalEvent.target.id === 'map' || e.originalEvent.target.classList.contains('leaflet-container')) {
                 activeId = null;
@@ -924,80 +1147,30 @@
 
             gasUrl = inputUrl;
             localStorage.setItem('gasUrl', gasUrl);
+            document.getElementById('floatingSettingsMenu').classList.add('hidden');
             fetchCloudData(true);
         }
-
-        window.changePopupMedia = function(itemId, dir = 0) {
-            const container = document.getElementById(`popup_img_box_${itemId}`);
-            if (!container) return;
-            
-            const rawMedia = container.getAttribute('data-media');
-            if (!rawMedia) return;
-            
-            let mediaList = [];
-            try {
-                mediaList = JSON.parse(decodeURIComponent(rawMedia));
-            } catch(e) { return; }
-            if (mediaList.length === 0) return;
-
-            let currentIndex = parseInt(container.getAttribute('data-index')) || 0;
-            currentIndex += dir;
-            if (currentIndex < 0) currentIndex = mediaList.length - 1;
-            if (currentIndex >= mediaList.length) currentIndex = 0;
-
-            container.setAttribute('data-index', currentIndex);
-            currentPlaybackImgIndex = currentIndex;
-
-            const contentArea = container.querySelector('.media-content-area');
-            const countEl = container.querySelector('.img-count-badge');
-            
-            const item = mediaList[currentIndex];
-            const itemTitle = container.getAttribute('data-title') || '';
-            const galleryGroup = `gallery_${itemId}`;
-
-            if (contentArea) {
-                if (item.type === 'image') {
-                    const safeImg = convertGoogleDriveLink(item.url);
-                    contentArea.innerHTML = `
-                        <a href="${getGoogleDriveOriginalLink(item.url)}" data-caption="${itemTitle}" data-fancybox="${galleryGroup}" class="w-full h-full flex items-center justify-center">
-                            <img src="${safeImg}" class="w-full h-full object-cover map-thumb" onerror="this.parentElement.parentElement.innerHTML='<span class=\\'text-[10px] text-slate-400\\'>圖片載入中/未公開</span>'">
-                        </a>`;
-                } else if (item.type === 'video') {
-                    const videoHtml = getVideoEmbedHtml(item.url);
-                    contentArea.innerHTML = `<div class="w-full h-full bg-black flex items-center justify-center">${videoHtml}</div>`;
-                }
-            }
-
-            if (countEl) {
-                const icon = item.type === 'video' ? '🎬 ' : '';
-                countEl.innerText = `${icon}${currentIndex + 1}/${mediaList.length}`;
-            }
-
-            Fancybox.bind("[data-fancybox]", {
-                Hash: false, Thumbs: false,
-                Toolbar: { display: { left: ["infobar"], middle: [], right: ["zoomIn", "zoomOut", "close"] } }
-            });
-        };
 
         async function fetchCloudData(showAlert = false) {
             if (!gasUrl) return;
 
-            let cleanUrl = gasUrl.split('?')[0];
+            let cleanUrl = gasUrl.trim().split('?')[0];
+            if (!cleanUrl) return;
+
             let targetUrl = cleanUrl + '?action=read&_t=' + Date.now();
 
             try {
                 const res = await fetch(targetUrl, { method: 'GET', redirect: 'follow' });
                 if (res.ok) {
                     const json = await res.json();
-                    if (json && (json.data || Array.isArray(json))) {
-                        renderMapMarkers(json.data || json);
+                    const listData = json.data || (Array.isArray(json) ? json : null);
+                    if (listData) {
+                        renderMapMarkers(listData);
                         if (showAlert) alert("✅ 連線成功！已成功同步雲端手帳。");
                         return;
                     }
                 }
-            } catch (e) {
-                console.warn("直連嘗試失敗，切換至備用代理：", e);
-            }
+            } catch (e) {}
 
             try {
                 const proxyUrl = "https://api.allorigins.win/get?url=" + encodeURIComponent(targetUrl);
@@ -1005,22 +1178,72 @@
                 if (res.ok) {
                     const proxyData = await res.json();
                     const json = JSON.parse(proxyData.contents);
-                    if (json && (json.data || Array.isArray(json))) {
-                        renderMapMarkers(json.data || json);
+                    const listData = json.data || (Array.isArray(json) ? json : null);
+                    if (listData) {
+                        renderMapMarkers(listData);
                         if (showAlert) alert("✅ 連線成功！已成功同步雲端手帳。");
                         return;
                     }
                 }
-            } catch (e) {
-                console.error("備用代理連線失敗：", e);
-            }
+            } catch (e) {}
 
             if (showAlert) {
-                alert("❌ 連線失敗！請確認 GAS 網址是否正確。");
+                alert("❌ 連線失敗！請確認 GAS 網址結尾是否為 /exec，且部署權限設為所有人。");
             }
         }
 
+        function centerPopupOnMap(lat, lng) {
+            const targetLat = parseFloat(lat);
+            const targetLng = parseFloat(lng);
+            if (isNaN(targetLat) || isNaN(targetLng)) return;
+
+            const targetLatLng = L.latLng(targetLat, targetLng);
+            const targetZoom = Math.max(map.getZoom(), 15);
+            const targetPoint = map.project(targetLatLng, targetZoom);
+            
+            const popupCenterPoint = L.point(targetPoint.x, targetPoint.y - 180);
+            const centerLatLng = map.unproject(popupCenterPoint, targetZoom);
+
+            map.setView(centerLatLng, targetZoom, { animate: true, duration: 0.4 });
+        }
+
+        function drawConnectingLine(lat, lng) {
+            removeConnectingLine();
+            const targetLat = parseFloat(lat);
+            const targetLng = parseFloat(lng);
+            if (isNaN(targetLat) || isNaN(targetLng)) return;
+            
+            const pinLatLng = L.latLng(targetLat, targetLng);
+            const targetZoom = map.getZoom();
+            
+            const pinPoint = map.project(pinLatLng, targetZoom);
+            const cardBottomPoint = L.point(pinPoint.x, pinPoint.y - 45);
+            const cardBottomLatLng = map.unproject(cardBottomPoint, targetZoom);
+
+            mapConnectingPolyline = L.polyline([cardBottomLatLng, pinLatLng], {
+                color: '#ff2a75',
+                weight: 4,
+                dashArray: '5, 8',
+                opacity: 0.95
+            }).addTo(map);
+        }
+
+        function removeConnectingLine() {
+            if (mapConnectingPolyline) {
+                map.removeLayer(mapConnectingPolyline);
+                mapConnectingPolyline = null;
+            }
+        }
+
+        window.toggleMapCardFlip = function(itemId) {
+            const card = document.getElementById('mapFlipCard_' + itemId);
+            if (card) {
+                card.classList.toggle('is-flipped');
+            }
+        };
+
         window.showGroupListInPopup = function(locKey) {
+            removeConnectingLine();
             const marker = markerInstances[locKey];
             if (!marker) return;
 
@@ -1035,12 +1258,12 @@
                 return dateA.localeCompare(dateB);
             });
 
-            let listHtml = `<div class="p-1 text-slate-700">`;
+            let listHtml = `<div class="p-2 text-slate-700 bg-white rounded-xl shadow-2xl border border-slate-200 min-w-[260px]">`;
             listHtml += `<div class="font-bold text-sm text-[#7f5539] mb-2 pb-1 border-b border-[#ddc8b4] flex justify-between items-center">`;
             listHtml += `<span class="flex items-center gap-1"><i data-lucide="layers" class="w-4 h-4 text-[#b7b7a4]"></i> 地點手帳列表 (${items.length})</span>`;
             
             if (isEditMode) {
-                listHtml += `<button onclick="addNewEntryAtLocation('${locKey}')" class="text-[11px] bg-[#7f5539] text-white px-2 py-0.5 rounded-md hover:bg-[#9c6644] transition shadow-2xs font-medium">+ 新增手帳</button>`;
+                listHtml += `<button onclick="addNewEntryAtLocation('${locKey}')" class="text-[11px] bg-emerald-600 text-white px-2 py-0.5 rounded-md hover:bg-emerald-700 transition font-medium">+ 新增手帳</button>`;
             }
             listHtml += `</div>`;
 
@@ -1063,6 +1286,11 @@
             lucide.createIcons();
         };
 
+        function formatNotesLikeStoryBubble(text) {
+            if (!text) return '這裡會顯示滿滿的筆記與回憶喔！(*´∀`)~♥';
+            return text;
+        }
+
         window.showItemDetailInPopup = function(locKey, itemId, showBackBtn = false, initialMediaIndex = 0) {
             const marker = markerInstances[locKey];
             if (!marker) return;
@@ -1070,9 +1298,13 @@
             const item = markersData.find(m => m.id === itemId);
             if (!item) return;
 
+            document.querySelectorAll('.marker-pink-pulse').forEach(el => el.classList.remove('marker-pink-pulse'));
+            if (marker._icon) {
+                marker._icon.classList.add('marker-pink-pulse');
+            }
+
             const rawImages = parseImageUrls(item.image_url);
             const videoUrl = item.video_url ? item.video_url.trim() : '';
-            const cleanDate = formatDateString(item.date);
 
             const mediaList = [];
             rawImages.forEach(img => mediaList.push({ type: 'image', url: img }));
@@ -1082,78 +1314,100 @@
             if (validIndex < 0) validIndex = 0;
             if (validIndex >= mediaList.length) validIndex = Math.max(0, mediaList.length - 1);
 
-            currentPlaybackImgIndex = validIndex;
-
-            let popupHtml = '<div class="p-1 text-slate-700">';
-
-            if (showBackBtn) {
-                popupHtml += `
-                    <button onclick="showGroupListInPopup('${locKey}')" class="text-xs text-[#7f5539] hover:underline mb-1.5 font-bold flex items-center gap-1 btn-interactive">
-                        ❮ 返回列表
-                    </button>
-                `;
-            }
-
-            const locationTag = item.location ? `<span class="text-xs font-normal text-slate-500">📍 ${item.location}</span>` : '';
-
-            popupHtml += `
-                <div class="font-bold text-sm text-[#7f5539] mb-0.5 flex items-center justify-between gap-1">
-                    <span class="flex items-center gap-1.5">${item.title} ${locationTag}</span>
-                    ${videoUrl ? '<span class="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-medium border border-amber-200 shrink-0">🎥 內含影片</span>' : ''}
-                </div>`;
-
-            if (cleanDate) {
-                popupHtml += `<div class="text-[11px] text-pink-600 font-medium mb-1.5 flex items-center gap-1">📅 ${cleanDate}</div>`;
-            }
-
-            if (mediaList.length > 0) {
-                const currentItem = mediaList[validIndex];
-                const encodedMediaList = encodeURIComponent(JSON.stringify(mediaList));
-                const galleryGroup = `gallery_${item.id}`;
-
-                let contentHtml = '';
+            let currentItem = mediaList[validIndex] || null;
+            let photoContent = '';
+            
+            if (currentItem) {
                 if (currentItem.type === 'image') {
                     const safeImg = convertGoogleDriveLink(currentItem.url);
-                    contentHtml = `
-                        <a href="${getGoogleDriveOriginalLink(currentItem.url)}" data-caption="${item.title}" data-fancybox="${galleryGroup}" class="w-full h-full flex items-center justify-center">
-                            <img src="${safeImg}" class="w-full h-full object-cover map-thumb" onerror="this.parentElement.parentElement.innerHTML='<span class=\\'text-[10px] text-slate-400\\'>圖片載入中/未公開</span>'">
+                    photoContent = `
+                        <a href="${getGoogleDriveOriginalLink(currentItem.url)}" data-caption="${item.title} (${validIndex + 1}/${mediaList.length})" data-fancybox="gallery_${item.id}" class="w-full h-full flex items-center justify-center">
+                            <img src="${safeImg}" class="w-full h-full object-cover rounded-xs" onerror="this.parentElement.parentElement.innerHTML='<span class=\\'text-[10px] text-slate-400\\'>圖片載入中/未公開</span>'">
                         </a>`;
                 } else if (currentItem.type === 'video') {
-                    const videoHtml = getVideoEmbedHtml(currentItem.url);
-                    contentHtml = `<div class="w-full h-full bg-black flex items-center justify-center">${videoHtml}</div>`;
+                    photoContent = getVideoEmbedHtml(currentItem.url);
                 }
-
-                const iconPrefix = currentItem.type === 'video' ? '🎬 ' : '';
-
-                popupHtml += `
-                    <div id="popup_img_box_${item.id}" data-media="${encodedMediaList}" data-title="${item.title}" data-index="${validIndex}" class="popup-img-container relative w-full rounded-lg overflow-hidden bg-slate-100 flex items-center justify-center mt-1 mb-1.5 shadow-sm group select-none">
-                        <div class="media-content-area w-full h-full flex items-center justify-center">
-                            ${contentHtml}
-                        </div>
-                        ${mediaList.length > 1 ? `
-                            <span class="img-count-badge absolute top-1 right-1 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded-md z-10 pointer-events-none">${iconPrefix}${validIndex + 1}/${mediaList.length}</span>
-                            <button onclick="event.stopPropagation(); changePopupMedia('${item.id}', -1)" class="btn-interactive absolute left-1 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/70 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs shadow-md z-10 font-bold">❮</button>
-                            <button onclick="event.stopPropagation(); changePopupMedia('${item.id}', 1)" class="btn-interactive absolute right-1 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/70 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs shadow-md z-10 font-bold">❯</button>
-                        ` : ''}
-                    </div>`;
+            } else {
+                photoContent = `<div class="text-xs text-slate-400 flex items-center justify-center h-full">尚無照片</div>`;
             }
 
-            if (item.notes) {
-                popupHtml += '<div class="text-[12px] text-slate-600 popup-notes mt-1 border-t border-slate-100 pt-1.5 leading-relaxed">' + item.notes + '</div>';
-            }
+            let navOverlayHtml = '';
+            if (mediaList.length > 1) {
+                const prevIdx = (validIndex - 1 + mediaList.length) % mediaList.length;
+                const nextIdx = (validIndex + 1) % mediaList.length;
 
-            if (isEditMode) {
-                popupHtml += `
-                    <div class="mt-2 pt-1.5 border-t border-slate-200 flex justify-between items-center">
-                        <button onclick="addNewEntryAtLocation('${locKey}')" class="text-xs text-[#7f5539] hover:underline font-medium">+ 在此新增手帳</button>
-                        <button onclick="openEditPanelForItemById('${item.id}')" class="text-xs bg-[#7f5539] text-white px-2 py-1 rounded hover:bg-[#9c6644] font-medium transition shadow-2xs">編輯此手帳</button>
+                navOverlayHtml = `
+                    <button onclick="event.stopPropagation(); showItemDetailInPopup('${locKey}', '${item.id}', ${showBackBtn}, ${prevIdx})" class="absolute left-2 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/80 text-white rounded-full p-1.5 z-30 transition shadow-md btn-interactive">
+                        <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                    </button>
+                    <button onclick="event.stopPropagation(); showItemDetailInPopup('${locKey}', '${item.id}', ${showBackBtn}, ${nextIdx})" class="absolute right-2 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/80 text-white rounded-full p-1.5 z-30 transition shadow-md btn-interactive">
+                        <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                    </button>
+                    <div class="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded-full z-20 font-mono">
+                        ${validIndex + 1} / ${mediaList.length}
                     </div>
                 `;
             }
 
-            popupHtml += '</div>';
+            const formattedNotesText = formatNotesLikeStoryBubble(item.notes);
 
-            marker.bindPopup(popupHtml, { autoPan: false }).openPopup();
+            /* ✍️ 背面排版修正：改為靠左對齊 (text-left items-start px-4) */
+            let popupHtml = `
+                <div class="w-[280px] sm:w-[310px] h-[370px] perspective-1000 select-none">
+                    <div id="mapFlipCard_${item.id}" class="flip-card-inner relative w-full h-full preserve-3d">
+                        
+                        <!-- 📷 正面 -->
+                        <div class="flip-card-front absolute inset-0 bg-white p-2.5 pb-4 rounded-xs shadow-2xl border border-slate-200/90 flex flex-col justify-between backface-hidden overflow-hidden">
+                            <div class="flex-1 flex flex-col min-h-0">
+                                ${showBackBtn ? `<button onclick="showGroupListInPopup('${locKey}')" class="text-[10px] text-[#7f5539] hover:underline font-bold mb-1 block">❮ 返回列表</button>` : ''}
+                                
+                                <div class="relative w-full aspect-square bg-slate-900 rounded-xs overflow-hidden mb-2 shadow-inner flex items-center justify-center">
+                                    ${photoContent}
+                                    ${navOverlayHtml}
+                                </div>
+
+                                <div class="px-1 mt-auto">
+                                    <div class="text-sm font-bold text-slate-800 line-clamp-1 leading-snug font-rounded">${item.title}</div>
+                                    <div class="text-xs text-slate-500 mt-1 flex items-center gap-1 line-clamp-1">
+                                        <span>${iconEmojiMap[item.icon] || '📍'}</span>
+                                        <span class="truncate">${item.location || '未標註地點'}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div onclick="toggleMapCardFlip('${item.id}')" class="real-curl-fold" title="翻面看筆記"></div>
+                        </div>
+
+                        <!-- ✍️ 背面：改為靠左對齊 -->
+                        <div class="flip-card-back absolute inset-0 bg-[#fcf8f2] p-5 rounded-xs shadow-2xl border-2 border-dashed border-[#d4bead] flex flex-col justify-between items-start backface-hidden [transform:rotateY(180deg)] overflow-hidden">
+                            <div class="w-full flex items-center justify-between text-xs text-[#a07855] border-b border-[#e6d5c3] pb-1.5 px-1 shrink-0">
+                                <span class="flex items-center gap-1 font-rounded"><i data-lucide="heart" class="w-3.5 h-3.5 text-rose-400 fill-rose-200"></i> 心情手札</span>
+                                <span class="font-mono text-[10px] opacity-75">✨ Memory Note</span>
+                            </div>
+
+                            <div class="w-full flex-1 flex flex-col justify-center items-start my-auto py-2">
+                                <div class="w-full max-h-[240px] overflow-y-auto px-1 text-slate-700 text-xs md:text-sm leading-relaxed font-rounded popup-notes text-left">
+                                    ${formattedNotesText}
+                                </div>
+                            </div>
+
+                            <div class="w-full text-center text-[10px] text-[#b89b82] font-serif tracking-widest pt-1 border-t border-[#e6d5c3] shrink-0">
+                                ~ * ♥ Our Sweet Moments ♥ * ~
+                            </div>
+
+                            <div onclick="toggleMapCardFlip('${item.id}')" class="real-curl-fold" title="翻回相片"></div>
+                        </div>
+
+                    </div>
+                </div>
+            `;
+
+            marker.bindPopup(popupHtml, { 
+                autoPan: false,
+                offset: [0, -20]
+            }).openPopup();
+
+            drawConnectingLine(item.lat, item.lng);
 
             if (isEditMode) {
                 openEditPanelForItem(item);
@@ -1161,6 +1415,10 @@
 
             lucide.createIcons();
         };
+
+        map.on('popupclose', function() {
+            removeConnectingLine();
+        });
 
         function renderMapMarkers(data) {
             markersData = data || [];
@@ -1192,13 +1450,12 @@
 
                     marker.on('click', () => {
                         closeStoryStage(); 
-                        const targetLatLng = L.latLng(lat, lng);
-                        const targetZoom = Math.max(map.getZoom(), 15);
-                        const targetPoint = map.project(targetLatLng, targetZoom);
-                        const offsetPoint = L.point(targetPoint.x, targetPoint.y - 120); 
-                        const centerLatLng = map.unproject(offsetPoint, targetZoom);
+                        centerPopupOnMap(lat, lng);
 
-                        map.setView(centerLatLng, targetZoom, { animate: true, duration: 0.5 });
+                        document.querySelectorAll('.marker-pink-pulse').forEach(el => el.classList.remove('marker-pink-pulse'));
+                        if (marker._icon) {
+                            marker._icon.classList.add('marker-pink-pulse');
+                        }
 
                         const currentGroups = getGroupedItems();
                         const currentItems = currentGroups[locKey] || [];
@@ -1208,9 +1465,7 @@
                             showItemDetailInPopup(locKey, currentItems[0].id, false, 0);
                         }
                     });
-                } catch (err) {
-                    console.error("地圖標記繪製跳過：", primaryItem, err);
-                }
+                } catch (err) {}
             });
 
             renderSidebar();
@@ -1226,7 +1481,6 @@
             });
         }
 
-        /* 🌟 變更 2：切換至時間軸時自動開啟圖三放映舞台，並展開/顯示列表 */
         function switchSidebarTab(tabName) {
             const tabs = ['folders', 'timeline', 'gallery'];
             tabs.forEach(t => {
@@ -1234,13 +1488,17 @@
                 const view = document.getElementById('view' + t.charAt(0).toUpperCase() + t.slice(1));
                 
                 if (t === tabName) {
-                    btn.classList.add('bg-[#fdfbf7]', 'shadow-xs');
-                    btn.classList.remove('hover:bg-[#fdfbf7]/60');
-                    view.classList.remove('hidden');
+                    if (btn) {
+                        btn.classList.add('bg-[#fdfbf7]', 'shadow-xs');
+                        btn.classList.remove('hover:bg-[#fdfbf7]/60');
+                    }
+                    if (view) view.classList.remove('hidden');
                 } else {
-                    btn.classList.remove('bg-[#fdfbf7]', 'shadow-xs');
-                    btn.classList.add('hover:bg-[#fdfbf7]/60');
-                    view.classList.add('hidden');
+                    if (btn) {
+                        btn.classList.remove('bg-[#fdfbf7]', 'shadow-xs');
+                        btn.classList.add('hover:bg-[#fdfbf7]/60');
+                    }
+                    if (view) view.classList.add('hidden');
                 }
             });
 
@@ -1248,7 +1506,12 @@
                 openStoryStage();
             } else {
                 closeStoryStage();
-                toggleMobileList(false); // 切換至集合或拍立得時預設為展開狀態
+                toggleMobileList(false);
+            }
+
+            const btnReturn = document.getElementById('btnReturnToEnvelope');
+            if (!isEditMode && document.getElementById('viewCoverStage').classList.contains('hidden')) {
+                if (btnReturn) btnReturn.classList.remove('hidden');
             }
 
             lucide.createIcons();
@@ -1261,26 +1524,6 @@
                 if (dateA === dateB) return (a.order || 0) - (b.order || 0);
                 return dateA.localeCompare(dateB);
             });
-        }
-
-        async function toggleItemTimelineStatus(id) {
-            if (!isEditMode) return;
-            const item = markersData.find(m => m.id === id);
-            if (!item) return;
-
-            item.in_timeline = (item.in_timeline === 'no') ? 'yes' : 'no';
-
-            if (gasUrl) {
-                try {
-                    await fetch(gasUrl, {
-                        method: 'POST', mode: 'no-cors',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ action: 'save', data: item })
-                    });
-                } catch(e) { console.error(e); }
-            }
-
-            renderTimeline();
         }
 
         function updateTimelineHighlight(id) {
@@ -1298,6 +1541,7 @@
 
         function renderTimeline() {
             const container = document.getElementById('timelineContainer');
+            if (!container) return;
             container.innerHTML = '';
 
             const sortedItems = markersData.filter(m => {
@@ -1323,19 +1567,12 @@
                 const isHidden = item.in_timeline === 'no';
                 const cardStyle = isHidden ? 'opacity-40 bg-slate-200/60 grayscale' : 'bg-white/40';
 
-                const toggleBtn = isEditMode ? `
-                    <button onclick="event.stopPropagation(); toggleItemTimelineStatus('${item.id}')" title="${isHidden ? '點擊取消隱藏（加入時間軸）' : '點擊隱藏（不進入時間軸）'}" class="p-1 rounded hover:bg-slate-200/80 transition text-slate-500 mr-1">
-                        <i data-lucide="${isHidden ? 'eye-off' : 'eye'}" class="w-3.5 h-3.5 ${isHidden ? 'text-slate-500' : 'text-emerald-600'}"></i>
-                    </button>
-                ` : '';
-
                 timelineHtml += `
                     <div data-id="${item.id}" id="tl_item_${item.id}" class="timeline-item btn-interactive relative pl-7 pr-2 py-2 rounded-r-lg border-l-2 border-transparent ${cardStyle} mb-1.5 flex items-center justify-between group">
                         <div onclick="focusPlace('${item.lat}', '${item.lng}', '${item.id}')" class="flex-1 cursor-pointer overflow-hidden">
                             <div class="absolute left-[9px] top-3.5 w-2 h-2 rounded-full ${isHidden ? 'bg-slate-400' : 'bg-[#7f5539]'} ring-4 ring-[#f4ebe1]"></div>
                             <div class="text-[10px] ${isHidden ? 'text-slate-500' : 'text-pink-600'} font-bold flex items-center gap-1">
                                 <i data-lucide="calendar" class="w-2.5 h-2.5"></i> ${cleanDate}
-                                ${isHidden ? '<span class="text-[9px] bg-slate-300 text-slate-600 px-1 rounded ml-1 font-normal">已隱藏</span>' : ''}
                             </div>
                             <div class="text-xs ${isHidden ? 'text-slate-500 line-through' : 'text-slate-800'} leading-snug flex items-baseline gap-1.5 mt-0.5">
                                 <span class="font-bold shrink-0 text-sm md:text-xs">${item.title}</span>
@@ -1345,119 +1582,98 @@
                             </div>
                             ${item.notes ? `<div class="text-[10px] text-slate-400 line-clamp-1 mt-0.5">${item.notes}</div>` : ''}
                         </div>
-                        <div class="flex items-center gap-1">
-                            ${toggleBtn}
-                            <i data-lucide="menu" class="w-3.5 h-3.5 text-slate-400 ${isEditMode ? 'cursor-grab active:cursor-grabbing' : 'opacity-0 pointer-events-none'} ml-1"></i>
-                        </div>
+                        ${isEditMode ? `<i data-lucide="menu" class="w-3.5 h-3.5 text-emerald-500 cursor-grab active:cursor-grabbing ml-1"></i>` : ''}
                     </div>
                 `;
             });
 
             container.innerHTML = timelineHtml;
             lucide.createIcons();
+        }
 
-            if (timelineSortable) timelineSortable.destroy();
-            timelineSortable = Sortable.create(container, {
-                animation: 180,
-                ghostClass: 'sortable-ghost',
-                chosenClass: 'sortable-chosen',
-                handle: '.cursor-grab',
-                disabled: !isEditMode,
-                onEnd: async function () {
-                    if (!isEditMode) return;
-                    const reorderedIds = Array.from(container.children).map(el => el.getAttribute('data-id')).filter(Boolean);
-                    
-                    for (let i = 0; i < reorderedIds.length; i++) {
-                        const matchedItem = markersData.find(m => m.id === reorderedIds[i]);
-                        if (matchedItem) {
-                            matchedItem.order = i * 10; 
-                            
-                            if (gasUrl) {
-                                fetch(gasUrl, {
-                                    method: 'POST', mode: 'no-cors',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ action: 'save', data: matchedItem })
-                                }).catch(e => console.error(e));
-                            }
-                        }
-                    }
-                    markersData.sort((a, b) => (a.order || 0) - (b.order || 0));
-                }
+        /* 📌 軟木相片牆渲染：便條紙左側增加 padding 讓出空間給圖釘 */
+        function renderGallery() {
+            const container = document.getElementById('galleryContainer');
+            if (!container) return;
+            container.innerHTML = '';
+
+            const photoItems = markersData.filter(m => m.image_url && parseImageUrls(m.image_url).length > 0);
+
+            if (photoItems.length === 0) {
+                container.innerHTML = '<div class="text-xs text-slate-100 text-center py-6 bg-black/20 rounded-xl">軟木牆上尚未釘上照片...</div>';
+                return;
+            }
+
+            photoItems.sort((a, b) => {
+                const dateA = formatDateString(a.date) || '9999-99-99';
+                const dateB = formatDateString(b.date) || '9999-99-99';
+                if (dateA === dateB) return (a.order || 0) - (b.order || 0);
+                return dateA.localeCompare(dateB);
             });
+
+            let cardsHtml = `<div class="grid grid-cols-2 gap-4 p-0.5">`;
+
+            photoItems.forEach((item, index) => {
+                const rawImages = parseImageUrls(item.image_url);
+                if (rawImages.length === 0) return;
+
+                const firstSafeImg = convertGoogleDriveLink(rawImages[0]);
+                const cleanDate = formatDateString(item.date);
+                const rotateDeg = (index % 3 === 0) ? '-1.8deg' : ((index % 3 === 1) ? '1.5deg' : '-0.8deg');
+
+                cardsHtml += `
+                    <div onclick="focusPlace('${item.lat}', '${item.lng}', '${item.id}')" 
+                         style="transform: rotate(${rotateDeg});"
+                         class="polaroid-card btn-interactive rounded-xs cursor-pointer select-none flex flex-col relative border border-slate-200/80 bg-white shadow-md hover:shadow-2xl hover:-translate-y-1 hover:rotate-0 transition-all duration-200 mt-3">
+                        
+                        <!-- 左上角便條紙 (左側加長留白給圖釘) -->
+                        ${cleanDate ? `
+                            <div class="date-note-paper-pinned absolute -top-4.5 left-1 z-20 transform -rotate-3 select-none border border-amber-200 shadow-sm">
+                                ${cleanDate}
+                            </div>
+                        ` : ''}
+
+                        <!-- 主大頭針 (釘在左側加長區塊) -->
+                        <div class="absolute -top-5.5 left-2 z-30 text-base drop-shadow-md transform -rotate-12 pointer-events-none">📌</div>
+
+                        <!-- 1:1 正方形相片容器 -->
+                        <div class="relative w-full aspect-square bg-slate-100 rounded-xs overflow-hidden mb-1.5 shadow-inner mt-1">
+                            ${rawImages.length > 1 ? `<span class="absolute top-1 right-1 bg-black/60 text-white text-[8px] px-1.5 py-0.5 rounded-full z-10 font-bold">📸 ${rawImages.length}</span>` : ''}
+                            <img src="${firstSafeImg}" class="w-full h-full object-cover" onerror="this.src='https://via.placeholder.com/150?text=圖片載入中/未公開'">
+                        </div>
+
+                        <!-- 標題與地點簡明欄位 -->
+                        <div class="px-0.5 pb-1">
+                            <div class="text-xs font-bold text-slate-800 line-clamp-1 leading-tight font-rounded">${item.title}</div>
+                            <div class="text-[9px] text-slate-500 mt-0.5 flex items-center gap-0.5 line-clamp-1">
+                                <span>${iconEmojiMap[item.icon] || '📍'}</span>
+                                <span class="truncate">${item.location || ''}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            cardsHtml += `</div>`;
+            container.innerHTML = cardsHtml;
+            lucide.createIcons();
         }
 
         function openStoryStage() {
             document.getElementById('storyStage').classList.remove('hidden');
+            if (!isEditMode) {
+                document.getElementById('btnReturnToEnvelope').classList.remove('hidden');
+            }
+            makeBubbleDraggable();
             showCurrentTimelineStep(true);
         }
 
         function closeStoryStage() {
-            pauseTimelinePlayback();
             document.getElementById('storyStage').classList.add('hidden');
-        }
-
-        function toggleTimelinePlayback() {
-            if (playbackState === 'playing') {
-                pauseTimelinePlayback();
-            } else if (playbackState === 'paused') {
-                resumeTimelinePlayback();
-            } else {
-                startTimelinePlayback();
+            if (!isEditMode && document.getElementById('viewCoverStage').classList.contains('hidden')) {
+                document.getElementById('btnReturnToEnvelope').classList.remove('hidden');
             }
         }
-
-        function updatePlaybackButtonUI(state) {
-            const btn = document.getElementById('btnPlayTimeline');
-            if (!btn) return;
-            if (state === 'playing') {
-                btn.innerHTML = '暫停';
-            } else {
-                btn.innerHTML = '播放';
-            }
-        }
-
-        function startTimelinePlayback() {
-            openStoryStage();
-            playbackState = 'playing';
-            updatePlaybackButtonUI('playing');
-            
-            const sortedItems = getSortedTimelineItems();
-            if (currentPlaybackItemIndex < 0 || currentPlaybackItemIndex >= sortedItems.length) {
-                currentPlaybackItemIndex = 0;
-            }
-
-            runPlaybackLoop();
-        }
-
-        function resumeTimelinePlayback() {
-            openStoryStage();
-            playbackState = 'playing';
-            updatePlaybackButtonUI('playing');
-            runPlaybackLoop();
-        }
-
-        function pauseTimelinePlayback() {
-            playbackState = 'paused';
-            if (playbackTimer) clearTimeout(playbackTimer);
-            updatePlaybackButtonUI('paused');
-        }
-
-        function stopTimelinePlayback(isEnded = false) {
-            playbackState = isEnded ? 'ended' : 'stopped';
-            if (playbackTimer) clearTimeout(playbackTimer);
-            updatePlaybackButtonUI(playbackState);
-        }
-
-        window.jumpToItem = function(itemId) {
-            const sortedItems = getSortedTimelineItems();
-            const targetIndex = sortedItems.findIndex(m => m.id === itemId);
-            if (targetIndex !== -1) {
-                if (playbackState === 'playing') pauseTimelinePlayback();
-                currentPlaybackItemIndex = targetIndex;
-                currentPlaybackImgIndex = 0;
-                showCurrentTimelineStep(true);
-            }
-        };
 
         function renderOverviewTrack(sortedItems, currentItem) {
             if (!sortedItems || sortedItems.length === 0) return;
@@ -1560,6 +1776,58 @@
             }
         }
 
+        function makeBubbleDraggable() {
+            const bubble = document.getElementById('storyBubble');
+            if (!bubble || bubble.dataset.dragInit) return;
+            bubble.dataset.dragInit = "true";
+
+            let isDragging = false;
+            let startX, startY, initialLeft, initialTop;
+
+            bubble.addEventListener('pointerdown', (e) => {
+                const notesEl = document.getElementById('storyBubbleNotes');
+                if (e.target === notesEl && notesEl.scrollHeight > notesEl.clientHeight) {
+                    return; 
+                }
+
+                isDragging = true;
+                startX = e.clientX;
+                startY = e.clientY;
+
+                const rect = bubble.getBoundingClientRect();
+                const parentRect = bubble.parentElement.getBoundingClientRect();
+
+                initialLeft = rect.left - parentRect.left;
+                initialTop = rect.top - parentRect.top;
+
+                bubble.style.left = `${initialLeft}px`;
+                bubble.style.top = `${initialTop}px`;
+                bubble.style.right = 'auto';
+                bubble.style.bottom = 'auto';
+
+                try { bubble.setPointerCapture(e.pointerId); } catch(err){}
+            });
+
+            bubble.addEventListener('pointermove', (e) => {
+                if (!isDragging) return;
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+
+                bubble.style.left = `${initialLeft + dx}px`;
+                bubble.style.top = `${initialTop + dy}px`;
+            });
+
+            const stopDrag = (e) => {
+                if (isDragging) {
+                    isDragging = false;
+                    try { bubble.releasePointerCapture(e.pointerId); } catch(err){}
+                }
+            };
+
+            bubble.addEventListener('pointerup', stopDrag);
+            bubble.addEventListener('pointercancel', stopDrag);
+        }
+
         function showCurrentTimelineStep(isNewLocation = true) {
             const sortedItems = getSortedTimelineItems();
             if (sortedItems.length === 0) return;
@@ -1572,7 +1840,6 @@
 
             renderOverviewTrack(sortedItems, item);
 
-            // 1. 解析多媒體列表 (照片 + 影片)
             const rawImages = parseImageUrls(item.image_url);
             const videoUrl = item.video_url ? item.video_url.trim() : '';
             const mediaList = [];
@@ -1581,19 +1848,24 @@
 
             if (currentPlaybackImgIndex >= mediaList.length) currentPlaybackImgIndex = 0;
 
-            // 2. 更新頂部標題
             document.getElementById('storyHeaderIcon').innerText = iconEmojiMap[item.icon] || '📍';
             
+            const dateSpan = cleanDate 
+                ? `<span class="text-xs md:text-sm text-pink-400 font-bold font-rounded shrink-0 flex items-center gap-1">📅 ${cleanDate}</span>` 
+                : '';
+
             const locationSpan = item.location 
-                ? `<span class="text-xs md:text-sm font-normal text-slate-300 truncate font-rounded">📍 ${item.location}</span>` 
+                ? `<span class="text-xs md:text-sm font-normal text-slate-300 truncate font-rounded flex items-center gap-0.5">📍 ${item.location}</span>` 
                 : '';
                 
             document.getElementById('storyHeaderTitle').innerHTML = `
                 <span class="text-base md:text-lg font-extrabold text-white tracking-wide font-rounded drop-shadow-md shrink-0">${item.title || '手帳主旨'}</span>
+                ${dateSpan}
                 ${locationSpan}
             `;
 
-            // 3. 生成標題後方的半透明小圓點
+            document.getElementById('storyHeaderFolder').innerText = item.folder_name || '我們的旅程';
+
             const dotsBox = document.getElementById('storyHeaderDots');
             if (mediaList.length > 1) {
                 dotsBox.classList.remove('hidden');
@@ -1609,7 +1881,6 @@
             const mediaContent = document.getElementById('storyMediaContent');
             const bgBlur = document.getElementById('storyBgBlur');
 
-            // 4. 渲染媒體內容
             if (mediaList.length === 0) {
                 bgBlur.style.backgroundImage = 'none';
                 bgBlur.style.backgroundColor = '#0f172a';
@@ -1630,7 +1901,6 @@
                 }
             }
 
-            // 5. 動畫切換處理
             if (isNewLocation) {
                 mediaBox.classList.remove('animate-location-shift', 'animate-photo-fade');
                 void mediaBox.offsetWidth;
@@ -1646,20 +1916,25 @@
                 mediaContent.classList.add('animate-photo-fade');
             }
 
-            // 6. 對話氣泡內容更新
-            document.getElementById('storyBubbleDate').innerText = cleanDate ? `📅 ${cleanDate}` : '';
-            document.getElementById('storyBubbleFolder').innerText = item.folder_name || '我們的旅程';
             document.getElementById('storyBubbleNotes').innerText = item.notes ? item.notes : '這一天也留下了甜甜的回憶～ (´∀`)';
 
             updateTimelineHighlight(item.id);
             lucide.createIcons();
         }
 
+        window.jumpToItem = function(itemId) {
+            const sortedItems = getSortedTimelineItems();
+            const targetIndex = sortedItems.findIndex(m => m.id === itemId);
+            if (targetIndex !== -1) {
+                currentPlaybackItemIndex = targetIndex;
+                currentPlaybackImgIndex = 0;
+                showCurrentTimelineStep(true);
+            }
+        };
+
         function nextTimelinePhoto() {
             const sortedItems = getSortedTimelineItems();
             if (sortedItems.length === 0) return;
-
-            if (playbackState === 'playing') pauseTimelinePlayback();
 
             const item = sortedItems[currentPlaybackItemIndex];
             const rawImages = parseImageUrls(item ? item.image_url : '');
@@ -1685,8 +1960,6 @@
             const sortedItems = getSortedTimelineItems();
             if (sortedItems.length === 0) return;
 
-            if (playbackState === 'playing') pauseTimelinePlayback();
-
             currentPlaybackImgIndex--;
             let isNewLocation = false;
 
@@ -1706,92 +1979,9 @@
             showCurrentTimelineStep(isNewLocation);
         }
 
-        function runPlaybackLoop() {
-            if (playbackState !== 'playing') return;
-
-            const sortedItems = getSortedTimelineItems();
-            if (currentPlaybackItemIndex >= sortedItems.length) {
-                stopTimelinePlayback(true);
-                return;
-            }
-
-            const item = sortedItems[currentPlaybackItemIndex];
-            const rawImages = parseImageUrls(item.image_url);
-            const hasVideo = item.video_url && item.video_url.trim() ? 1 : 0;
-            const totalMedia = rawImages.length + hasVideo;
-
-            playbackTimer = setTimeout(() => {
-                if (playbackState !== 'playing') return;
-
-                currentPlaybackImgIndex++;
-                let isNewLocation = false;
-
-                if (currentPlaybackImgIndex >= Math.max(1, totalMedia)) {
-                    currentPlaybackItemIndex++;
-                    currentPlaybackImgIndex = 0;
-                    isNewLocation = true;
-                }
-
-                if (currentPlaybackItemIndex >= sortedItems.length) {
-                    stopTimelinePlayback(true);
-                    return;
-                }
-
-                showCurrentTimelineStep(isNewLocation);
-                runPlaybackLoop();
-            }, playbackDelay * 1000);
-        }
-
-        function renderGallery() {
-            const container = document.getElementById('galleryContainer');
-            container.innerHTML = '';
-
-            const photoItems = markersData.filter(m => m.image_url && parseImageUrls(m.image_url).length > 0);
-
-            if (photoItems.length === 0) {
-                container.innerHTML = '<div class="text-xs text-slate-400 text-center py-6">尚未上傳相片...</div>';
-                return;
-            }
-
-            photoItems.sort((a, b) => {
-                const dateA = formatDateString(a.date) || '9999-99-99';
-                const dateB = formatDateString(b.date) || '9999-99-99';
-                if (dateA === dateB) return (a.order || 0) - (b.order || 0);
-                return dateA.localeCompare(dateB);
-            });
-
-            let cardsHtml = `<div class="grid grid-cols-2 gap-2">`;
-
-            photoItems.forEach(item => {
-                const rawImages = parseImageUrls(item.image_url);
-                if (rawImages.length === 0) return;
-
-                const firstSafeImg = convertGoogleDriveLink(rawImages[0]);
-                const cleanDate = formatDateString(item.date);
-
-                cardsHtml += `
-                    <div onclick="focusPlace('${item.lat}', '${item.lng}', '${item.id}')" class="polaroid-card btn-interactive rounded-xl cursor-pointer select-none flex flex-col relative border border-slate-200/80 p-2 bg-white shadow-xs">
-                        <div class="relative w-full h-24 md:h-28 bg-slate-100 rounded-lg overflow-hidden mb-1.5 shadow-inner">
-                            ${rawImages.length > 1 ? `<span class="absolute top-1 right-1 bg-black/60 text-white text-[8px] px-1.5 py-0.5 rounded-full z-10 font-bold">📸 ${rawImages.length}</span>` : ''}
-                            ${cleanDate ? `<span class="absolute bottom-1 right-1 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded z-10 font-mono">${cleanDate}</span>` : ''}
-                            <img src="${firstSafeImg}" class="w-full h-full object-cover" onerror="this.src='https://via.placeholder.com/150?text=圖片載入中/未公開'">
-                        </div>
-                        <div class="text-xs font-bold text-slate-800 line-clamp-1 leading-snug">${item.title}</div>
-                        <div class="text-[10px] text-slate-500 mt-0.5 flex items-center gap-1 line-clamp-1">
-                            <span>${iconEmojiMap[item.icon] || '📍'}</span>
-                            <span class="truncate">${item.location || ''}</span>
-                        </div>
-                    </div>
-                `;
-            });
-
-            cardsHtml += `</div>`;
-            container.innerHTML = cardsHtml;
-            lucide.createIcons();
-        }
-
         function renderSidebar() {
             const container = document.getElementById('folderContainer');
+            if (!container) return;
             container.innerHTML = '';
             
             const allFolders = Array.from(new Set([...folders, ...markersData.map(m => m.folder_name).filter(Boolean)]));
@@ -1800,21 +1990,25 @@
                 const folderItems = markersData.filter(m => m.folder_name === folderName);
                 
                 const isDefault = folderName === '行程總覽';
+                
                 const actionButtons = (isDefault || !isEditMode) ? '' : `
-                    <div class="flex gap-1.5 opacity-40 hover:opacity-100 transition ml-auto">
-                        <button onclick="event.stopPropagation(); renameFolder('${folderName}')" title="重命名" class="hover:text-blue-600 p-0.5"><i data-lucide="edit-3" class="w-3.5 h-3.5"></i></button>
-                        <button onclick="event.stopPropagation(); deleteFolder('${folderName}')" title="刪除" class="hover:text-red-600 p-0.5"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                    <div class="flex gap-1.5 opacity-80 hover:opacity-100 transition ml-auto">
+                        <button onclick="event.stopPropagation(); renameFolder('${folderName}')" title="重命名" class="text-emerald-700 hover:text-emerald-900 p-0.5"><i data-lucide="edit-3" class="w-3.5 h-3.5"></i></button>
+                        <button onclick="event.stopPropagation(); deleteFolder('${folderName}')" title="刪除" class="text-red-500 hover:text-red-700 p-0.5"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
                     </div>
                 `;
 
                 const folderId = 'folder_' + btoa(encodeURIComponent(folderName)).replace(/=/g, '');
 
                 const folderDiv = document.createElement('div');
-                folderDiv.className = "bg-[#f5ebe0]/80 rounded-xl p-2.5 border border-[#ddc8b4]/80 mb-2 shadow-xs";
+                folderDiv.className = isEditMode 
+                    ? "bg-emerald-50 rounded-xl p-2.5 border border-emerald-200 mb-2 shadow-xs"
+                    : "bg-[#f5ebe0]/80 rounded-xl p-2.5 border border-[#ddc8b4]/80 mb-2 shadow-xs";
+                    
                 folderDiv.innerHTML = `
-                    <div class="font-bold text-xs text-[#7f5539] flex items-center gap-1.5 mb-1.5 select-none">
+                    <div class="font-bold text-xs ${isEditMode ? 'text-emerald-900' : 'text-[#7f5539]'} flex items-center gap-1.5 mb-1.5 select-none">
                         <i data-lucide="folder" class="w-3.5 h-3.5 text-[#b7b7a4]"></i> 
-                        <span class="text-xs md:text-xs font-bold">${folderName} (${folderItems.length})</span>
+                        <span class="text-xs font-bold">${folderName} (${folderItems.length})</span>
                         ${actionButtons}
                     </div>
                     <div id="${folderId}" class="sortable-list space-y-1.5 min-h-[10px]">
@@ -1827,7 +2021,7 @@
                                         ${iconEmojiMap[item.icon] || '📍'} ${item.location || ''}
                                     </span>
                                 </span>
-                                <i data-lucide="menu" class="w-3.5 h-3.5 text-slate-300 ${isEditMode ? 'cursor-grab active:cursor-grabbing' : 'opacity-0 pointer-events-none'} ml-2"></i>
+                                ${isEditMode ? `<i data-lucide="menu" class="w-3.5 h-3.5 text-emerald-500 cursor-grab active:cursor-grabbing ml-2"></i>` : ''}
                             </div>
                         `).join('')}
                     </div>
@@ -1835,22 +2029,18 @@
                 container.appendChild(folderDiv);
 
                 const listEl = document.getElementById(folderId);
-                if (listEl) {
+                if (listEl && isEditMode) {
                     Sortable.create(listEl, {
                         animation: 180,
                         ghostClass: 'sortable-ghost',
                         chosenClass: 'sortable-chosen',
                         handle: '.cursor-grab', 
-                        disabled: !isEditMode, 
                         onEnd: async function () {
-                            if (!isEditMode) return;
                             const reorderedIds = Array.from(listEl.children).map(el => el.getAttribute('data-id'));
-                            
                             for (let i = 0; i < reorderedIds.length; i++) {
                                 const matchedItem = markersData.find(m => m.id === reorderedIds[i]);
                                 if (matchedItem) {
                                     matchedItem.order = i * 10; 
-                                    
                                     if (gasUrl) {
                                         fetch(gasUrl, {
                                             method: 'POST', mode: 'no-cors',
@@ -1868,7 +2058,6 @@
             lucide.createIcons();
         }
 
-        /* 🌟 變更 1：點選項目後在手機自動收起選單，呈現滿版地圖 */
         function focusPlace(lat, lng, id) {
             const targetLat = parseFloat(lat);
             const targetLng = parseFloat(lng);
@@ -1886,7 +2075,6 @@
             } else if (!isNaN(targetLat) && !isNaN(targetLng)) {
                 closeStoryStage();
                 
-                // 在手機版選擇照片或集合後，自動收起清單以最大化地圖區域
                 if (window.innerWidth < 768) {
                     toggleMobileList(true);
                 }
@@ -1896,13 +2084,12 @@
 
                 if (marker) {
                     marker.addTo(map);
-                    const targetLatLng = L.latLng(targetLat, targetLng);
-                    const targetZoom = Math.max(map.getZoom(), 15);
-                    const targetPoint = map.project(targetLatLng, targetZoom);
-                    const offsetPoint = L.point(targetPoint.x, targetPoint.y - 120); 
-                    const centerLatLng = map.unproject(offsetPoint, targetZoom);
+                    centerPopupOnMap(targetLat, targetLng);
 
-                    map.setView(centerLatLng, targetZoom, { animate: true, duration: 0.5 });
+                    document.querySelectorAll('.marker-pink-pulse').forEach(el => el.classList.remove('marker-pink-pulse'));
+                    if (marker._icon) {
+                        marker._icon.classList.add('marker-pink-pulse');
+                    }
 
                     const groups = getGroupedItems();
                     const items = groups[locKey] || [];
@@ -1918,45 +2105,55 @@
             }
         }
 
-        function toggleAuthMode() {
+        function promptForEditMode() {
             if (!isEditMode) {
                 const password = prompt("請輸入管理員密碼以開啟編輯權限：");
                 if (password === "20250214") {
                     isEditMode = true;
-                    alert("認證成功！已切換至【編輯模式】。");
+                    applyAuthDOMChanges();
+                    document.getElementById('floatingSettingsMenu').classList.add('hidden');
+                    openPanel(true);
                 } else if (password !== null) {
                     alert("密碼錯誤，拒絕存取！");
-                    return;
-                } else {
-                    return;
                 }
-            } else {
+            }
+        }
+
+        function toggleAuthMode() {
+            if (isEditMode) {
                 isEditMode = false;
                 closePanel();
-                alert("已登出，安全切換回【觀看模式】。");
+                document.getElementById('floatingSettingsMenu').classList.add('hidden');
+                applyAuthDOMChanges();
             }
-            applyAuthDOMChanges();
         }
 
         function applyAuthDOMChanges() {
-            const btnCreate = document.getElementById('btnCreateFolder');
-            const authIcon = document.getElementById('authIcon');
-            const authText = document.getElementById('authText');
-            const btnToggle = document.getElementById('btnToggleAuth');
+            const btnToggle = document.getElementById('btnToggleAuthFloating');
+            const editFolderHeader = document.getElementById('editFolderHeader');
+            const btnReturn = document.getElementById('btnReturnToEnvelope');
+            const sidebarTabs = document.getElementById('sidebarTabsContainer');
 
             map.closePopup();
 
             if (isEditMode) {
-                btnCreate.disabled = false;
-                authText.innerText = "編輯模式";
-                authIcon.setAttribute('data-lucide', 'lock-open');
-                btnToggle.className = "w-full text-xs bg-emerald-600 hover:bg-emerald-700 text-white py-1.5 md:py-2 rounded-md font-medium transition shadow-sm flex items-center justify-center gap-1.5";
+                if (editFolderHeader) editFolderHeader.classList.remove('hidden');
+                if (btnToggle) btnToggle.classList.remove('hidden');
+                if (sidebarTabs) sidebarTabs.classList.remove('hidden');
+                
+                const coverStage = document.getElementById('viewCoverStage');
+                if (coverStage) coverStage.classList.add('hidden', 'opacity-0', 'pointer-events-none');
+                if (btnReturn) btnReturn.classList.add('hidden');
             } else {
-                btnCreate.disabled = true;
-                authText.innerText = "觀看模式";
-                authIcon.setAttribute('data-lucide', 'eye');
-                btnToggle.className = "w-full text-xs bg-[#7f5539] hover:bg-[#9c6644] text-white py-1.5 md:py-2 rounded-md font-medium transition shadow-sm flex items-center justify-center gap-1.5";
+                if (editFolderHeader) editFolderHeader.classList.add('hidden');
+                if (btnToggle) btnToggle.classList.add('hidden');
+                if (sidebarTabs) sidebarTabs.classList.add('hidden');
+                
                 closePanel();
+
+                if (btnReturn && document.getElementById('viewCoverStage').classList.contains('hidden')) {
+                    btnReturn.classList.remove('hidden');
+                }
             }
             
             renderSidebar();
@@ -1964,15 +2161,6 @@
             renderGallery();
             lucide.createIcons();
         }
-
-        setInterval(() => {
-            const isPopupOpen = map._popup && map.hasLayer(map._popup);
-            const isEditPanelOpen = !document.getElementById('editPanel').classList.contains('hidden');
-
-            if (!isPopupOpen && !isEditPanelOpen && !document.querySelector('.sortable-chosen') && playbackState !== 'playing') {
-                fetchCloudData();
-            }
-        }, 8000);
 
         if (gasUrl) fetchCloudData();
         applyAuthDOMChanges();
