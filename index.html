@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="referrer" content="no-referrer">
+    <meta name="referrer" content="no-referrer-when-downgrade">
     <title>質感生活同步互動地圖 - 回憶手帳版</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -22,11 +22,16 @@
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=M+PLUS+Rounded+1c:wght@500;700;800&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
 
     <style>
-        body { 
-            font-family: 'Noto Sans TC', sans-serif; 
-            padding-top: env(safe-area-inset-top);
-            padding-bottom: env(safe-area-inset-bottom);
+        html, body {
+            height: 100%;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #2b1c14;
         }
+
         .font-rounded { font-family: 'M PLUS Rounded 1c', 'Noto Sans TC', sans-serif; }
 
         button, .btn-interactive {
@@ -41,11 +46,28 @@
             opacity: 0.85 !important;
         }
 
-        /* 觸控順暢滑動優化 */
         .touch-scroll {
-            touch-action: pan-y !important;
+            overflow-y: auto !important;
             -webkit-overflow-scrolling: touch !important;
+            touch-action: pan-y !important;
             overscroll-behavior-y: contain;
+        }
+
+        /* 📌 照片牆隱藏樣式 */
+        .photo-hidden {
+            display: none !important;
+        }
+
+        /* 📌 地圖 Pin 腳圖示 */
+        .custom-leaflet-icon-emoji {
+            width: 36px !important;
+            height: 36px !important;
+            margin-left: -18px !important;
+            margin-top: -35px !important;
+            -webkit-backface-visibility: hidden;
+            -webkit-transform-style: preserve-3d;
+            transform-origin: 50% 100% !important;
+            pointer-events: auto !important;
         }
 
         /* 軟木相片牆背景 */
@@ -69,21 +91,33 @@
         .flip-card-inner { 
             transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); 
             transform-style: preserve-3d;
+            transform-origin: center center;
         }
         .flip-card-inner.is-flipped { transform: rotateY(180deg); }
 
+        .flip-card-inner.is-flipped .flip-card-front {
+            opacity: 0 !important;
+            pointer-events: none !important;
+            visibility: hidden !important;
+        }
+        .flip-card-inner:not(.is-flipped) .flip-card-front {
+            opacity: 1 !important;
+            pointer-events: auto !important;
+            visibility: visible !important;
+        }
+
         /* 地圖標記粉色脈衝光暈動效 */
         @keyframes pinkPulseGlow {
-            0% { transform: scale(1); filter: drop-shadow(0 0 2px rgba(244, 114, 182, 0.9)); }
-            50% { transform: scale(1.3); filter: drop-shadow(0 0 16px rgba(244, 114, 182, 1)); }
-            100% { transform: scale(1); filter: drop-shadow(0 0 2px rgba(244, 114, 182, 0.9)); }
+            0% { transform: scale(1); filter: drop-shadow(0 0 3px rgba(244, 114, 182, 0.9)); }
+            50% { transform: scale(1.35); filter: drop-shadow(0 0 18px rgba(244, 114, 182, 1)); }
+            100% { transform: scale(1); filter: drop-shadow(0 0 3px rgba(244, 114, 182, 0.9)); }
         }
         .marker-pink-pulse {
             animation: pinkPulseGlow 1.2s infinite ease-in-out !important;
-            z-index: 1000 !important;
+            z-index: 2000 !important;
         }
 
-        /* 3D 擬真信封樣式 */
+        /* 3D 信封樣式 */
         .envelope-top-flap {
             clip-path: polygon(0 0, 100% 0, 50% 100%);
             transform-origin: top center;
@@ -95,7 +129,6 @@
             z-index: 20 !important;
         }
 
-        /* 信紙視覺 */
         .vintage-letter-paper {
             background-color: #fcf9f2 !important;
             border: 1px solid #d4c5b2;
@@ -129,7 +162,6 @@
             background-size: 100% 25px;
         }
 
-        /* 紙張三階段動態 */
         .paper-card {
             pointer-events: none;
             transition: transform 0.45s cubic-bezier(0.34, 1.45, 0.64, 1), box-shadow 0.3s ease;
@@ -192,23 +224,25 @@
             animation: locationShift 0.38s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
 
-        @keyframes heartbeat {
-            0% { transform: translate(-50%, -50%) scale(1); }
-            30% { transform: translate(-50%, -50%) scale(1.35); }
-            60% { transform: translate(-50%, -50%) scale(0.92); }
-            80% { transform: translate(-50%, -50%) scale(1.15); }
-            100% { transform: translate(-50%, -50%) scale(1); }
+        /* 相片牆切換平移動畫 */
+        @keyframes gallerySlideAnimation {
+            0% { opacity: 0; transform: translateX(28px); }
+            100% { opacity: 1; transform: translateX(0); }
         }
-        .animate-heartbeat {
-            animation: heartbeat 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        .animate-gallery-slide {
+            animation: gallerySlideAnimation 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
 
         #timelineActiveCursor {
             transition: left 0.38s cubic-bezier(0.34, 1.56, 0.64, 1), transform 0.38s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
 
+        /* 隱藏地圖彈窗小尾巴與預設背景 */
+        .leaflet-popup-tip-container {
+            display: none !important;
+        }
         .leaflet-popup {
-            min-width: 290px !important;
+            min-width: 300px !important;
             max-width: 90vw !important;
         }
         .leaflet-popup-content-wrapper {
@@ -216,6 +250,7 @@
             padding: 0 !important;
             box-shadow: none !important;
             border: none !important;
+            border-radius: 0 !important;
         }
         .leaflet-popup-content {
             width: auto !important;
@@ -223,8 +258,13 @@
         }
 
         .popup-notes {
-            white-space: pre-wrap;
-            word-break: break-all;
+            white-space: pre-line !important;
+            word-break: break-word !important;
+            text-align: left !important;
+            display: block !important;
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
         }
 
         .leaflet-control-geocoder {
@@ -234,7 +274,7 @@
             background-color: #fdfbf7 !important;
         }
 
-        /* 📸 拍立得卡片 (保留上方空間) */
+        /* 📸 拍立得卡片 */
         .polaroid-card {
             background: #fff;
             padding: 14px 6px 12px 6px;
@@ -242,7 +282,30 @@
             transition: all 0.2s ease;
         }
 
-        /* 左上角黃色便條紙：左側加長留白空間給圖釘，絕不擋到日期 */
+        .stacked-polaroid {
+            position: relative !important;
+            z-index: 10;
+        }
+        .stacked-polaroid::before,
+        .stacked-polaroid::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: #ffffff;
+            border: 1px solid rgba(203, 213, 225, 0.85);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            border-radius: 2px;
+            z-index: -1;
+            pointer-events: none;
+        }
+        .stacked-polaroid::before {
+            transform: rotate(-5deg) translate(-4px, 3px);
+        }
+        .stacked-polaroid::after {
+            transform: rotate(4.5deg) translate(4px, 2px);
+        }
+
+        /* 左上角黃色便條紙 */
         .date-note-paper-pinned {
             background: #fef08a;
             color: #854d0e;
@@ -255,38 +318,44 @@
             border: 1px solid #fef9c3;
         }
 
-        /* 擬真照片捲曲折角 */
+        .polaroid-photo-frame {
+            position: relative;
+        }
+
+        /* 精緻小折角 */
         .real-curl-fold {
             position: absolute;
             bottom: 0;
             right: 0;
-            width: 32px;
-            height: 32px;
+            width: 28px;
+            height: 28px;
             cursor: pointer;
-            z-index: 50;
-            overflow: hidden;
-            transition: all 0.2s ease;
+            z-index: 70;
+            transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .real-curl-fold:hover {
+            transform: scale(1.18);
         }
         .real-curl-fold::before {
             content: '';
             position: absolute;
-            top: 0; right: 0;
-            width: 0; height: 0;
-            border-style: solid;
-            border-width: 0 0 32px 32px;
-            border-color: transparent transparent #d1d5db transparent;
-            filter: drop-shadow(-2px -2px 3px rgba(0,0,0,0.3));
+            bottom: 0;
+            right: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, transparent 48%, #ffffff 50%, #f1f5f9 70%, #cbd5e1 100%);
+            clip-path: polygon(100% 0, 0 100%, 100% 100%);
+            border-top-left-radius: 6px;
+            filter: drop-shadow(-1px -1px 2px rgba(0, 0, 0, 0.15));
         }
         .real-curl-fold::after {
-            content: '↗';
+            content: '↺';
             position: absolute;
-            bottom: 3px;
+            bottom: 2px;
             right: 3px;
-            font-size: 11px;
-            color: #374151;
+            font-size: 10px;
+            color: #64748b;
             font-weight: bold;
-            transform: rotate(-10deg);
-            z-index: 60;
             pointer-events: none;
         }
 
@@ -298,12 +367,25 @@
 
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .img-fallback {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            background: #e5e7eb;
+            color: #9ca3af;
+            font-size: 10px;
+            text-align: center;
+            padding: 8px;
+        }
     </style>
 </head>
-<body class="bg-[#2b1c14] text-slate-700 h-[100dvh] w-screen flex flex-col md:flex-row font-sans relative overflow-hidden">
+<body class="fixed inset-0 bg-[#2b1c14] text-slate-700 flex flex-col md:flex-row font-sans overflow-hidden">
 
-    <!-- 全局右下角半透明齒輪控制選單 -->
-    <div class="fixed bottom-4 right-4 z-[2500] flex flex-col items-end gap-2 pointer-events-auto">
+    <!-- ⚙️ 左下角齒輪控制選單 -->
+    <div class="fixed bottom-4 left-4 z-[2500] flex flex-col items-start gap-2 pointer-events-auto">
         <div id="floatingSettingsMenu" class="hidden bg-[#2b1c14]/90 backdrop-blur-md p-3 rounded-2xl border border-white/20 text-white shadow-2xl w-72 mb-1 space-y-2.5">
             <div onclick="promptForEditMode()" class="text-xs font-bold text-amber-200/90 border-b border-white/10 pb-1.5 flex items-center justify-between cursor-pointer select-none">
                 <span class="flex items-center gap-1"><i data-lucide="settings-2" class="w-3.5 h-3.5"></i> 系統設定</span>
@@ -329,6 +411,11 @@
         </button>
     </div>
 
+    <!-- 💌 右下角重選信封圖案按鈕 -->
+    <button id="btnReturnToEnvelope" onclick="returnToEnvelope()" class="hidden fixed bottom-4 right-4 z-[2500] w-12 h-12 bg-white/90 hover:bg-white text-[#7f5539] border border-rose-300 rounded-full shadow-2xl flex items-center justify-center text-xl transition-all active:scale-90 btn-interactive" title="重選信封紙張">
+        💌
+    </button>
+
     <!-- 觀看模式封面：3D 信封主舞台 -->
     <div id="viewCoverStage" class="fixed inset-0 z-[2000] bg-[#1a0f0a]/90 backdrop-blur-md flex items-center justify-center p-4 transition-all duration-500 perspective-1000">
         <div id="envelopeContainer" class="relative w-full max-w-md h-[290px] preserve-3d cursor-pointer group" onclick="toggle3DEnvelope()">
@@ -347,7 +434,7 @@
                 <div onclick="event.stopPropagation(); handlePaperClick('gallery', 2)" class="paper-card paper-2 absolute w-[205px] h-[250px] letter-kraft-paper rounded-xl p-2.5 cursor-pointer flex flex-col justify-start select-none">
                     <div class="w-full h-full border-2 border-dashed border-[#8c6b41] rounded-lg p-2 flex flex-col items-center bg-[#e2ceb1]">
                         <div class="text-xl mb-1">📸</div>
-                        <div class="font-bold text-[#573d1e] text-xs text-center border-b border-[#a3835a] pb-1 w-full tracking-wider">拍立得與地圖</div>
+                        <div class="font-bold text-[#573d1e] text-xs text-center border-b border-[#a3835a] pb-1 w-full tracking-wider">拍立得相片牆</div>
                         <div class="text-[10px] text-[#70522c] tracking-tight font-medium mt-2 text-center">相片牆記憶與足跡探索</div>
                         <div class="w-full flex-1 letter-dashed-lines mt-3 opacity-60"></div>
                         <div class="text-[8px] text-[#70522c] font-serif self-center mt-auto">Delife Paper</div>
@@ -380,11 +467,11 @@
     </div>
 
     <!-- 側邊欄區域 -->
-    <div id="sidebarPanel" class="w-full md:w-80 bg-[#ede0d4] p-2.5 md:p-4 flex flex-col border-b md:border-b-0 md:border-r border-[#ddc8b4] shrink-0 z-[1000] shadow-md transition-all duration-300 max-h-[60dvh] md:max-h-none md:h-full">
+    <div id="sidebarPanel" class="w-full md:w-80 bg-[#ede0d4] p-2.5 md:p-4 flex flex-col border-b md:border-b-0 md:border-r border-[#ddc8b4] shrink-0 z-[1000] shadow-md transition-all duration-300 h-[62vh] md:h-full overflow-hidden">
         <div class="shrink-0 mb-1.5">
             <div class="flex justify-between items-center mb-1">
                 <h1 class="text-base md:text-xl font-bold flex items-center gap-1.5 text-[#7f5539]">
-                    <i data-lucide="heart-handshake" class="text-[#b7b7a4]"></i> 浪漫足跡手帳
+                    <i data-lucide="camera" class="text-[#b7b7a4]"></i> 拍立得相片牆
                 </h1>
                 
                 <div class="flex items-center gap-1">
@@ -395,14 +482,14 @@
                 </div>
             </div>
             
-            <div id="sidebarTabsContainer" class="hidden grid grid-cols-3 gap-1 bg-[#dfd0c0] p-1 rounded-xl text-xs font-bold text-[#7f5539] shadow-inner">
+            <div id="sidebarTabsContainer" class="grid grid-cols-3 gap-1 bg-[#dfd0c0] p-1 rounded-xl text-xs font-bold text-[#7f5539] shadow-inner">
                 <button id="tabFolders" onclick="switchSidebarTab('folders')" class="py-1 rounded-lg bg-[#fdfbf7] shadow-xs text-center transition hover:bg-white">集合</button>
                 <button id="tabTimeline" onclick="switchSidebarTab('timeline')" class="py-1 rounded-lg hover:bg-[#fdfbf7]/60 text-center transition">時間軸</button>
                 <button id="tabGallery" onclick="switchSidebarTab('gallery')" class="py-1 rounded-lg hover:bg-[#fdfbf7]/60 text-center transition">拍立得</button>
             </div>
         </div>
 
-        <div id="listContentWrapper" class="flex-1 flex flex-col min-h-0 overflow-hidden touch-scroll">
+        <div id="listContentWrapper" class="flex-1 flex flex-col min-h-0 overflow-hidden">
             <div id="viewFolders" class="flex-1 overflow-y-auto touch-scroll min-h-0 space-y-2 pr-1 mb-1">
                 <div id="editFolderHeader" class="hidden flex justify-between items-center bg-emerald-100/80 p-1.5 rounded-lg border border-emerald-200 mb-1">
                     <span class="text-xs font-bold text-emerald-800 flex items-center gap-1">✏️ 編輯模式控制</span>
@@ -414,26 +501,27 @@
             </div>
 
             <div id="viewTimeline" class="hidden flex-1 flex flex-col min-h-0 mb-1">
-                <div id="timelineContainer" class="hidden md:block flex-1 overflow-y-auto touch-scroll min-h-0 space-y-2 pr-1 no-scrollbar relative"></div>
+                <div id="timelineContainer" class="flex-1 overflow-y-auto touch-scroll min-h-0 space-y-2 pr-1 no-scrollbar relative"></div>
             </div>
 
-            <!-- 📌 軟木相片牆區域 (已加入 touch-scroll 順暢下滑) -->
-            <div id="viewGallery" class="hidden flex-1 overflow-y-auto touch-scroll min-h-0 mb-1 corkboard-bg p-2 pt-8 rounded-xl shadow-inner border border-[#a67c52]">
-                <div id="galleryContainer" class="space-y-2 pt-2"></div>
+            <div id="viewGallery" class="hidden flex-1 overflow-y-auto touch-scroll min-h-0 mb-1 corkboard-bg p-2 pt-2 rounded-xl shadow-inner border border-[#a67c52]">
+                <div class="sticky top-0 z-40 bg-[#fff9f0]/95 backdrop-blur-md p-1.5 rounded-2xl border border-[#e8d5c4] mb-3 shadow-md flex items-center justify-between text-xs font-bold gap-1">
+                    <button id="galleryTabTime" onclick="setGalleryMode('time')" class="flex-1 py-1.5 rounded-xl transition-all text-center bg-[#ff8c42] text-white shadow-xs font-bold flex items-center justify-center gap-1">📌 故事線</button>
+                    <button id="galleryTabFolder" onclick="setGalleryMode('folder')" class="flex-1 py-1.5 rounded-xl transition-all text-center text-[#8c6d46] hover:bg-white/60 font-medium">回憶盒</button>
+                    <button id="galleryTabLocation" onclick="setGalleryMode('location')" class="flex-1 py-1.5 rounded-xl transition-all text-center text-[#8c6d46] hover:bg-white/60 font-medium">踩腳印</button>
+                </div>
+
+                <div id="galleryContainer" class="space-y-2 pt-1 pb-6 transition-all duration-300"></div>
             </div>
         </div>
     </div>
 
     <!-- 主展示舞台 -->
     <div id="mainStageArea" class="flex-1 h-full relative overflow-hidden bg-slate-900">
-        <button id="btnReturnToEnvelope" onclick="returnToEnvelope()" class="hidden absolute top-3 left-3 z-[3000] bg-white/90 backdrop-blur-md text-[#7f5539] border border-rose-200 px-3 py-1.5 rounded-full font-bold text-xs shadow-lg hover:bg-rose-50 flex items-center gap-1.5 btn-interactive">
-            <span>💌</span> 重選信封紙張
-        </button>
-
         <div id="map" class="w-full h-full z-[1]"></div>
 
-        <!-- 故事放映室舞台 (完美修正 Chrome/iOS 頂部 safe area 避讓) -->
-        <div id="storyStage" class="hidden absolute inset-0 z-[500] bg-slate-950 flex flex-col justify-between items-center p-2.5 md:p-4 pt-[max(0.75rem,env(safe-area-inset-top))] select-none overflow-hidden">
+        <!-- 故事放映室舞台 -->
+        <div id="storyStage" class="hidden fixed inset-0 z-[2000] bg-slate-950 flex flex-col justify-between items-center p-2.5 md:p-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(0.75rem,env(safe-area-inset-bottom))] select-none overflow-hidden">
             <div id="storyBgBlur" class="absolute inset-0 bg-cover bg-center blur-2xl opacity-40 scale-110 transition-all duration-700 pointer-events-none"></div>
             <div class="absolute inset-0 bg-gradient-to-b from-black/80 via-transparent to-black/90 pointer-events-none"></div>
 
@@ -457,19 +545,32 @@
                     <div id="storyHeaderTitle" class="flex items-center gap-1.5 md:gap-2.5 overflow-hidden flex-1"></div>
                     
                     <div class="flex items-center gap-1.5 shrink-0 ml-auto">
-                        <span id="storyHeaderFolder" class="text-xs md:text-sm bg-pink-500/80 text-white px-2.5 py-0.5 rounded-full font-bold border border-pink-300/40 shadow-xs backdrop-blur-md">我們的旅程</span>
                         <div id="storyHeaderDots" class="flex items-center gap-1 shrink-0 bg-black/30 backdrop-blur-md px-2 py-1 rounded-full border border-white/10"></div>
                     </div>
                 </div>
 
                 <div id="storyMediaBox" class="w-full flex-1 min-h-0 flex flex-col items-center justify-center relative rounded-2xl overflow-hidden shadow-2xl border border-white/15 bg-slate-950/80 backdrop-blur-xs select-none">
-                    <!-- 修正切換點擊區，避免遮擋影片底部控制介面 -->
-                    <div onclick="prevTimelinePhoto()" class="absolute top-0 left-0 w-1/5 h-[70%] z-30 cursor-pointer flex items-center justify-start pl-2 opacity-0 hover:opacity-100 transition"><span class="bg-black/50 text-white rounded-full p-1.5 shadow-md"><i data-lucide="chevron-left" class="w-5 h-5"></i></span></div>
-                    <div onclick="nextTimelinePhoto()" class="absolute top-0 right-0 w-1/5 h-[70%] z-30 cursor-pointer flex items-center justify-end pr-2 opacity-0 hover:opacity-100 transition"><span class="bg-black/50 text-white rounded-full p-1.5 shadow-md"><i data-lucide="chevron-right" class="w-5 h-5"></i></span></div>
                     
+                    <div id="storyNavLeft" onclick="prevTimelinePhoto()" class="absolute top-0 left-0 w-1/4 h-full z-30 cursor-pointer flex items-center justify-start pl-3 group">
+                        <span class="bg-black/50 group-hover:bg-black/80 text-white rounded-full p-2.5 shadow-xl transition transform group-hover:scale-110">
+                            <i data-lucide="chevron-left" class="w-6 h-6"></i>
+                        </span>
+                    </div>
+
+                    <div id="storyNavRight" onclick="nextTimelinePhoto()" class="absolute top-0 right-0 w-1/4 h-full z-30 cursor-pointer flex items-center justify-end pr-3 group">
+                        <span class="bg-black/50 group-hover:bg-black/80 text-white rounded-full p-2.5 shadow-xl transition transform group-hover:scale-110">
+                            <i data-lucide="chevron-right" class="w-6 h-6"></i>
+                        </span>
+                    </div>
+
                     <div id="storyMediaContent" class="w-full h-full flex items-center justify-center overflow-hidden p-1 z-10"></div>
 
-                    <!-- 故事放映室氣泡對話框 -->
+                    <div id="storyVideoNavBar" class="hidden absolute bottom-2 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10">
+                        <button onclick="event.stopPropagation(); prevTimelinePhoto()" class="text-white p-1"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
+                        <span class="text-[10px] text-white/80">左右切換</span>
+                        <button onclick="event.stopPropagation(); nextTimelinePhoto()" class="text-white p-1"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+                    </div>
+
                     <div id="storyBubble" class="absolute top-4 right-4 z-40 p-5 md:p-6 text-slate-800 cursor-move select-none max-w-[210px] md:max-w-[280px] animate-bubble-pop filter drop-shadow-xl pointer-events-auto">
                         <svg class="absolute inset-0 w-full h-full -z-10 overflow-visible" viewBox="0 0 200 150" preserveAspectRatio="none">
                             <path d="M 25,15 A 28,22 0 0,1 75,10 A 28,22 0 0,1 125,10 A 28,22 0 0,1 175,15 A 22,25 0 0,1 192,50 A 22,25 0 0,1 192,100 A 22,25 0 0,1 175,135 A 28,22 0 0,1 125,142 A 28,22 0 0,1 75,142 A 28,22 0 0,1 25,135 A 22,25 0 0,1 8,100 A 22,25 0 0,1 8,50 A 22,25 0 0,1 25,15 Z" 
@@ -481,7 +582,7 @@
                         </svg>
 
                         <div id="storyBubbleNotes" class="text-[10px] md:text-xs text-slate-700 leading-relaxed font-rounded popup-notes max-h-28 md:max-h-36 overflow-y-auto pr-1 touch-scroll">
-                            這裡會顯示滿滿的筆記與回憶喔！(*´∀`)~♥
+                            這裡會顯示滿滿的筆記與回憶喔！(*'∀`)~♥
                         </div>
                     </div>
                 </div>
@@ -546,10 +647,18 @@
                 <label class="block text-xs font-medium text-slate-600 mb-1">圖片網址 (多張請用逗號 , 隔開)</label>
                 <input type="text" id="placeImageUrl" class="w-full p-2 rounded-md bg-white border border-emerald-200 text-slate-800 focus:outline-none focus:border-emerald-600" placeholder="網址1, 網址2...">
             </div>
-            <div>
-                <label class="block text-xs font-medium text-slate-600 mb-1">影片網址 (YouTube / Google Drive / MP4)</label>
-                <input type="text" id="placeVideoUrl" class="w-full p-2 rounded-md bg-white border border-emerald-200 text-slate-800 focus:outline-none focus:border-emerald-600" placeholder="https://...">
+
+            <div class="bg-emerald-50/70 p-2 rounded-lg border border-emerald-200/80 space-y-2">
+                <div>
+                    <label class="block text-xs font-bold text-emerald-900 mb-1">📱 手機影片網址 (YouTube)</label>
+                    <input type="text" id="placeVideoUrlMobile" class="w-full p-2 rounded-md bg-white border border-emerald-200 text-slate-800 focus:outline-none focus:border-emerald-600 text-xs" placeholder="https://youtu.be/...">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">💻 其他裝置影片網址 (Google Drive / MP4)</label>
+                    <input type="text" id="placeVideoUrl" class="w-full p-2 rounded-md bg-white border border-emerald-200 text-slate-800 focus:outline-none focus:border-emerald-600 text-xs" placeholder="https://drive.google.com/...">
+                </div>
             </div>
+
             <div>
                 <label class="block text-xs font-medium text-slate-600 mb-1">筆記想法</label>
                 <textarea id="placeNotes" rows="3" class="w-full p-2 rounded-md bg-white border border-emerald-200 text-slate-800 focus:outline-none focus:border-emerald-600"></textarea>
@@ -571,7 +680,20 @@
         }).addTo(map);
 
         let isEnvelopeOpen = false;
-        let mapConnectingPolyline = null;
+        let currentGalleryMode = 'time';
+        window.activeGalleryCardId = null;
+        window.isSwitchingPopup = false;
+        let itemMarkerMap = {};
+
+        function escapeHtml(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
 
         function toggleSettingsMenu() {
             const menu = document.getElementById('floatingSettingsMenu');
@@ -639,7 +761,6 @@
 
         function returnToEnvelope() {
             closeStoryStage();
-            removeConnectingLine();
             const coverStage = document.getElementById('viewCoverStage');
             const btnReturn = document.getElementById('btnReturnToEnvelope');
             btnReturn.classList.add('hidden');
@@ -707,7 +828,7 @@
             currentLatLng = latlng;
             if (currentMarker) map.removeLayer(currentMarker);
             
-            currentMarker = L.marker(latlng, { icon: createCustomIcon('blue', 'map-pin') }).addTo(map);
+            currentMarker = L.marker(latlng, { icon: createCustomIcon('blue', 'map-pin'), zIndexOffset: 1000 }).addTo(map);
             
             openPanel(true);
             document.getElementById('placeTitle').value = name;
@@ -724,9 +845,7 @@
 
         const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbxfmcmztf5KUo9RUx_2zwIwuawdd5UBzQGA0jf2P6LDxFJG8izufuBRR0sZc_3KwIb5/exec';
         let gasUrl = localStorage.getItem('gasUrl') || DEFAULT_GAS_URL;
-        
-        let playbackDelay = parseFloat(localStorage.getItem('playbackDelay')) || 3.5; 
-        
+
         let playbackState = 'stopped';
         let currentPlaybackItemIndex = 0;
         let currentPlaybackImgIndex = 0;
@@ -761,13 +880,14 @@
 
             if (isMobileListCollapsed) {
                 listWrapper.classList.add('hidden');
-                sidebar.classList.remove('max-h-[60dvh]');
-                sidebar.classList.add('max-h-none');
+                sidebar.classList.remove('h-[62vh]', 'h-[92vh]');
+                sidebar.classList.add('h-auto');
                 if (icon) icon.setAttribute('data-lucide', 'chevron-down');
                 if (text) text.innerText = '展開列表';
             } else {
                 listWrapper.classList.remove('hidden');
-                sidebar.classList.add('max-h-[60dvh]');
+                sidebar.classList.remove('h-auto');
+                sidebar.classList.add('h-[62vh]');
                 if (icon) icon.setAttribute('data-lucide', 'chevron-up');
                 if (text) text.innerText = '收起列表';
             }
@@ -807,22 +927,80 @@
             if (url.includes('drive.google.com')) {
                 let id = '';
                 if (url.includes('/file/d/')) {
-                    id = url.split('/file/d/')[1].split('/')[0];
+                    id = url.split('/file/d/')[1].split('/')[0].split('?')[0];
                 } else if (url.includes('id=')) {
                     id = url.split('id=')[1].split('&')[0];
                 } else if (url.includes('/d/')) {
-                    id = url.split('/d/')[1].split('/')[0];
+                    id = url.split('/d/')[1].split('/')[0].split('?')[0];
                 }
                 if (id) {
-                    return "https://lh3.googleusercontent.com/d/" + id;
+                    return `https://drive.google.com/thumbnail?id=${id}&sz=w1000`;
                 }
             }
             return url;
         }
 
+        function getGoogleDriveFallbackUrls(url) {
+            if (!url) return [];
+            url = String(url).trim();
+            const urls = [];
+            if (url.includes('drive.google.com')) {
+                let id = '';
+                if (url.includes('/file/d/')) {
+                    id = url.split('/file/d/')[1].split('/')[0].split('?')[0];
+                } else if (url.includes('id=')) {
+                    id = url.split('id=')[1].split('&')[0];
+                } else if (url.includes('/d/')) {
+                    id = url.split('/d/')[1].split('/')[0].split('?')[0];
+                }
+                if (id) {
+                    urls.push(`https://drive.google.com/thumbnail?id=${id}&sz=w1000`);
+                    urls.push(`https://lh3.googleusercontent.com/d/${id}=w1000`);
+                    urls.push(`https://drive.google.com/uc?export=view&id=${id}`);
+                }
+            } else {
+                urls.push(url);
+            }
+            return urls;
+        }
+
         function getGoogleDriveOriginalLink(url) {
             return convertGoogleDriveLink(url);
         }
+
+        function buildImgWithFallback(rawUrl, extraClass, altText) {
+            const urls = getGoogleDriveFallbackUrls(rawUrl);
+            const safeAlt = escapeHtml(altText || '');
+            if (urls.length === 0) {
+                return `<div class="img-fallback">圖片網址無效</div>`;
+            }
+            const primary = urls[0];
+            const fallbackJson = escapeHtml(JSON.stringify(urls.slice(1)));
+            return `<img src="${primary}" alt="${safeAlt}" loading="lazy" class="${extraClass || ''}"
+                        data-fallback-queue="${fallbackJson}"
+                        onerror="handleImgFallback(this)">`;
+        }
+
+        window.handleImgFallback = function(imgEl) {
+            let queue = [];
+            try {
+                queue = JSON.parse(imgEl.getAttribute('data-fallback-queue') || '[]');
+            } catch (e) { queue = []; }
+
+            if (queue.length > 0) {
+                const next = queue.shift();
+                imgEl.setAttribute('data-fallback-queue', JSON.stringify(queue));
+                imgEl.onerror = function() { handleImgFallback(imgEl); };
+                imgEl.src = next;
+            } else {
+                const fallback = document.createElement('div');
+                fallback.className = 'img-fallback';
+                fallback.innerText = '圖片載入中/未公開';
+                if (imgEl.parentElement) {
+                    imgEl.parentElement.replaceChild(fallback, imgEl);
+                }
+            }
+        };
 
         function formatDateString(dateStr) {
             if (!dateStr) return '';
@@ -845,7 +1023,19 @@
             return str;
         }
 
-        /* 🎥 修正影片內嵌介面，確保原生播放按鈕不被變形 */
+        function getDeviceVideoUrl(item) {
+            if (!item) return '';
+            const isMobileDevice = /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            
+            if (isMobileDevice && item.video_url_mobile && item.video_url_mobile.trim()) {
+                return item.video_url_mobile.trim();
+            }
+            if (item.video_url && item.video_url.trim()) {
+                return item.video_url.trim();
+            }
+            return (item.video_url_mobile || '').trim();
+        }
+
         function getVideoEmbedHtml(url) {
             if (!url) return '';
             url = url.trim();
@@ -853,19 +1043,19 @@
             let fileId = '';
             if (url.includes('drive.google.com')) {
                 if (url.includes('/file/d/')) {
-                    fileId = url.split('/file/d/')[1].split('/')[0];
+                    fileId = url.split('/file/d/')[1].split('/')[0].split('?')[0];
                 } else if (url.includes('id=')) {
                     fileId = url.split('id=')[1].split('&')[0];
                 } else if (url.includes('/d/')) {
-                    fileId = url.split('/d/')[1].split('/')[0];
+                    fileId = url.split('/d/')[1].split('/')[0].split('?')[0];
                 }
                 if (fileId) {
-                    return `<iframe class="w-full h-full min-h-[220px] rounded-lg border-0 z-20 pointer-events-auto" src="https://drive.google.com/file/d/${fileId}/preview" frameborder="0" allow="autoplay; fullscreen" allowfullscreen></iframe>`;
+                    return `<iframe class="w-full h-full min-h-[220px] rounded-lg border-0" src="https://drive.google.com/file/d/${fileId}/preview" allow="autoplay; fullscreen" allowfullscreen></iframe>`;
                 }
             }
 
             if (url.match(/\.(mp4|webm|ogg)($|\?)/i)) {
-                return `<video class="w-full h-full max-h-full object-contain rounded-lg z-20 pointer-events-auto" controls playsinline webkit-playsinline preload="metadata">
+                return `<video class="w-full h-full max-h-full object-contain rounded-lg" controls playsinline webkit-playsinline preload="metadata">
                             <source src="${url}">
                         </video>`;
             }
@@ -883,10 +1073,10 @@
             }
 
             if (videoId) {
-                return `<iframe class="w-full aspect-video rounded-lg z-20 pointer-events-auto border-0" src="https://www.youtube.com/embed/${videoId}?autoplay=0&playsinline=1&enablejsapi=1" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`;
+                return `<iframe class="w-full aspect-video rounded-lg border-0" src="https://www.youtube.com/embed/${videoId}?playsinline=1" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`;
             }
 
-            return `<iframe class="w-full h-full rounded-lg z-20 pointer-events-auto border-0" src="${url}" frameborder="0" allow="fullscreen"></iframe>`;
+            return `<iframe class="w-full h-full rounded-lg border-0" src="${url}" frameborder="0" allow="fullscreen"></iframe>`;
         }
 
         function createCustomIcon(colorName, iconName) {
@@ -894,38 +1084,39 @@
             const emoji = iconEmojiMap[iconName] || '📍';
             
             const svgPinBg = `
-                <svg width="36" height="36" viewBox="0 0 40 40" style="display:block; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.3));">
-                    <path d="M20 2C13.1 2 7.5 7.6 7.5 14.5C7.5 23.2 20 37 20 37S32.5 23.2 32.5 14.5C32.5 7.6 26.9 2 20 2Z" fill="${color}"/>
+                <svg width="38" height="38" viewBox="0 0 40 40" style="display:block; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4));">
+                    <path d="M20 2C13.1 2 7.5 7.6 7.5 14.5C7.5 23.2 20 37 20 37S32.5 23.2 32.5 14.5C32.5 7.6 26.9 2 20 2Z" fill="${color}" stroke="#ffffff" stroke-width="1.5"/>
                     <circle cx="20" cy="14.5" r="9" fill="white"/>
                 </svg>
             `;
 
             return L.divIcon({
                 html: `
-                    <div style="position:relative; width:36px; height:36px;">
+                    <div style="position:relative; width:38px; height:38px; pointer-events:none;">
                         ${svgPinBg}
-                        <div style="position:absolute; top:3px; left:0; width:36px; height:20px; display:flex; align-items:center; justify-content:center; font-size:12px; line-height:1; pointer-events:none; user-select:none;">
+                        <div style="position:absolute; top:4px; left:0; width:38px; height:20px; display:flex; align-items:center; justify-content:center; font-size:13px; line-height:1; pointer-events:none; user-select:none;">
                             ${emoji}
                         </div>
                     </div>
                 `,
                 className: 'custom-leaflet-icon-emoji',
-                iconSize: [36, 36],
-                iconAnchor: [18, 35]
+                iconSize: [38, 38],
+                iconAnchor: [19, 37]
             });
         }
 
         map.on('click', function(e) {
-            removeConnectingLine();
             if (!isEditMode) return;
-            if (e.originalEvent.target.id === 'map' || e.originalEvent.target.classList.contains('leaflet-container')) {
-                activeId = null;
-                currentLatLng = e.latlng;
-                if (currentMarker) map.removeLayer(currentMarker);
-                currentMarker = L.marker(e.latlng, { icon: createCustomIcon('blue', 'map-pin') }).addTo(map);
-                openPanel(true);
-                lucide.createIcons();
+            const t = e.originalEvent.target;
+            if (t.closest && t.closest('.leaflet-control, .leaflet-marker-icon, .leaflet-popup')) {
+                return;
             }
+            activeId = null;
+            currentLatLng = e.latlng;
+            if (currentMarker) map.removeLayer(currentMarker);
+            currentMarker = L.marker(e.latlng, { icon: createCustomIcon('blue', 'map-pin'), zIndexOffset: 1000 }).addTo(map);
+            openPanel(true);
+            lucide.createIcons();
         });
 
         window.addNewEntryAtLocation = function(locKey) {
@@ -940,7 +1131,7 @@
                 activeId = null;
                 currentLatLng = { lat, lng };
                 if (currentMarker) map.removeLayer(currentMarker);
-                currentMarker = L.marker([lat, lng], { icon: createCustomIcon('blue', 'map-pin') }).addTo(map);
+                currentMarker = L.marker([lat, lng], { icon: createCustomIcon('blue', 'map-pin'), zIndexOffset: 1000 }).addTo(map);
                 openPanel(true);
                 lucide.createIcons();
             }
@@ -948,7 +1139,7 @@
 
         window.openEditPanelForItemById = function(itemId) {
             if (!isEditMode) return;
-            const item = markersData.find(m => m.id === itemId);
+            const item = markersData.find(m => String(m.id) === String(itemId));
             if (item) {
                 openEditPanelForItem(item);
             }
@@ -968,6 +1159,7 @@
             document.getElementById('placeNotes').value = item.notes || '';
             document.getElementById('placeImageUrl').value = item.image_url || '';
             document.getElementById('placeVideoUrl').value = item.video_url || '';
+            document.getElementById('placeVideoUrlMobile').value = item.video_url_mobile || '';
             document.getElementById('placeColor').value = item.color || 'blue';
             document.getElementById('placeIcon').value = item.icon || 'map-pin';
             
@@ -989,6 +1181,7 @@
                 document.getElementById('placeNotes').value = "";
                 document.getElementById('placeImageUrl').value = "";
                 document.getElementById('placeVideoUrl').value = "";
+                document.getElementById('placeVideoUrlMobile').value = "";
                 document.getElementById('btnDelete').classList.add('hidden');
                 document.getElementById('placeColor').value = 'blue';
                 document.getElementById('placeIcon').value = 'map-pin';
@@ -1012,7 +1205,7 @@
             if (!select) return;
             const currentSelectedValue = select.value || '';
             const allFolders = Array.from(new Set([...folders, ...markersData.map(m => m.folder_name).filter(Boolean)]));
-            select.innerHTML = allFolders.map(f => `<option value="${f}">${f}</option>`).join('');
+            select.innerHTML = allFolders.map(f => `<option value="${escapeHtml(f)}">${escapeHtml(f)}</option>`).join('');
             if (currentSelectedValue && allFolders.includes(currentSelectedValue)) select.value = currentSelectedValue;
         }
 
@@ -1090,12 +1283,13 @@
             const rawDateVal = document.getElementById('placeDate').value || ""; 
             const date = formatDateString(rawDateVal);
 
-            const existingItem = activeId ? markersData.find(m => m.id === activeId) : null;
+            const existingItem = activeId ? markersData.find(m => String(m.id) === String(activeId)) : null;
             const inTimeline = existingItem ? (existingItem.in_timeline || 'yes') : 'yes';
 
             const notes = document.getElementById('placeNotes').value;
             const imageUrl = document.getElementById('placeImageUrl').value;
             const videoUrl = document.getElementById('placeVideoUrl').value;
+            const videoUrlMobile = document.getElementById('placeVideoUrlMobile').value;
             const color = document.getElementById('placeColor').value;
             let icon = document.getElementById('placeIcon').value;
             const folder = document.getElementById('placeFolder').value;
@@ -1108,8 +1302,9 @@
             const maxOrder = folderItems.reduce((max, item) => (item.order > max ? item.order : max), Date.now());
             const itemOrder = existingItem && existingItem.order !== undefined ? existingItem.order : (maxOrder + 1000);
 
-            const dataItem = { id, title, location, date, in_timeline: inTimeline, lat, lng, notes, video_url: videoUrl, image_url: imageUrl, color, icon, folder_name: folder, order: itemOrder };
+            const dataItem = { id, title, location, date, in_timeline: inTimeline, lat, lng, notes, video_url: videoUrl, video_url_mobile: videoUrlMobile, image_url: imageUrl, color, icon, folder_name: folder, order: itemOrder };
 
+            let saveSucceeded = true;
             if (gasUrl) {
                 try {
                     await fetch(gasUrl, {
@@ -1117,10 +1312,14 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ action: 'save', data: dataItem })
                     });
-                } catch (e) { console.error(e); }
+                } catch (e) {
+                    console.error(e);
+                    saveSucceeded = false;
+                    alert("⚠️ 儲存到雲端時發生網路錯誤，請檢查網路連線後重試。本機畫面仍會先更新，但可能尚未同步。");
+                }
             }
 
-            if (activeId) markersData = markersData.filter(m => m.id !== id);
+            if (activeId) markersData = markersData.filter(m => String(m.id) !== String(id));
             markersData.push(dataItem);
             if (currentMarker) map.removeLayer(currentMarker);
             currentMarker = null;
@@ -1141,7 +1340,7 @@
                     });
                 } catch(e){}
             }
-            markersData = markersData.filter(m => m.id !== activeId);
+            markersData = markersData.filter(m => String(m.id) !== String(activeId));
             closePanel();
             fetchCloudData();
         }
@@ -1205,52 +1404,26 @@
             }
         }
 
-        /* 🎯 智慧地圖置中（完美修復圖二：手機版卡片不會被擠到最上方） */
-        function centerPopupOnMap(lat, lng) {
-            const targetLat = parseFloat(lat);
-            const targetLng = parseFloat(lng);
-            if (isNaN(targetLat) || isNaN(targetLng)) return;
-
-            const targetLatLng = L.latLng(targetLat, targetLng);
+        /* 📌 需求 2 & 3 修復：精密定位 - 照片卡片 100% 正中央，Pin 腳位在照片左下方 35px 近處 */
+        function positionMapForCenteredPhoto(lat, lng) {
+            const pinLatLng = L.latLng(parseFloat(lat), parseFloat(lng));
             const targetZoom = Math.max(map.getZoom(), 15);
-            const targetPoint = map.project(targetLatLng, targetZoom);
-            
-            // 依據手機/電腦視窗動態調整向下偏移量，確保 370px 高的卡片正好處於螢幕垂直中央
-            const isMobile = window.innerWidth < 768;
-            const offsetY = isMobile ? 30 : -100;
-            
-            const popupCenterPoint = L.point(targetPoint.x, targetPoint.y - offsetY);
-            const centerLatLng = map.unproject(popupCenterPoint, targetZoom);
 
-            map.setView(centerLatLng, targetZoom, { animate: true, duration: 0.4 });
-        }
+            map.setZoom(targetZoom, { animate: false });
+            const mapSize = map.getSize();
 
-        function drawConnectingLine(lat, lng) {
-            removeConnectingLine();
-            const targetLat = parseFloat(lat);
-            const targetLng = parseFloat(lng);
-            if (isNaN(targetLat) || isNaN(targetLng)) return;
-            
-            const pinLatLng = L.latLng(targetLat, targetLng);
-            const targetZoom = map.getZoom();
-            
-            const pinPoint = map.project(pinLatLng, targetZoom);
-            const cardBottomPoint = L.point(pinPoint.x, pinPoint.y - 45);
-            const cardBottomLatLng = map.unproject(cardBottomPoint, targetZoom);
+            // Pin 點設定於 (視口中心 X-180px, 視口中心 Y+190px)
+            const targetPinPoint = L.point(mapSize.x / 2 - 180, mapSize.y / 2 + 190);
 
-            mapConnectingPolyline = L.polyline([cardBottomLatLng, pinLatLng], {
-                color: '#ff2a75',
-                weight: 4,
-                dashArray: '5, 8',
-                opacity: 0.95
-            }).addTo(map);
-        }
+            const currentPinPoint = map.latLngToContainerPoint(pinLatLng);
+            const dx = currentPinPoint.x - targetPinPoint.x;
+            const dy = currentPinPoint.y - targetPinPoint.y;
 
-        function removeConnectingLine() {
-            if (mapConnectingPolyline) {
-                map.removeLayer(mapConnectingPolyline);
-                mapConnectingPolyline = null;
-            }
+            const currentCenterPoint = map.latLngToContainerPoint(map.getCenter());
+            const newCenterPoint = L.point(currentCenterPoint.x + dx, currentCenterPoint.y + dy);
+            const newCenterLatLng = map.containerPointToLatLng(newCenterPoint);
+
+            map.setView(newCenterLatLng, targetZoom, { animate: true, duration: 0.3 });
         }
 
         window.toggleMapCardFlip = function(itemId) {
@@ -1260,8 +1433,50 @@
             }
         };
 
+        /* 📌 需求 2 修復：連接線長度縮短至 1/3 (約 30px) */
+        function updateDashedLeaderLine() {
+            if (!window.activePinLatLng) {
+                if (window.activeDashedLine) {
+                    map.removeLayer(window.activeDashedLine);
+                    window.activeDashedLine = null;
+                }
+                return;
+            }
+
+            const pinLatLng = window.activePinLatLng;
+            
+            // 抓取真實照片卡片 DOM
+            const cardEl = document.querySelector('.flip-card-front');
+            let cardBottomLeftLatLng = null;
+
+            if (cardEl) {
+                const rect = cardEl.getBoundingClientRect();
+                const mapRect = document.getElementById('map').getBoundingClientRect();
+                const containerX = rect.left - mapRect.left;
+                const containerY = rect.bottom - mapRect.top;
+                cardBottomLeftLatLng = map.containerPointToLatLng(L.point(containerX + 2, containerY - 2));
+            } else {
+                const w = map.getSize().x;
+                const h = map.getSize().y;
+                cardBottomLeftLatLng = map.containerPointToLatLng(L.point(w / 2 - 150, h / 2 + 185));
+            }
+
+            if (!window.activeDashedLine) {
+                window.activeDashedLine = L.polyline([pinLatLng, cardBottomLeftLatLng], {
+                    color: '#f472b6',
+                    weight: 3.5,
+                    dashArray: '5, 5',
+                    opacity: 0.95,
+                    interactive: false
+                }).addTo(map);
+            } else {
+                window.activeDashedLine.setLatLngs([pinLatLng, cardBottomLeftLatLng]);
+            }
+        }
+
+        map.on('move zoom viewreset', updateDashedLeaderLine);
+
         window.showGroupListInPopup = function(locKey) {
-            removeConnectingLine();
             const marker = markerInstances[locKey];
             if (!marker) return;
 
@@ -1291,8 +1506,8 @@
                 listHtml += `
                     <div onclick="showItemDetailInPopup('${locKey}', '${item.id}', true, 0)" class="btn-interactive p-2 rounded-lg bg-white/90 border border-slate-200/80 hover:border-[#7f5539] hover:bg-[#fdfbf7] cursor-pointer transition flex items-center justify-between shadow-2xs">
                         <div>
-                            <div class="font-bold text-xs text-slate-800">${item.title}</div>
-                            <div class="text-[10px] text-pink-600 font-medium flex items-center gap-1 mt-0.5">📅 ${cleanDate}</div>
+                            <div class="font-bold text-xs text-slate-800">${escapeHtml(item.title)}</div>
+                            <div class="text-[10px] text-pink-600 font-medium flex items-center gap-1 mt-0.5">📅 ${escapeHtml(cleanDate)}</div>
                         </div>
                         <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
                     </div>
@@ -1300,29 +1515,45 @@
             });
             listHtml += `</div></div>`;
 
-            marker.bindPopup(listHtml, { autoPan: false }).openPopup();
+            marker.bindPopup(listHtml, { 
+                autoPan: true, 
+                autoPanPaddingTopLeft: [10, 100],
+                autoPanPaddingBottomRight: [10, 20] 
+            }).openPopup();
             lucide.createIcons();
         };
 
         function formatNotesLikeStoryBubble(text) {
-            if (!text) return '這裡會顯示滿滿的筆記與回憶喔！(*´∀`)~♥';
-            return text;
+            if (!text) return '這裡會顯示滿滿的筆記與回憶喔！(*\'∀`)~♥';
+            return String(text)
+                .split('\n')
+                .map(line => line.trim())
+                .filter(line => line.length > 0)
+                .join('\n');
         }
 
         window.showItemDetailInPopup = function(locKey, itemId, showBackBtn = false, initialMediaIndex = 0) {
-            const marker = markerInstances[locKey];
+            const item = markersData.find(m => String(m.id) === String(itemId));
+            if (!item) return;
+
+            const marker = itemMarkerMap[item.id] || markerInstances[locKey];
             if (!marker) return;
 
-            const item = markersData.find(m => m.id === itemId);
-            if (!item) return;
+            window.isSwitchingPopup = true;
+
+            // 確保標記 100% 顯示並置頂
+            marker.addTo(map);
+            if (marker.setZIndexOffset) marker.setZIndexOffset(2000);
 
             document.querySelectorAll('.marker-pink-pulse').forEach(el => el.classList.remove('marker-pink-pulse'));
             if (marker._icon) {
                 marker._icon.classList.add('marker-pink-pulse');
             }
 
+            window.activePinLatLng = marker.getLatLng();
+
             const rawImages = parseImageUrls(item.image_url);
-            const videoUrl = item.video_url ? item.video_url.trim() : '';
+            const videoUrl = getDeviceVideoUrl(item);
 
             const mediaList = [];
             rawImages.forEach(img => mediaList.push({ type: 'image', url: img }));
@@ -1337,10 +1568,10 @@
             
             if (currentItem) {
                 if (currentItem.type === 'image') {
-                    const safeImg = convertGoogleDriveLink(currentItem.url);
+                    const imgHtml = buildImgWithFallback(currentItem.url, 'w-full h-full object-cover rounded-xs', item.title);
                     photoContent = `
-                        <a href="${getGoogleDriveOriginalLink(currentItem.url)}" data-caption="${item.title} (${validIndex + 1}/${mediaList.length})" data-fancybox="gallery_${item.id}" class="w-full h-full flex items-center justify-center">
-                            <img src="${safeImg}" class="w-full h-full object-cover rounded-xs" onerror="this.parentElement.parentElement.innerHTML='<span class=\\'text-[10px] text-slate-400\\'>圖片載入中/未公開</span>'">
+                        <a href="${getGoogleDriveOriginalLink(currentItem.url)}" data-caption="${escapeHtml(item.title)} (${validIndex + 1}/${mediaList.length})" data-fancybox="gallery_${item.id}" class="w-full h-full flex items-center justify-center">
+                            ${imgHtml}
                         </a>`;
                 } else if (currentItem.type === 'video') {
                     photoContent = getVideoEmbedHtml(currentItem.url);
@@ -1370,7 +1601,7 @@
             const formattedNotesText = formatNotesLikeStoryBubble(item.notes);
 
             let popupHtml = `
-                <div class="w-[280px] sm:w-[310px] h-[370px] perspective-1000 select-none">
+                <div class="w-[300px] h-[370px] perspective-1000 select-none">
                     <div id="mapFlipCard_${item.id}" class="flip-card-inner relative w-full h-full preserve-3d">
                         
                         <!-- 📷 正面 -->
@@ -1378,33 +1609,32 @@
                             <div class="flex-1 flex flex-col min-h-0">
                                 ${showBackBtn ? `<button onclick="showGroupListInPopup('${locKey}')" class="text-[10px] text-[#7f5539] hover:underline font-bold mb-1 block">❮ 返回列表</button>` : ''}
                                 
-                                <div class="relative w-full aspect-square bg-slate-900 rounded-xs overflow-hidden mb-2 shadow-inner flex items-center justify-center">
+                                <div class="polaroid-photo-frame relative w-full flex-1 bg-slate-900 rounded-xs overflow-hidden mb-2 shadow-inner flex items-center justify-center">
                                     ${photoContent}
                                     ${navOverlayHtml}
                                 </div>
 
                                 <div class="px-1 mt-auto">
-                                    <div class="text-sm font-bold text-slate-800 line-clamp-1 leading-snug font-rounded">${item.title}</div>
-                                    <div class="text-xs text-slate-500 mt-1 flex items-center gap-1 line-clamp-1">
+                                    <div class="text-sm font-bold text-slate-800 line-clamp-1 leading-snug font-rounded">${escapeHtml(item.title)}</div>
+                                    <div class="text-xs text-slate-500 mt-0.5 flex items-center gap-1 line-clamp-1">
                                         <span>${iconEmojiMap[item.icon] || '📍'}</span>
-                                        <span class="truncate">${item.location || '未標註地點'}</span>
+                                        <span class="truncate">${escapeHtml(item.location || '未標註地點')}</span>
                                     </div>
                                 </div>
                             </div>
-
-                            <div onclick="toggleMapCardFlip('${item.id}')" class="real-curl-fold" title="翻面看筆記"></div>
+                            <div onclick="event.stopPropagation(); toggleMapCardFlip('${item.id}')" class="real-curl-fold" title="翻面看筆記"></div>
                         </div>
 
-                        <!-- ✍️ 背面：靠左對齊 -->
+                        <!-- ✍️ 背面 -->
                         <div class="flip-card-back absolute inset-0 bg-[#fcf8f2] p-5 rounded-xs shadow-2xl border-2 border-dashed border-[#d4bead] flex flex-col justify-between items-start backface-hidden [transform:rotateY(180deg)] overflow-hidden">
                             <div class="w-full flex items-center justify-between text-xs text-[#a07855] border-b border-[#e6d5c3] pb-1.5 px-1 shrink-0">
                                 <span class="flex items-center gap-1 font-rounded"><i data-lucide="heart" class="w-3.5 h-3.5 text-rose-400 fill-rose-200"></i> 心情手札</span>
                                 <span class="font-mono text-[10px] opacity-75">✨ Memory Note</span>
                             </div>
 
-                            <div class="w-full flex-1 flex flex-col justify-center items-start my-auto py-2">
-                                <div class="w-full max-h-[240px] overflow-y-auto touch-scroll px-1 text-slate-700 text-xs md:text-sm leading-relaxed font-rounded popup-notes text-left">
-                                    ${formattedNotesText}
+                            <div class="w-full flex-1 flex flex-col justify-start items-start py-3 overflow-hidden">
+                                <div class="w-full max-h-[230px] overflow-y-auto touch-scroll text-slate-700 text-xs md:text-sm leading-relaxed font-rounded popup-notes text-left">
+                                    ${escapeHtml(formattedNotesText)}
                                 </div>
                             </div>
 
@@ -1412,19 +1642,31 @@
                                 ~ * ♥ Our Sweet Moments ♥ * ~
                             </div>
 
-                            <div onclick="toggleMapCardFlip('${item.id}')" class="real-curl-fold" title="翻回相片"></div>
+                            <div onclick="event.stopPropagation(); toggleMapCardFlip('${item.id}')" class="real-curl-fold" title="翻回相片"></div>
                         </div>
 
                     </div>
                 </div>
             `;
 
+            // 設定精密 Offset (讓照片卡片置中在螢幕正中央)
             marker.bindPopup(popupHtml, { 
                 autoPan: false,
-                offset: [0, -20]
+                offset: [180, -5]
             }).openPopup();
 
-            drawConnectingLine(item.lat, item.lng);
+            positionMapForCenteredPhoto(item.lat, item.lng);
+
+            // 確保照片牆上的該張照片維持隱藏狀態
+            if (window.activeGalleryCardId) {
+                const targetCard = document.getElementById('gallery_card_' + window.activeGalleryCardId);
+                if (targetCard) targetCard.classList.add('photo-hidden');
+            }
+
+            setTimeout(() => {
+                updateDashedLeaderLine();
+                window.isSwitchingPopup = false;
+            }, 80);
 
             if (isEditMode) {
                 openEditPanelForItem(item);
@@ -1434,9 +1676,22 @@
         };
 
         map.on('popupclose', function() {
-            removeConnectingLine();
+            if (window.isSwitchingPopup) return;
+            
+            if (window.activeGalleryCardId) {
+                const targetCard = document.getElementById('gallery_card_' + window.activeGalleryCardId);
+                if (targetCard) targetCard.classList.remove('photo-hidden');
+                window.activeGalleryCardId = null;
+            }
+
+            window.activePinLatLng = null;
+            if (window.activeDashedLine) {
+                map.removeLayer(window.activeDashedLine);
+                window.activeDashedLine = null;
+            }
         });
 
+        /* 📌 需求 1 修復：渲染所有地點圖釘標記，設定置頂與標記圖示 */
         function renderMapMarkers(data) {
             markersData = data || [];
             markersData.sort((a, b) => (a.order || 0) - (b.order || 0));
@@ -1445,6 +1700,7 @@
                 if (layer instanceof L.Marker) map.removeLayer(layer);
             });
             markerInstances = {};
+            itemMarkerMap = {};
 
             const groups = getGroupedItems();
 
@@ -1460,14 +1716,18 @@
 
                 try {
                     const marker = L.marker([lat, lng], { 
-                        icon: createCustomIcon(primaryItem.color, primaryItem.icon) 
+                        icon: createCustomIcon(primaryItem.color, primaryItem.icon),
+                        zIndexOffset: 1000
                     }).addTo(map);
 
                     markerInstances[locKey] = marker;
 
+                    items.forEach(it => {
+                        itemMarkerMap[it.id] = marker;
+                    });
+
                     marker.on('click', () => {
                         closeStoryStage(); 
-                        centerPopupOnMap(lat, lng);
 
                         document.querySelectorAll('.marker-pink-pulse').forEach(el => el.classList.remove('marker-pink-pulse'));
                         if (marker._icon) {
@@ -1500,6 +1760,9 @@
 
         function switchSidebarTab(tabName) {
             const tabs = ['folders', 'timeline', 'gallery'];
+            const sidebar = document.getElementById('sidebarPanel');
+            const tabsContainer = document.getElementById('sidebarTabsContainer');
+
             tabs.forEach(t => {
                 const btn = document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1));
                 const view = document.getElementById('view' + t.charAt(0).toUpperCase() + t.slice(1));
@@ -1519,11 +1782,26 @@
                 }
             });
 
+            if (!isEditMode && tabName === 'gallery') {
+                if (tabsContainer) tabsContainer.classList.add('hidden');
+            } else {
+                if (tabsContainer) tabsContainer.classList.remove('hidden');
+            }
+
+            if (window.innerWidth < 768 && tabName === 'gallery') {
+                sidebar.classList.remove('h-[62vh]', 'h-auto');
+                sidebar.classList.add('h-[92vh]');
+                isMobileListCollapsed = false;
+                document.getElementById('listContentWrapper').classList.remove('hidden');
+            } else if (window.innerWidth < 768 && !isMobileListCollapsed) {
+                sidebar.classList.remove('h-[92vh]');
+                sidebar.classList.add('h-[62vh]');
+            }
+
             if (tabName === 'timeline') {
                 openStoryStage();
             } else {
                 closeStoryStage();
-                toggleMobileList(false);
             }
 
             const btnReturn = document.getElementById('btnReturnToEnvelope');
@@ -1589,15 +1867,15 @@
                         <div onclick="focusPlace('${item.lat}', '${item.lng}', '${item.id}')" class="flex-1 cursor-pointer overflow-hidden">
                             <div class="absolute left-[9px] top-3.5 w-2 h-2 rounded-full ${isHidden ? 'bg-slate-400' : 'bg-[#7f5539]'} ring-4 ring-[#f4ebe1]"></div>
                             <div class="text-[10px] ${isHidden ? 'text-slate-500' : 'text-pink-600'} font-bold flex items-center gap-1">
-                                <i data-lucide="calendar" class="w-2.5 h-2.5"></i> ${cleanDate}
+                                <i data-lucide="calendar" class="w-2.5 h-2.5"></i> ${escapeHtml(cleanDate)}
                             </div>
                             <div class="text-xs ${isHidden ? 'text-slate-500 line-through' : 'text-slate-800'} leading-snug flex items-baseline gap-1.5 mt-0.5">
-                                <span class="font-bold shrink-0 text-sm md:text-xs">${item.title}</span>
+                                <span class="font-bold shrink-0 text-sm md:text-xs">${escapeHtml(item.title)}</span>
                                 <span class="text-[10px] text-slate-500 flex items-center gap-0.5 truncate font-normal">
-                                    ${iconEmojiMap[item.icon] || '📍'} ${item.location || ''}
+                                    ${iconEmojiMap[item.icon] || '📍'} ${escapeHtml(item.location || '')}
                                 </span>
                             </div>
-                            ${item.notes ? `<div class="text-[10px] text-slate-400 line-clamp-1 mt-0.5">${item.notes}</div>` : ''}
+                            ${item.notes ? `<div class="text-[10px] text-slate-400 line-clamp-1 mt-0.5">${escapeHtml(item.notes)}</div>` : ''}
                         </div>
                         ${isEditMode ? `<i data-lucide="menu" class="w-3.5 h-3.5 text-emerald-500 cursor-grab active:cursor-grabbing ml-1"></i>` : ''}
                     </div>
@@ -1608,11 +1886,112 @@
             lucide.createIcons();
         }
 
-        /* 📌 軟木相片牆渲染 */
-        function renderGallery() {
+        function setGalleryMode(mode) {
+            if (currentGalleryMode === mode) return;
+            currentGalleryMode = mode;
+
+            const labels = { time: '故事線', folder: '回憶盒', location: '踩腳印' };
+
+            ['time', 'folder', 'location'].forEach(m => {
+                const btn = document.getElementById('galleryTab' + m.charAt(0).toUpperCase() + m.slice(1));
+                if (btn) {
+                    if (m === mode) {
+                        btn.className = "flex-1 py-1.5 rounded-xl transition-all text-center bg-[#ff8c42] text-white shadow-xs font-bold flex items-center justify-center gap-1 transform -translate-y-0.5";
+                        btn.innerHTML = `📌 ${labels[m]}`;
+                    } else {
+                        btn.className = "flex-1 py-1.5 rounded-xl transition-all text-center text-[#8c6d46] hover:bg-white/60 font-medium";
+                        btn.innerHTML = labels[m];
+                    }
+                }
+            });
+
+            renderGallery(true);
+        }
+
+        /* 📌 需求 4 修復：照片牆點擊後精準隱藏照片，開啟地圖卡片 */
+        window.focusPlaceWithFlyAnim = function(event, lat, lng, id) {
+            if (window.innerWidth < 768) {
+                toggleMobileList(true);
+            }
+
+            closeStoryStage();
+
+            // 1. 還原舊隱藏的照片，隱藏剛點擊的照片
+            if (window.activeGalleryCardId) {
+                const oldCard = document.getElementById('gallery_card_' + window.activeGalleryCardId);
+                if (oldCard) oldCard.classList.remove('photo-hidden');
+            }
+
+            window.activeGalleryCardId = String(id);
+            const targetCardEl = document.getElementById('gallery_card_' + id);
+            if (targetCardEl) {
+                targetCardEl.classList.add('photo-hidden');
+            }
+
+            const locKey = getLocKey(parseFloat(lat), parseFloat(lng));
+            showItemDetailInPopup(locKey, id, false, 0);
+            updateTimelineHighlight(id);
+
+            const item = markersData.find(m => String(m.id) === String(id));
+            if (isEditMode && item) {
+                openEditPanelForItem(item);
+            }
+        };
+
+        function createPolaroidCardHtml(item, index) {
+            const rawImages = parseImageUrls(item.image_url);
+            if (rawImages.length === 0) return '';
+
+            const imgHtml = buildImgWithFallback(rawImages[0], 'w-full h-full object-cover', item.title);
+            const cleanDate = formatDateString(item.date);
+            const rotateDeg = (index % 3 === 0) ? '-1.8deg' : ((index % 3 === 1) ? '1.5deg' : '-0.8deg');
+
+            const isMultiPhoto = rawImages.length > 1;
+            const stackClass = isMultiPhoto ? 'stacked-polaroid' : '';
+
+            // 是否為目前被選中的照片
+            const isCurrentlyActive = (window.activeGalleryCardId && String(window.activeGalleryCardId) === String(item.id));
+            const hiddenClass = isCurrentlyActive ? 'photo-hidden' : '';
+
+            return `
+                <div id="gallery_card_${item.id}"
+                     onclick="focusPlaceWithFlyAnim(event, '${item.lat}', '${item.lng}', '${item.id}')" 
+                     style="transform: rotate(${rotateDeg});"
+                     class="polaroid-card ${stackClass} ${hiddenClass} btn-interactive rounded-xs cursor-pointer select-none flex flex-col relative border border-slate-200/80 bg-white shadow-md hover:shadow-2xl hover:-translate-y-1 hover:rotate-0 transition-all duration-200 mt-3">
+                    
+                    ${cleanDate ? `
+                        <div class="date-note-paper-pinned absolute -top-4.5 left-1 z-20 transform -rotate-3 select-none border border-amber-200 shadow-sm">
+                            ${escapeHtml(cleanDate)}
+                        </div>
+                    ` : ''}
+
+                    <div class="absolute -top-5.5 left-2 z-30 text-base drop-shadow-md transform -rotate-12 pointer-events-none">📌</div>
+
+                    <div class="polaroid-photo-frame relative w-full aspect-square bg-slate-100 rounded-xs overflow-hidden mb-1.5 shadow-inner mt-1">
+                        ${rawImages.length > 1 ? `<span class="absolute top-1 right-1 bg-black/60 text-white text-[8px] px-1.5 py-0.5 rounded-full z-10 font-bold">📸 ${rawImages.length}</span>` : ''}
+                        ${imgHtml}
+                    </div>
+
+                    <div class="px-0.5 pb-1">
+                        <div class="text-xs font-bold text-slate-800 line-clamp-1 leading-tight font-rounded">${escapeHtml(item.title)}</div>
+                        <div class="text-[9px] text-slate-500 mt-0.5 flex items-center gap-0.5 line-clamp-1">
+                            <span>${iconEmojiMap[item.icon] || '📍'}</span>
+                            <span class="truncate">${escapeHtml(item.location || '')}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderGallery(animate = false) {
             const container = document.getElementById('galleryContainer');
             if (!container) return;
-            container.innerHTML = '';
+
+            if (animate) {
+                container.classList.remove('animate-gallery-slide');
+                void container.offsetWidth;
+                container.classList.add('animate-gallery-slide');
+            }
 
             const photoItems = markersData.filter(m => m.image_url && parseImageUrls(m.image_url).length > 0);
 
@@ -1621,58 +2000,71 @@
                 return;
             }
 
-            photoItems.sort((a, b) => {
+            const sortByDate = (a, b) => {
                 const dateA = formatDateString(a.date) || '9999-99-99';
                 const dateB = formatDateString(b.date) || '9999-99-99';
                 if (dateA === dateB) return (a.order || 0) - (b.order || 0);
                 return dateA.localeCompare(dateB);
-            });
+            };
 
-            let cardsHtml = `<div class="grid grid-cols-2 gap-4 p-0.5">`;
+            let htmlResult = '';
 
-            photoItems.forEach((item, index) => {
-                const rawImages = parseImageUrls(item.image_url);
-                if (rawImages.length === 0) return;
+            if (currentGalleryMode === 'time') {
+                photoItems.sort(sortByDate);
+                htmlResult = `<div class="grid grid-cols-2 gap-3 p-0.5 pb-8">` + 
+                    photoItems.map((item, idx) => createPolaroidCardHtml(item, idx)).join('') + 
+                `</div>`;
+            } 
+            else if (currentGalleryMode === 'folder') {
+                const folderGroups = {};
+                photoItems.forEach(item => {
+                    const fName = item.folder_name || '行程總覽';
+                    if (!folderGroups[fName]) folderGroups[fName] = [];
+                    folderGroups[fName].push(item);
+                });
 
-                const firstSafeImg = convertGoogleDriveLink(rawImages[0]);
-                const cleanDate = formatDateString(item.date);
-                const rotateDeg = (index % 3 === 0) ? '-1.8deg' : ((index % 3 === 1) ? '1.5deg' : '-0.8deg');
-
-                cardsHtml += `
-                    <div onclick="focusPlace('${item.lat}', '${item.lng}', '${item.id}')" 
-                         style="transform: rotate(${rotateDeg});"
-                         class="polaroid-card btn-interactive rounded-xs cursor-pointer select-none flex flex-col relative border border-slate-200/80 bg-white shadow-md hover:shadow-2xl hover:-translate-y-1 hover:rotate-0 transition-all duration-200 mt-3">
-                        
-                        <!-- 左上角便條紙 -->
-                        ${cleanDate ? `
-                            <div class="date-note-paper-pinned absolute -top-4.5 left-1 z-20 transform -rotate-3 select-none border border-amber-200 shadow-sm">
-                                ${cleanDate}
-                            </div>
-                        ` : ''}
-
-                        <!-- 主大頭針 -->
-                        <div class="absolute -top-5.5 left-2 z-30 text-base drop-shadow-md transform -rotate-12 pointer-events-none">📌</div>
-
-                        <!-- 1:1 正方形相片容器 -->
-                        <div class="relative w-full aspect-square bg-slate-100 rounded-xs overflow-hidden mb-1.5 shadow-inner mt-1">
-                            ${rawImages.length > 1 ? `<span class="absolute top-1 right-1 bg-black/60 text-white text-[8px] px-1.5 py-0.5 rounded-full z-10 font-bold">📸 ${rawImages.length}</span>` : ''}
-                            <img src="${firstSafeImg}" class="w-full h-full object-cover" onerror="this.src='https://via.placeholder.com/150?text=圖片載入中/未公開'">
+                Object.keys(folderGroups).forEach(fName => {
+                    const groupList = folderGroups[fName].sort(sortByDate);
+                    htmlResult += `
+                        <div class="sticky top-11 z-30 bg-[#fff5ea]/95 text-[#7f5539] backdrop-blur-md px-3 py-1.5 rounded-xl text-xs font-bold border border-[#f3d5c0] shadow-xs flex items-center justify-between my-2">
+                            <span class="flex items-center gap-1">📌 📁 ${escapeHtml(fName)}</span>
+                            <span class="text-[10px] text-[#d97706] font-mono">(${groupList.length})</span>
                         </div>
-
-                        <!-- 標題與地點簡明欄位 -->
-                        <div class="px-0.5 pb-1">
-                            <div class="text-xs font-bold text-slate-800 line-clamp-1 leading-tight font-rounded">${item.title}</div>
-                            <div class="text-[9px] text-slate-500 mt-0.5 flex items-center gap-0.5 line-clamp-1">
-                                <span>${iconEmojiMap[item.icon] || '📍'}</span>
-                                <span class="truncate">${item.location || ''}</span>
-                            </div>
+                        <div class="grid grid-cols-2 gap-3 p-0.5 mb-4">
+                            ${groupList.map((item, idx) => createPolaroidCardHtml(item, idx)).join('')}
                         </div>
-                    </div>
-                `;
-            });
+                    `;
+                });
+            } 
+            else if (currentGalleryMode === 'location') {
+                const locGroups = {};
+                photoItems.forEach(item => {
+                    let locKey = '其他';
+                    if (item.location && item.location.trim().length > 0) {
+                        locKey = item.location.trim().substring(0, 2);
+                        if (locKey === '我們') {
+                            locKey = '我們的';
+                        }
+                    }
+                    if (!locGroups[locKey]) locGroups[locKey] = [];
+                    locGroups[locKey].push(item);
+                });
 
-            cardsHtml += `</div>`;
-            container.innerHTML = cardsHtml;
+                Object.keys(locGroups).forEach(locKey => {
+                    const groupList = locGroups[locKey].sort(sortByDate);
+                    htmlResult += `
+                        <div class="sticky top-11 z-30 bg-[#fff0f3]/95 text-[#9f1239] backdrop-blur-md px-3 py-1.5 rounded-xl text-xs font-bold border border-[#fecdd3] shadow-xs flex items-center justify-between my-2">
+                            <span class="flex items-center gap-1">📌 📍 ${escapeHtml(locKey)}</span>
+                            <span class="text-[10px] text-[#e11d48] font-mono">(${groupList.length})</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3 p-0.5 mb-4">
+                            ${groupList.map((item, idx) => createPolaroidCardHtml(item, idx)).join('')}
+                        </div>
+                    `;
+                });
+            }
+
+            container.innerHTML = htmlResult;
             lucide.createIcons();
         }
 
@@ -1708,17 +2100,23 @@
 
             const totalMonths = uniqueMonths.length;
 
+            const currentDStr = formatDateString(currentItem.date);
+            const currentYM = (currentDStr && currentDStr.length >= 7) ? currentDStr.slice(0, 7) : '';
+
             const ticksBox = document.getElementById('timelineMonthTicks');
             if (ticksBox) {
                 ticksBox.innerHTML = uniqueMonths.map((ym, idx) => {
                     const pct = (idx / totalMonths) * 100;
                     const parts = ym.split('-');
                     const ymLabel = `${parts[0].slice(2)}/${parts[1]}`;
+                    const isCurrentMonth = (ym === currentYM);
 
                     return `
                         <div class="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 flex flex-col items-center pointer-events-none" style="left: ${pct}%;">
-                            <div class="w-[1.5px] h-3 bg-white/30"></div>
-                            <span class="text-[9px] font-mono text-slate-300 tracking-tight select-none mt-1.5 drop-shadow">${ymLabel}</span>
+                            <div class="w-[1.5px] ${isCurrentMonth ? 'bg-pink-400 h-4' : 'bg-white/30 h-3'}"></div>
+                            <span class="text-[9px] font-mono ${isCurrentMonth ? 'text-pink-300 font-bold block' : 'text-slate-300 hidden md:block'} tracking-tight select-none mt-1.5 drop-shadow">
+                                ${ymLabel}
+                            </span>
                         </div>
                     `;
                 }).join('');
@@ -1763,7 +2161,7 @@
                 pct = Math.max(0, Math.min(100, pct));
 
                 const offsetY = yPattern[itemIndexInDay % yPattern.length];
-                const isCurrent = (item.id === currentItem.id);
+                const isCurrent = (String(item.id) === String(currentItem.id));
 
                 if (isCurrent) {
                     activeItemPos = { pct, offsetY };
@@ -1773,7 +2171,7 @@
                     <div onclick="jumpToItem('${item.id}')" 
                          class="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 cursor-pointer group z-10 p-1 transition-transform hover:scale-150" 
                          style="left: ${pct}%; transform: translate(-50%, calc(-50% + ${offsetY}px));" 
-                         title="${dStr} - ${item.title}">
+                         title="${escapeHtml(dStr)} - ${escapeHtml(item.title)}">
                         <div class="w-1.5 h-1.5 rounded-full transition-all duration-300 ${isCurrent ? 'bg-pink-400 ring-2 ring-pink-300 shadow-[0_0_8px_#f472b6] scale-125' : 'bg-amber-300/85 group-hover:bg-pink-300'}"></div>
                     </div>
                 `;
@@ -1845,6 +2243,24 @@
             bubble.addEventListener('pointercancel', stopDrag);
         }
 
+        function setNavZonesForMediaType(isVideo) {
+            const left = document.getElementById('storyNavLeft');
+            const right = document.getElementById('storyNavRight');
+            const videoBar = document.getElementById('storyVideoNavBar');
+            if (!left || !right) return;
+
+            left.classList.remove('hidden');
+            right.classList.remove('hidden');
+
+            if (videoBar) {
+                if (isVideo) {
+                    videoBar.classList.remove('hidden');
+                } else {
+                    videoBar.classList.add('hidden');
+                }
+            }
+        }
+
         function showCurrentTimelineStep(isNewLocation = true) {
             const sortedItems = getSortedTimelineItems();
             if (sortedItems.length === 0) return;
@@ -1858,7 +2274,8 @@
             renderOverviewTrack(sortedItems, item);
 
             const rawImages = parseImageUrls(item.image_url);
-            const videoUrl = item.video_url ? item.video_url.trim() : '';
+            const videoUrl = getDeviceVideoUrl(item);
+
             const mediaList = [];
             rawImages.forEach(img => mediaList.push({ type: 'image', url: img }));
             if (videoUrl) mediaList.push({ type: 'video', url: videoUrl });
@@ -1868,20 +2285,18 @@
             document.getElementById('storyHeaderIcon').innerText = iconEmojiMap[item.icon] || '📍';
             
             const dateSpan = cleanDate 
-                ? `<span class="text-xs md:text-sm text-pink-400 font-bold font-rounded shrink-0 flex items-center gap-1">📅 ${cleanDate}</span>` 
+                ? `<span class="text-xs md:text-sm font-normal text-pink-400 font-rounded shrink-0 flex items-center gap-0.5"><span class="text-xs md:text-sm">📅</span> ${escapeHtml(cleanDate)}</span>` 
                 : '';
 
             const locationSpan = item.location 
-                ? `<span class="text-xs md:text-sm font-normal text-slate-300 truncate font-rounded flex items-center gap-0.5">📍 ${item.location}</span>` 
+                ? `<span class="text-xs md:text-sm font-normal text-slate-300 truncate font-rounded flex items-center gap-0.5">📍 ${escapeHtml(item.location)}</span>` 
                 : '';
                 
             document.getElementById('storyHeaderTitle').innerHTML = `
-                <span class="text-base md:text-lg font-extrabold text-white tracking-wide font-rounded drop-shadow-md shrink-0">${item.title || '手帳主旨'}</span>
+                <span class="text-base md:text-lg font-extrabold text-white tracking-wide font-rounded drop-shadow-md shrink-0">${escapeHtml(item.title || '手帳主旨')}</span>
                 ${dateSpan}
                 ${locationSpan}
             `;
-
-            document.getElementById('storyHeaderFolder').innerText = item.folder_name || '我們的旅程';
 
             const dotsBox = document.getElementById('storyHeaderDots');
             if (mediaList.length > 1) {
@@ -1902,19 +2317,21 @@
                 bgBlur.style.backgroundImage = 'none';
                 bgBlur.style.backgroundColor = '#0f172a';
                 mediaContent.innerHTML = `<div class="text-xs text-slate-400">尚無上傳照片...</div>`;
+                setNavZonesForMediaType(false);
             } else {
                 const activeMedia = mediaList[currentPlaybackImgIndex];
                 
                 if (activeMedia.type === 'image') {
                     const safeImgUrl = convertGoogleDriveLink(activeMedia.url);
                     bgBlur.style.backgroundImage = `url('${safeImgUrl}')`;
-                    mediaContent.innerHTML = `
-                        <img src="${safeImgUrl}" class="w-full h-full object-contain pointer-events-none" onerror="this.src='https://via.placeholder.com/600x800?text=圖片載入中/未公開'">
-                    `;
+                    const imgHtml = buildImgWithFallback(activeMedia.url, 'w-full h-full object-contain pointer-events-none', item.title);
+                    mediaContent.innerHTML = imgHtml;
+                    setNavZonesForMediaType(false);
                 } else {
                     bgBlur.style.backgroundImage = 'none';
                     bgBlur.style.backgroundColor = '#0f172a';
                     mediaContent.innerHTML = getVideoEmbedHtml(activeMedia.url);
+                    setNavZonesForMediaType(true);
                 }
             }
 
@@ -1941,7 +2358,7 @@
 
         window.jumpToItem = function(itemId) {
             const sortedItems = getSortedTimelineItems();
-            const targetIndex = sortedItems.findIndex(m => m.id === itemId);
+            const targetIndex = sortedItems.findIndex(m => String(m.id) === String(itemId));
             if (targetIndex !== -1) {
                 currentPlaybackItemIndex = targetIndex;
                 currentPlaybackImgIndex = 0;
@@ -1955,7 +2372,8 @@
 
             const item = sortedItems[currentPlaybackItemIndex];
             const rawImages = parseImageUrls(item ? item.image_url : '');
-            const hasVideo = item && item.video_url && item.video_url.trim() ? 1 : 0;
+            const videoUrl = getDeviceVideoUrl(item);
+            const hasVideo = item && videoUrl ? 1 : 0;
             const totalMedia = rawImages.length + hasVideo;
 
             currentPlaybackImgIndex++;
@@ -1988,12 +2406,39 @@
                 }
                 const prevItem = sortedItems[currentPlaybackItemIndex];
                 const prevRawImages = parseImageUrls(prevItem ? prevItem.image_url : '');
-                const prevHasVideo = prevItem && prevItem.video_url && prevItem.video_url.trim() ? 1 : 0;
+                const prevVideoUrl = getDeviceVideoUrl(prevItem);
+                const prevHasVideo = prevItem && prevVideoUrl ? 1 : 0;
                 const prevTotalMedia = prevRawImages.length + prevHasVideo;
                 currentPlaybackImgIndex = Math.max(0, prevTotalMedia - 1);
             }
 
             showCurrentTimelineStep(isNewLocation);
+        }
+
+        function focusPlace(lat, lng, id) {
+            const targetLat = parseFloat(lat);
+            const targetLng = parseFloat(lng);
+
+            if (window.innerWidth < 768) {
+                toggleMobileList(true);
+            }
+
+            setTimeout(() => {
+                map.invalidateSize();
+                if (!isNaN(targetLat) && !isNaN(targetLng)) {
+                    closeStoryStage();
+                    
+                    const locKey = getLocKey(targetLat, targetLng);
+                    showItemDetailInPopup(locKey, id, false, 0);
+                }
+            }, 200);
+
+            updateTimelineHighlight(id);
+
+            const item = markersData.find(m => String(m.id) === String(id));
+            if (isEditMode && item) {
+                openEditPanelForItem(item);
+            }
         }
 
         function renderSidebar() {
@@ -2025,7 +2470,7 @@
                 folderDiv.innerHTML = `
                     <div class="font-bold text-xs ${isEditMode ? 'text-emerald-900' : 'text-[#7f5539]'} flex items-center gap-1.5 mb-1.5 select-none">
                         <i data-lucide="folder" class="w-3.5 h-3.5 text-[#b7b7a4]"></i> 
-                        <span class="text-xs font-bold">${folderName} (${folderItems.length})</span>
+                        <span class="text-xs font-bold">${escapeHtml(folderName)} (${folderItems.length})</span>
                         ${actionButtons}
                     </div>
                     <div id="${folderId}" class="sortable-list space-y-1.5 min-h-[10px]">
@@ -2033,9 +2478,9 @@
                             <div data-id="${item.id}" class="sortable-item btn-interactive text-xs bg-white p-2 rounded-lg cursor-pointer hover:bg-[#f5ebe0] text-slate-800 flex justify-between items-center transition border border-slate-200/60 shadow-2xs">
                                 <span onclick="focusPlace('${item.lat}', '${item.lng}', '${item.id}')" class="flex items-center gap-1.5 font-medium flex-1 overflow-hidden">
                                     <span style="color: ${colorMap[item.color] || '#3b82f6'}" class="shrink-0">●</span>
-                                    <span class="font-bold text-slate-800 shrink-0 text-xs">${item.title}</span>
+                                    <span class="font-bold text-slate-800 shrink-0 text-xs">${escapeHtml(item.title)}</span>
                                     <span class="text-[10px] text-slate-500 flex items-center gap-0.5 truncate">
-                                        ${iconEmojiMap[item.icon] || '📍'} ${item.location || ''}
+                                        ${iconEmojiMap[item.icon] || '📍'} ${escapeHtml(item.location || '')}
                                     </span>
                                 </span>
                                 ${isEditMode ? `<i data-lucide="menu" class="w-3.5 h-3.5 text-emerald-500 cursor-grab active:cursor-grabbing ml-2"></i>` : ''}
@@ -2055,7 +2500,7 @@
                         onEnd: async function () {
                             const reorderedIds = Array.from(listEl.children).map(el => el.getAttribute('data-id'));
                             for (let i = 0; i < reorderedIds.length; i++) {
-                                const matchedItem = markersData.find(m => m.id === reorderedIds[i]);
+                                const matchedItem = markersData.find(m => String(m.id) === String(reorderedIds[i]));
                                 if (matchedItem) {
                                     matchedItem.order = i * 10; 
                                     if (gasUrl) {
@@ -2073,53 +2518,6 @@
                 }
             });
             lucide.createIcons();
-        }
-
-        function focusPlace(lat, lng, id) {
-            const targetLat = parseFloat(lat);
-            const targetLng = parseFloat(lng);
-
-            const sortedItems = getSortedTimelineItems();
-            const foundIdx = sortedItems.findIndex(m => m.id === id);
-            if (foundIdx !== -1) {
-                currentPlaybackItemIndex = foundIdx;
-                currentPlaybackImgIndex = 0;
-            }
-
-            const isTimelineTabActive = !document.getElementById('viewTimeline').classList.contains('hidden');
-            if (isTimelineTabActive) {
-                openStoryStage();
-            } else if (!isNaN(targetLat) && !isNaN(targetLng)) {
-                closeStoryStage();
-                
-                if (window.innerWidth < 768) {
-                    toggleMobileList(true);
-                }
-
-                const locKey = getLocKey(targetLat, targetLng);
-                const marker = locKey ? markerInstances[locKey] : null;
-
-                if (marker) {
-                    marker.addTo(map);
-                    centerPopupOnMap(targetLat, targetLng);
-
-                    document.querySelectorAll('.marker-pink-pulse').forEach(el => el.classList.remove('marker-pink-pulse'));
-                    if (marker._icon) {
-                        marker._icon.classList.add('marker-pink-pulse');
-                    }
-
-                    const groups = getGroupedItems();
-                    const items = groups[locKey] || [];
-                    showItemDetailInPopup(locKey, id, items.length > 1, 0);
-                }
-            }
-
-            updateTimelineHighlight(id);
-
-            const item = markersData.find(m => m.id === id);
-            if (isEditMode && item) {
-                openEditPanelForItem(item);
-            }
         }
 
         function promptForEditMode() {
@@ -2164,7 +2562,7 @@
             } else {
                 if (editFolderHeader) editFolderHeader.classList.add('hidden');
                 if (btnToggle) btnToggle.classList.add('hidden');
-                if (sidebarTabs) sidebarTabs.classList.add('hidden');
+                if (sidebarTabs) sidebarTabs.classList.remove('hidden');
                 
                 closePanel();
 
