@@ -19,7 +19,7 @@
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 
     <!-- Google 字體 -->
-    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=M+PLUS+Rounded+1c:wght@500;700;800&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=M+PLUS+Rounded+1c:wght@500;700;800&family=Noto+Sans+TC:wght@400;500;700&family=Shippori+Mincho:wght@600;800&display=swap" rel="stylesheet">
 
     <style>
         html, body {
@@ -33,6 +33,7 @@
         }
 
         .font-rounded { font-family: 'M PLUS Rounded 1c', 'Noto Sans TC', sans-serif; }
+        .font-stamp { font-family: 'Shippori Mincho', 'M PLUS Rounded 1c', serif; }
 
         button, .btn-interactive {
             touch-action: manipulation;
@@ -76,7 +77,7 @@
             box-shadow: inset 0 0 15px rgba(0,0,0,0.3);
         }
 
-        /* 🎬 復古和紙膠帶動效 */
+        /* 🎬 復古和紙膠帶 (信封用) */
         .washi-tape-top {
             position: absolute;
             top: -8px;
@@ -162,7 +163,7 @@
             background-size: 100% 25px;
         }
 
-        /* ✉️ 信紙初始預設（完全重疊且平行，位於袋內） */
+        /* ✉️ 信紙初始預設 */
         .paper-card {
             pointer-events: none;
             transition: transform 0.45s cubic-bezier(0.34, 1.45, 0.64, 1), box-shadow 0.3s ease;
@@ -176,7 +177,6 @@
             z-index: 1 !important;
         }
 
-        /* ✉️ 第一階段：打開信封後，三張紙整齊平行向上小幅上升，剛好露出第一排字 */
         .envelope-papers-out .paper-card {
             pointer-events: auto;
             transform: translateY(-45px) rotate(0deg) translateX(0px) scale(0.85);
@@ -187,7 +187,6 @@
         .envelope-papers-out .paper-2 { z-index: 32 !important; }
         .envelope-papers-out .paper-1 { z-index: 33 !important; }
 
-        /* ✉️ 第二階段：點擊該張信紙後獨立抽出，並微幅展開不超邊 */
         .envelope-papers-out .paper-3.active-paper {
             transform: translateY(-135px) rotate(-4deg) translateX(-18px) scale(0.92) !important;
             z-index: 60 !important;
@@ -202,6 +201,100 @@
             transform: translateY(-145px) rotate(3deg) translateX(18px) scale(0.94) !important;
             z-index: 60 !important;
             box-shadow: 0 22px 45px rgba(0, 0, 0, 0.45) !important;
+        }
+
+        /* ✂️ 純膠帶遮罩與撕裂效果 */
+        .secret-cover-mask {
+            position: absolute;
+            inset: 0;
+            background-color: rgba(248, 242, 235, 0.95);
+            z-index: 50;
+            cursor: pointer !important;
+            pointer-events: auto !important;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            border-radius: 1rem;
+        }
+
+        .washi-tape-strip {
+            position: absolute;
+            height: 42px;
+            background: rgba(246, 230, 212, 0.96);
+            background-image: 
+                radial-gradient(rgba(140, 100, 60, 0.18) 1.2px, transparent 0),
+                linear-gradient(to right, rgba(255,255,255,0.5), rgba(255,255,255,0.1));
+            background-size: 6px 6px, 100% 100%;
+            clip-path: polygon(
+                0% 2px, 2% 0px, 4% 3px, 6% 0px, 8% 2px, 10% 0px,
+                90% 0px, 92% 3px, 94% 0px, 96% 2px, 98% 0px, 100% 3px,
+                100% calc(100% - 2px), 98% 100%, 96% calc(100% - 3px), 94% 100%, 92% calc(100% - 2px), 90% 100%,
+                10% 100%, 8% calc(100% - 3px), 6% 100%, 4% calc(100% - 2px), 2% 100%, 0% calc(100% - 3px)
+            );
+            box-shadow: 0 5px 12px rgba(0, 0, 0, 0.18);
+            backdrop-filter: blur(4px);
+            transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+            pointer-events: none;
+        }
+
+        .tape-1 {
+            top: 15%;
+            left: -10%;
+            right: -10%;
+            transform: rotate(-3.5deg);
+            border-top: 1px solid rgba(255, 255, 255, 0.8);
+            border-bottom: 1px solid rgba(180, 140, 100, 0.25);
+        }
+
+        .tape-2 {
+            bottom: 15%;
+            left: -10%;
+            right: -10%;
+            transform: rotate(3deg);
+            background: rgba(238, 218, 198, 0.96);
+            border-top: 1px solid rgba(255, 255, 255, 0.8);
+            border-bottom: 1px solid rgba(180, 140, 100, 0.25);
+        }
+
+        /* 💮 日系橡皮章樣式 (Rubber Stamp) */
+        .rubber-stamp {
+            position: relative;
+            z-index: 60;
+            padding: 6px 16px;
+            border: 2px solid #6b4c38;
+            border-radius: 8px;
+            color: #6b4c38;
+            background: rgba(253, 251, 247, 0.85);
+            backdrop-filter: blur(2px);
+            box-shadow: inset 0 0 0 2px rgba(107, 76, 56, 0.2), 0 4px 10px rgba(0, 0, 0, 0.12);
+            transform: rotate(-4deg);
+            transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            opacity: 0.92;
+        }
+
+        /* 撕開離場觸發狀態 */
+        .secret-cover-mask.is-peeled {
+            opacity: 0 !important;
+            pointer-events: none !important;
+            transform: scale(0.95);
+        }
+        .secret-cover-mask.is-peeled .tape-1 {
+            transform: translate(-150%, -80px) rotate(-45deg) scale(0.6);
+        }
+        .secret-cover-mask.is-peeled .tape-2 {
+            transform: translate(150%, 80px) rotate(45deg) scale(0.6);
+        }
+        .secret-cover-mask.is-peeled .rubber-stamp {
+            transform: scale(0.5) rotate(20deg);
+            opacity: 0;
         }
 
         @keyframes bubblePop {
@@ -687,7 +780,6 @@
         let itemMarkerMap = {};
 
         window.chatImageIndices = {};
-        window.secretUnfoldedState = {};
 
         function escapeHtml(str) {
             if (str === null || str === undefined) return '';
@@ -1859,13 +1951,11 @@
             renderTeaserMainStage();
         };
 
-        window.toggleSecretNotes = function(evt, itemId) {
-            if (evt) {
-                evt.preventDefault();
-                evt.stopPropagation();
+        /* ✂️ 撕開膠帶連同橡皮章 function */
+        window.peelTapeCover = function(el) {
+            if (el) {
+                el.classList.add('is-peeled');
             }
-            window.secretUnfoldedState[itemId] = !window.secretUnfoldedState[itemId];
-            renderTeaserMainStage();
         };
 
         function renderTeaserMainStage() {
@@ -1888,7 +1978,7 @@
             });
 
             let itemsHtml = '';
-            chatItems.forEach((item) => {
+            chatItems.forEach((item, index) => {
                 const images = parseImageUrls(item.image_url);
                 const totalImgs = images.length;
                 
@@ -1941,31 +2031,40 @@
                     </div>
                 ` : '';
 
-                const isUnfolded = !!window.secretUnfoldedState[item.id];
                 const hasNotes = item.notes && item.notes.trim().length > 0;
 
+                /* 💮 加入「悄悄話 for Amber」日系橡皮章印戳 */
                 const secretNoteHtml = `
-                    <div onclick="toggleSecretNotes(event, '${item.id}')" 
-                         class="cursor-pointer relative bg-[#fdfbf7] p-3 md:p-4 rounded-2xl shadow-md border-2 border-dashed border-[#e3d5c5] transform rotate-1 hover:rotate-0 transition-all duration-300 select-none group">
+                    <div class="relative bg-[#fdfbf7] p-3.5 md:p-4 rounded-2xl shadow-md border-2 border-dashed border-[#e3d5c5] transform rotate-1 transition-all duration-300 select-none overflow-hidden min-h-[120px] flex flex-col justify-between">
                         
-                        <div class="flex items-center justify-between border-b border-[#ebdcd0] pb-1.5 mb-2">
-                            <span class="text-xs font-bold text-[#8c6d46] font-rounded flex items-center gap-1">
-                                🔒 悄悄話
-                            </span>
-                            <span class="text-[10px] text-pink-500 font-bold tracking-wider">
-                                ${isUnfolded ? '▲ 輕觸摺疊' : '▼ 點擊查看心意'}
-                            </span>
+                        <!-- ✂️ 膠帶與中央橡皮章印戳 -->
+                        <div onclick="peelTapeCover(this)" class="secret-cover-mask">
+                            <div class="washi-tape-strip tape-1"></div>
+                            
+                            <!-- 💮 日系橡皮章 (位於正中間) -->
+                            <div class="rubber-stamp">
+                                <span class="font-stamp text-sm font-bold tracking-widest leading-none flex items-center gap-1">
+                                    悄悄話 <span class="text-[10px] text-rose-800">♥</span>
+                                </span>
+                                <span class="font-mono text-[9px] font-bold tracking-wider opacity-80 mt-0.5 border-t border-[#6b4c38]/40 pt-0.5">
+                                    for Amber
+                                </span>
+                            </div>
+
+                            <div class="washi-tape-strip tape-2"></div>
                         </div>
 
-                        ${isUnfolded ? `
-                            <div class="text-xs md:text-sm text-[#5c4d43] font-rounded leading-relaxed whitespace-pre-line animate-photo-fade">
-                                ${hasNotes ? escapeHtml(item.notes) : '<span class="text-slate-400 italic">點擊編輯按鈕新增悄悄話...</span>'}
-                            </div>
-                        ` : `
-                            <div class="flex items-center justify-center py-2 text-xs text-[#a0825c] font-rounded bg-[#f5ebe0]/60 rounded-xl border border-[#e8ded2] group-hover:bg-[#f5ebe0] transition">
-                                <span>💌 封存的悄悄話 (點擊打開)</span>
-                            </div>
-                        `}
+                        <!-- 底層悄悄話內容 -->
+                        <div class="flex items-center justify-between border-b border-[#ebdcd0] pb-1.5 mb-2">
+                            <span class="text-xs font-bold text-[#8c6d46] font-rounded flex items-center gap-1">
+                                💌 悄悄話
+                            </span>
+                            <span class="text-[10px] text-rose-400 font-bold tracking-wider">♥ SWEET MESSAGE</span>
+                        </div>
+
+                        <div class="text-xs md:text-sm text-[#5c4d43] font-rounded leading-relaxed whitespace-pre-line flex-1">
+                            ${hasNotes ? escapeHtml(item.notes) : '<span class="text-slate-400 italic">點擊編輯按鈕新增悄悄話...</span>'}
+                        </div>
                     </div>
                 `;
 
@@ -1987,7 +2086,7 @@
                                 ${photoFrameHtml}
                             </div>
 
-                            <div class="block md:hidden absolute -top-4 right-0 w-3/4 z-30 transform rotate-2">
+                            <div class="block md:hidden w-full z-20 mt-1">
                                 ${secretNoteHtml}
                             </div>
 
