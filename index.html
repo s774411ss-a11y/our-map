@@ -11,7 +11,7 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     
     <script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.umd.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css" />
+    <link rel="stylesheet" href="https://unpkg.com/fancyapps/ui@5.0/dist/fancybox/fancybox.css" />
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
     <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
@@ -53,12 +53,8 @@
             overscroll-behavior-y: contain;
         }
 
-        /* 📌 照片牆隱藏樣式 */
-        .photo-hidden {
-            display: none !important;
-        }
+        .photo-hidden { display: none !important; }
 
-        /* 📌 地圖 Pin 腳圖示 */
         .custom-leaflet-icon-emoji {
             width: 36px !important;
             height: 36px !important;
@@ -70,7 +66,6 @@
             pointer-events: auto !important;
         }
 
-        /* 軟木相片牆背景 */
         .corkboard-bg {
             background-color: #cb9b51;
             background-image: 
@@ -81,7 +76,21 @@
             box-shadow: inset 0 0 15px rgba(0,0,0,0.3);
         }
 
-        /* 3D 翻轉卡片效果 */
+        /* 🎬 復古和紙膠帶動效 */
+        .washi-tape-top {
+            position: absolute;
+            top: -8px;
+            left: 20%;
+            transform: rotate(-2deg);
+            width: 70px;
+            height: 18px;
+            background: rgba(245, 222, 195, 0.85);
+            border: 1px dashed rgba(190, 150, 110, 0.6);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.12);
+            z-index: 25;
+            pointer-events: none;
+        }
+
         .perspective-1000 { perspective: 1000px; }
         .preserve-3d { transform-style: preserve-3d; }
         .backface-hidden { 
@@ -106,7 +115,6 @@
             visibility: visible !important;
         }
 
-        /* 地圖標記粉色脈衝光暈動效 */
         @keyframes pinkPulseGlow {
             0% { transform: scale(1); filter: drop-shadow(0 0 3px rgba(244, 114, 182, 0.9)); }
             50% { transform: scale(1.35); filter: drop-shadow(0 0 18px rgba(244, 114, 182, 1)); }
@@ -117,7 +125,6 @@
             z-index: 2000 !important;
         }
 
-        /* 3D 信封樣式 */
         .envelope-top-flap {
             clip-path: polygon(0 0, 100% 0, 50% 100%);
             transform-origin: top center;
@@ -140,14 +147,7 @@
         .letter-kraft-paper {
             background-color: #e2ceb1 !important;
             border: 1px solid #bd9c71;
-            box-shadow: 0 8px 22px rgba(0, 0, 0, 0.28);
-            opacity: 1 !important;
-        }
-
-        .letter-locked-paper {
-            background-color: #eee7dc !important;
-            border: 1px solid #c7bba8;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
             opacity: 1 !important;
         }
 
@@ -162,10 +162,12 @@
             background-size: 100% 25px;
         }
 
+        /* ✉️ 信紙初始預設（完全重疊且平行，位於袋內） */
         .paper-card {
             pointer-events: none;
             transition: transform 0.45s cubic-bezier(0.34, 1.45, 0.64, 1), box-shadow 0.3s ease;
             transform-origin: bottom center;
+            transform: translateY(0) rotate(0deg) translateX(0px) scale(0.85);
             z-index: 5 !important;
         }
 
@@ -174,29 +176,32 @@
             z-index: 1 !important;
         }
 
+        /* ✉️ 第一階段：打開信封後，三張紙整齊平行向上小幅上升，剛好露出第一排字 */
         .envelope-papers-out .paper-card {
             pointer-events: auto;
+            transform: translateY(-45px) rotate(0deg) translateX(0px) scale(0.85);
             z-index: 30 !important;
         }
-        
-        .envelope-papers-out .paper-1 { transform: translateY(-125px) rotate(6deg) translateX(42px) scale(0.98); }
-        .envelope-papers-out .paper-2 { transform: translateY(-110px) rotate(-2deg) translateX(-15px) scale(0.98); }
-        .envelope-papers-out .paper-3 { transform: translateY(-90px) rotate(-12deg) translateX(-75px) scale(0.94); }
 
-        .envelope-papers-out .paper-1.active-paper {
-            transform: translateY(-160px) rotate(6deg) translateX(42px) scale(1.03) !important;
+        .envelope-papers-out .paper-3 { z-index: 31 !important; }
+        .envelope-papers-out .paper-2 { z-index: 32 !important; }
+        .envelope-papers-out .paper-1 { z-index: 33 !important; }
+
+        /* ✉️ 第二階段：點擊該張信紙後獨立抽出，並微幅展開不超邊 */
+        .envelope-papers-out .paper-3.active-paper {
+            transform: translateY(-135px) rotate(-4deg) translateX(-18px) scale(0.92) !important;
             z-index: 60 !important;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4) !important;
         }
         .envelope-papers-out .paper-2.active-paper {
-            transform: translateY(-145px) rotate(-2deg) translateX(-15px) scale(1.03) !important;
+            transform: translateY(-140px) rotate(0deg) translateX(0px) scale(0.92) !important;
             z-index: 60 !important;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4) !important;
         }
-        .envelope-papers-out .paper-3.active-paper {
-            transform: translateY(-125px) rotate(-12deg) translateX(-75px) scale(0.98) !important;
+        .envelope-papers-out .paper-1.active-paper {
+            transform: translateY(-145px) rotate(3deg) translateX(18px) scale(0.94) !important;
             z-index: 60 !important;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4) !important;
+            box-shadow: 0 22px 45px rgba(0, 0, 0, 0.45) !important;
         }
 
         @keyframes bubblePop {
@@ -224,7 +229,6 @@
             animation: locationShift 0.38s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
 
-        /* 相片牆切換平移動畫 */
         @keyframes gallerySlideAnimation {
             0% { opacity: 0; transform: translateX(28px); }
             100% { opacity: 1; transform: translateX(0); }
@@ -237,14 +241,8 @@
             transition: left 0.38s cubic-bezier(0.34, 1.56, 0.64, 1), transform 0.38s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
 
-        /* 隱藏地圖彈窗小尾巴與預設背景 */
-        .leaflet-popup-tip-container {
-            display: none !important;
-        }
-        .leaflet-popup {
-            min-width: 300px !important;
-            max-width: 90vw !important;
-        }
+        .leaflet-popup-tip-container { display: none !important; }
+        .leaflet-popup { min-width: 300px !important; max-width: 90vw !important; }
         .leaflet-popup-content-wrapper {
             background: transparent !important;
             padding: 0 !important;
@@ -252,10 +250,7 @@
             border: none !important;
             border-radius: 0 !important;
         }
-        .leaflet-popup-content {
-            width: auto !important;
-            margin: 0 !important;
-        }
+        .leaflet-popup-content { width: auto !important; margin: 0 !important; }
 
         .popup-notes {
             white-space: pre-line !important;
@@ -274,7 +269,6 @@
             background-color: #fdfbf7 !important;
         }
 
-        /* 📸 拍立得卡片 */
         .polaroid-card {
             background: #fff;
             padding: 14px 6px 12px 6px;
@@ -282,10 +276,7 @@
             transition: all 0.2s ease;
         }
 
-        .stacked-polaroid {
-            position: relative !important;
-            z-index: 10;
-        }
+        .stacked-polaroid { position: relative !important; z-index: 10; }
         .stacked-polaroid::before,
         .stacked-polaroid::after {
             content: '';
@@ -298,14 +289,9 @@
             z-index: -1;
             pointer-events: none;
         }
-        .stacked-polaroid::before {
-            transform: rotate(-5deg) translate(-4px, 3px);
-        }
-        .stacked-polaroid::after {
-            transform: rotate(4.5deg) translate(4px, 2px);
-        }
+        .stacked-polaroid::before { transform: rotate(-5deg) translate(-4px, 3px); }
+        .stacked-polaroid::after { transform: rotate(4.5deg) translate(4px, 2px); }
 
-        /* 左上角黃色便條紙 */
         .date-note-paper-pinned {
             background: #fef08a;
             color: #854d0e;
@@ -318,11 +304,8 @@
             border: 1px solid #fef9c3;
         }
 
-        .polaroid-photo-frame {
-            position: relative;
-        }
+        .polaroid-photo-frame { position: relative; }
 
-        /* 精緻小折角 */
         .real-curl-fold {
             position: absolute;
             bottom: 0;
@@ -333,9 +316,7 @@
             z-index: 70;
             transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
-        .real-curl-fold:hover {
-            transform: scale(1.18);
-        }
+        .real-curl-fold:hover { transform: scale(1.18); }
         .real-curl-fold::before {
             content: '';
             position: absolute;
@@ -388,7 +369,7 @@
     <div class="fixed bottom-4 left-4 z-[2500] flex flex-col items-start gap-2 pointer-events-auto">
         <div id="floatingSettingsMenu" class="hidden bg-[#2b1c14]/90 backdrop-blur-md p-3 rounded-2xl border border-white/20 text-white shadow-2xl w-72 mb-1 space-y-2.5">
             <div onclick="promptForEditMode()" class="text-xs font-bold text-amber-200/90 border-b border-white/10 pb-1.5 flex items-center justify-between cursor-pointer select-none">
-                <span class="flex items-center gap-1"><i data-lucide="settings-2" class="w-3.5 h-3.5"></i> 系統設定</span>
+                <span class="flex items-center gap-1"><i data-lucide="settings-2" class="w-3.5 h-3.5"></i> 系統設定 (輸入密碼進入編輯模式)</span>
                 <button onclick="event.stopPropagation(); toggleSettingsMenu()" class="text-slate-400 hover:text-white p-0.5"><i data-lucide="x" class="w-4 h-4"></i></button>
             </div>
             
@@ -422,34 +403,42 @@
             <div class="absolute inset-0 bg-[#e6ccb2] rounded-2xl shadow-2xl border border-[#ddc8b4] z-[1]"></div>
 
             <div id="papersStack" class="absolute inset-x-10 bottom-2 z-[5] h-[260px] flex items-end justify-center">
-                <div onclick="event.stopPropagation(); handlePaperClick('locked', 3)" class="paper-card paper-3 absolute w-[200px] h-[250px] letter-locked-paper rounded-xl p-2.5 cursor-not-allowed flex flex-col justify-start select-none">
-                    <div class="w-full h-full border-2 border-dashed border-[#bdae99] rounded-lg p-2 flex flex-col items-center bg-[#eee7dc]">
-                        <div class="text-xl mb-1 text-slate-500">🔒</div>
-                        <div class="font-bold text-slate-600 text-xs text-center border-b border-slate-300 pb-1 w-full">神秘未公開</div>
-                        <div class="text-[10px] text-slate-400 mt-2 text-center">寫作中，敬請期待...</div>
-                        <div class="w-full flex-1 letter-dashed-lines mt-3 opacity-30"></div>
-                    </div>
-                </div>
-
-                <div onclick="event.stopPropagation(); handlePaperClick('gallery', 2)" class="paper-card paper-2 absolute w-[205px] h-[250px] letter-kraft-paper rounded-xl p-2.5 cursor-pointer flex flex-col justify-start select-none">
-                    <div class="w-full h-full border-2 border-dashed border-[#8c6b41] rounded-lg p-2 flex flex-col items-center bg-[#e2ceb1]">
-                        <div class="text-xl mb-1">📸</div>
-                        <div class="font-bold text-[#573d1e] text-xs text-center border-b border-[#a3835a] pb-1 w-full tracking-wider">拍立得相片牆</div>
-                        <div class="text-[10px] text-[#70522c] tracking-tight font-medium mt-2 text-center">相片牆記憶與足跡探索</div>
-                        <div class="w-full flex-1 letter-dashed-lines mt-3 opacity-60"></div>
-                        <div class="text-[8px] text-[#70522c] font-serif self-center mt-auto">Delife Paper</div>
-                    </div>
-                </div>
-
-                <div onclick="event.stopPropagation(); handlePaperClick('timeline', 1)" class="paper-card paper-1 absolute w-[205px] h-[250px] vintage-letter-paper rounded-xl p-2.5 cursor-pointer flex flex-col justify-start select-none">
+                
+                <!-- 📸 第 3 張信紙（左側）：【拍立得相片牆】 -->
+                <div onclick="event.stopPropagation(); handlePaperClick('gallery', 3)" class="paper-card paper-3 absolute w-[205px] h-[250px] vintage-letter-paper rounded-xl p-2.5 cursor-pointer flex flex-col justify-start select-none">
                     <div class="w-full h-full letter-lace-border flex flex-col items-center bg-[#fcf9f2]">
-                        <div class="text-xl mb-1 text-[#8c6d46]">🐇</div>
-                        <div class="font-bold text-[#6b4c27] text-xs text-center border-b border-[#c8b396] pb-1 w-full tracking-wider">故事放映室</div>
-                        <div class="text-[10px] text-[#a0825c] tracking-tight font-mono mt-2 text-center">我們的故事 ~~~~~~~~~~~~~~~~~~</div>
+                        <div class="text-xl mb-1">📸</div>
+                        <div class="font-bold text-[#6b4c27] text-xs text-center border-b border-[#c8b396] pb-1 w-full tracking-wider">拍立得相片牆</div>
+                        <div class="text-[10px] text-[#a0825c] tracking-tight font-medium mt-2 text-center">相片牆記憶與足跡探索</div>
                         <div class="w-full flex-1 letter-dashed-lines mt-3 opacity-60"></div>
                         <div class="text-[8px] text-[#a0825c] font-serif self-center mt-auto">Delife Paper</div>
                     </div>
                 </div>
+
+                <!-- 🐇 第 2 張信紙（中間）：【故事放映室】 -->
+                <div onclick="event.stopPropagation(); handlePaperClick('timeline', 2)" class="paper-card paper-2 absolute w-[205px] h-[250px] vintage-letter-paper rounded-xl p-2.5 cursor-pointer flex flex-col justify-start select-none">
+                    <div class="w-full h-full border-2 border-dashed border-[#8c6b41] rounded-lg p-2 flex flex-col items-center bg-[#f7f3eb]">
+                        <div class="text-xl mb-1 text-[#8c6d46]">🐇</div>
+                        <div class="font-bold text-[#6b4c27] text-xs text-center border-b border-[#c8b396] pb-1 w-full tracking-wider">故事放映室</div>
+                        <div class="text-[10px] text-[#a0825c] tracking-tight font-medium mt-2 text-center">— 我們的故事 —</div>
+                        <div class="w-full flex-1 letter-dashed-lines mt-3 opacity-60"></div>
+                        <div class="text-[8px] text-[#a0825c] font-serif self-center mt-auto">Delife Paper</div>
+                    </div>
+                </div>
+
+                <!-- 💌 第 1 張信紙（右側）：【我們的訊息盒】 -->
+                <div onclick="event.stopPropagation(); handlePaperClick('chat', 1)" class="paper-card paper-1 absolute w-[205px] h-[250px] letter-kraft-paper rounded-xl p-2.5 cursor-pointer flex flex-col justify-start select-none">
+                    <div class="w-full h-full border-2 border-dashed border-[#8c6b41] rounded-lg p-2 flex flex-col items-center bg-[#e2ceb1]">
+                        <div class="text-2xl mb-1 text-[#573d1e]">💌</div>
+                        <div class="font-bold text-[#573d1e] text-xs text-center border-b border-[#a3835a] pb-1 w-full tracking-wider flex items-center justify-center gap-1">
+                            我們的訊息盒
+                        </div>
+                        <div class="text-[9px] text-[#70522c] tracking-tight font-medium mt-2 text-center">— 從相遇到約定的點點滴滴 —</div>
+                        <div class="w-full flex-1 letter-dashed-lines mt-3 opacity-60"></div>
+                        <div class="text-[8px] text-[#70522c] font-serif self-center mt-auto font-bold">Sweet Messages</div>
+                    </div>
+                </div>
+
             </div>
 
             <div class="absolute inset-0 bg-[#f5ebe0] envelope-pocket-front rounded-b-2xl shadow-lg border-t border-[#ddc8b4] pointer-events-none flex items-end justify-center pb-3">
@@ -482,10 +471,11 @@
                 </div>
             </div>
             
-            <div id="sidebarTabsContainer" class="grid grid-cols-3 gap-1 bg-[#dfd0c0] p-1 rounded-xl text-xs font-bold text-[#7f5539] shadow-inner">
+            <div id="sidebarTabsContainer" class="grid grid-cols-4 gap-1 bg-[#dfd0c0] p-1 rounded-xl text-xs font-bold text-[#7f5539] shadow-inner">
                 <button id="tabFolders" onclick="switchSidebarTab('folders')" class="py-1 rounded-lg bg-[#fdfbf7] shadow-xs text-center transition hover:bg-white">集合</button>
                 <button id="tabTimeline" onclick="switchSidebarTab('timeline')" class="py-1 rounded-lg hover:bg-[#fdfbf7]/60 text-center transition">時間軸</button>
                 <button id="tabGallery" onclick="switchSidebarTab('gallery')" class="py-1 rounded-lg hover:bg-[#fdfbf7]/60 text-center transition">拍立得</button>
+                <button id="tabChat" onclick="switchSidebarTab('chat')" class="py-1 rounded-lg hover:bg-[#fdfbf7]/60 text-center transition">對話</button>
             </div>
         </div>
 
@@ -513,12 +503,21 @@
 
                 <div id="galleryContainer" class="space-y-2 pt-1 pb-6 transition-all duration-300"></div>
             </div>
+
+            <div id="viewChat" class="hidden flex-1 flex flex-col items-center justify-center p-3 text-center text-xs text-[#7f5539]/80 font-rounded">
+                💌 我們的訊息盒已移至中央主區域展示
+            </div>
         </div>
     </div>
 
     <!-- 主展示舞台 -->
     <div id="mainStageArea" class="flex-1 h-full relative overflow-hidden bg-slate-900">
         <div id="map" class="w-full h-full z-[1]"></div>
+
+        <!-- 💌 【我們的訊息盒】專屬中央主舞台 -->
+        <div id="teaserMainStage" class="hidden absolute inset-0 z-[1500] bg-[#2b1c14] overflow-y-auto touch-scroll p-3 md:p-8 flex justify-center items-start">
+            <div id="teaserMainStageContent" class="w-full max-w-2xl md:max-w-4xl my-2"></div>
+        </div>
 
         <!-- 故事放映室舞台 -->
         <div id="storyStage" class="hidden fixed inset-0 z-[2000] bg-slate-950 flex flex-col justify-between items-center p-2.5 md:p-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(0.75rem,env(safe-area-inset-bottom))] select-none overflow-hidden">
@@ -582,7 +581,7 @@
                         </svg>
 
                         <div id="storyBubbleNotes" class="text-[10px] md:text-xs text-slate-700 leading-relaxed font-rounded popup-notes max-h-28 md:max-h-36 overflow-y-auto pr-1 touch-scroll">
-                            這裡會顯示滿滿的筆記與回憶喔！(*'∀`)~♥
+                            這裡會顯示滿滿的筆記與回憶喔！(*'∀')~♥
                         </div>
                     </div>
                 </div>
@@ -601,27 +600,28 @@
         
         <div class="space-y-3 flex-1 overflow-y-auto touch-scroll text-sm text-slate-600 pr-1">
             <div>
-                <label class="block text-xs font-medium text-slate-600 mb-1">主旨</label>
-                <input type="text" id="placeTitle" class="w-full p-2 rounded-md bg-white border border-emerald-200 text-slate-800 focus:outline-none focus:border-emerald-600" placeholder="例如：第一次牽手！">
+                <label id="labelPlaceTitle" class="block text-xs font-medium text-slate-600 mb-1">主旨</label>
+                <input type="text" id="placeTitle" class="w-full p-2 rounded-md bg-white border border-emerald-200 text-slate-800 focus:outline-none focus:border-emerald-600" placeholder="例如：距離第一次見面：還有 14 天">
             </div>
 
-            <div>
+            <div id="fieldContainerLocation">
                 <label class="block text-xs font-medium text-slate-600 mb-1">地點名稱</label>
                 <input type="text" id="placeLocation" class="w-full p-2 rounded-md bg-white border border-emerald-200 text-slate-800 focus:outline-none focus:border-emerald-600" placeholder="例如：台南水仙宮市場">
             </div>
             
-            <div>
+            <div id="fieldContainerDate">
                 <label class="block text-xs font-medium text-emerald-800 font-bold mb-1 flex items-center gap-1">
-                    <i data-lucide="calendar-heart" class="w-3.5 h-3.5 text-pink-500"></i> 紀念/踩點日期
+                    <i data-lucide="calendar-heart" class="w-3.5 h-3.5 text-pink-500"></i> 紀念/對話日期 (用於排序)
                 </label>
                 <input type="date" id="placeDate" class="w-full p-2 rounded-md bg-white border border-emerald-200 text-slate-800 focus:outline-none focus:border-emerald-600">
             </div>
 
-            <div>
+            <div id="fieldContainerFolder">
                 <label class="block text-xs font-medium text-slate-600 mb-1">所屬集合</label>
                 <select id="placeFolder" class="w-full p-2 rounded-md bg-white border border-emerald-200 text-slate-800 focus:outline-none focus:border-emerald-600"></select>
             </div>
-            <div class="grid grid-cols-2 gap-2">
+            
+            <div id="fieldContainerColorIcon" class="grid grid-cols-2 gap-2">
                 <div>
                     <label class="block text-xs font-medium text-slate-600 mb-1">標記顏色</label>
                     <select id="placeColor" class="w-full p-2 rounded-md bg-white border border-emerald-200 text-slate-800">
@@ -643,12 +643,13 @@
                     </select>
                 </div>
             </div>
+
             <div>
-                <label class="block text-xs font-medium text-slate-600 mb-1">圖片網址 (多張請用逗號 , 隔開)</label>
-                <input type="text" id="placeImageUrl" class="w-full p-2 rounded-md bg-white border border-emerald-200 text-slate-800 focus:outline-none focus:border-emerald-600" placeholder="網址1, 網址2...">
+                <label id="labelPlaceImageUrl" class="block text-xs font-medium text-slate-600 mb-1">對話截圖網址 (多張請用逗號分隔)</label>
+                <input type="text" id="placeImageUrl" class="w-full p-2 rounded-md bg-white border border-emerald-200 text-slate-800 focus:outline-none focus:border-emerald-600" placeholder="請貼上對話截圖圖片網址，多張用逗號隔開">
             </div>
 
-            <div class="bg-emerald-50/70 p-2 rounded-lg border border-emerald-200/80 space-y-2">
+            <div id="fieldContainerVideo" class="bg-emerald-50/70 p-2 rounded-lg border border-emerald-200/80 space-y-2">
                 <div>
                     <label class="block text-xs font-bold text-emerald-900 mb-1">📱 手機影片網址 (YouTube)</label>
                     <input type="text" id="placeVideoUrlMobile" class="w-full p-2 rounded-md bg-white border border-emerald-200 text-slate-800 focus:outline-none focus:border-emerald-600 text-xs" placeholder="https://youtu.be/...">
@@ -660,8 +661,8 @@
             </div>
 
             <div>
-                <label class="block text-xs font-medium text-slate-600 mb-1">筆記想法</label>
-                <textarea id="placeNotes" rows="3" class="w-full p-2 rounded-md bg-white border border-emerald-200 text-slate-800 focus:outline-none focus:border-emerald-600"></textarea>
+                <label id="labelPlaceNotes" class="block text-xs font-medium text-slate-600 mb-1">筆記想法</label>
+                <textarea id="placeNotes" rows="4" class="w-full p-2 rounded-md bg-white border border-emerald-200 text-slate-800 focus:outline-none focus:border-emerald-600" placeholder="對話截圖下方的真實心境..."></textarea>
             </div>
         </div>
 
@@ -684,6 +685,9 @@
         window.activeGalleryCardId = null;
         window.isSwitchingPopup = false;
         let itemMarkerMap = {};
+
+        window.chatImageIndices = {};
+        window.secretUnfoldedState = {};
 
         function escapeHtml(str) {
             if (str === null || str === undefined) return '';
@@ -726,8 +730,6 @@
 
         function handlePaperClick(paperType, paperNum) {
             if (!isEnvelopeOpen) return;
-            if (paperType === 'locked') return;
-
             const targetPaper = document.querySelector(`.paper-${paperNum}`);
 
             if (targetPaper.classList.contains('active-paper')) {
@@ -753,13 +755,14 @@
 
                 if (paperType === 'timeline') {
                     switchSidebarTab('timeline');
-                } else if (paperType === 'gallery' || paperType === 'folders') {
+                } else if (paperType === 'gallery' || paperType === 'folders' || paperType === 'chat') {
                     switchSidebarTab(paperType);
                 }
             }, 300);
         }
 
         function returnToEnvelope() {
+            if (isEditMode) return;
             closeStoryStage();
             const coverStage = document.getElementById('viewCoverStage');
             const btnReturn = document.getElementById('btnReturnToEnvelope');
@@ -850,7 +853,7 @@
         let currentPlaybackItemIndex = 0;
         let currentPlaybackImgIndex = 0;
 
-        let folders = JSON.parse(localStorage.getItem('mapFolders')) || ['行程總覽', '美食口袋名單', '住宿備忘'];
+        let folders = JSON.parse(localStorage.getItem('mapFolders')) || ['行程總覽', '心動預告片', '美食口袋名單', '住宿備忘'];
         let isEditMode = false;
         let isMobileListCollapsed = false;
 
@@ -905,6 +908,7 @@
         function getGroupedItems() {
             const groups = {};
             markersData.forEach(item => {
+                if (item.folder_name === '心動預告片') return;
                 const key = getLocKey(item.lat, item.lng);
                 if (!key) return;
                 if (!groups[key]) groups[key] = [];
@@ -1119,22 +1123,11 @@
             lucide.createIcons();
         });
 
-        window.addNewEntryAtLocation = function(locKey) {
-            if (!isEditMode) {
-                alert("請先解鎖【編輯模式】才能新增手帳喔！");
-                return;
-            }
-            const parts = locKey.split(',');
-            if (parts.length === 2) {
-                const lat = parseFloat(parts[0]);
-                const lng = parseFloat(parts[1]);
-                activeId = null;
-                currentLatLng = { lat, lng };
-                if (currentMarker) map.removeLayer(currentMarker);
-                currentMarker = L.marker([lat, lng], { icon: createCustomIcon('blue', 'map-pin'), zIndexOffset: 1000 }).addTo(map);
-                openPanel(true);
-                lucide.createIcons();
-            }
+        window.addNewTeaserItem = function() {
+            if (!isEditMode) return;
+            activeId = null;
+            currentLatLng = { lat: 23.6, lng: 121.0 };
+            openPanel(true, true);
         };
 
         window.openEditPanelForItemById = function(itemId) {
@@ -1149,9 +1142,10 @@
             if (!isEditMode || !item) return;
             
             activeId = item.id;
-            currentLatLng = { lat: parseFloat(item.lat), lng: parseFloat(item.lng) };
+            currentLatLng = { lat: parseFloat(item.lat || 23.6), lng: parseFloat(item.lng || 121.0) };
             
-            openPanel(false);
+            const isTeaser = (item.folder_name === '心動預告片');
+            openPanel(false, isTeaser);
             
             document.getElementById('placeTitle').value = item.title || '';
             document.getElementById('placeLocation').value = item.location || '';
@@ -1164,17 +1158,52 @@
             document.getElementById('placeIcon').value = item.icon || 'map-pin';
             
             const folderSelect = document.getElementById('placeFolder');
-            if (folderSelect && item.folder_name) {
-                folderSelect.value = item.folder_name;
+            if (folderSelect) {
+                folderSelect.value = item.folder_name || (isTeaser ? '心動預告片' : '行程總覽');
             }
         }
 
-        function openPanel(isNew = false) {
+        function openPanel(isNew = false, isTeaser = false) {
             if (!isEditMode) return;
             document.getElementById('editPanel').classList.remove('hidden');
             updateFolderSelect();
+
+            const locField = document.getElementById('fieldContainerLocation');
+            const dateField = document.getElementById('fieldContainerDate');
+            const folderField = document.getElementById('fieldContainerFolder');
+            const colorIconField = document.getElementById('fieldContainerColorIcon');
+            const videoField = document.getElementById('fieldContainerVideo');
+
+            const labelTitle = document.getElementById('labelPlaceTitle');
+            const labelImage = document.getElementById('labelPlaceImageUrl');
+            const labelNotes = document.getElementById('labelPlaceNotes');
+
+            if (isTeaser) {
+                if (locField) locField.classList.add('hidden');
+                if (dateField) dateField.classList.remove('hidden');
+                if (folderField) folderField.classList.add('hidden');
+                if (colorIconField) colorIconField.classList.add('hidden');
+                if (videoField) videoField.classList.add('hidden');
+
+                if (labelTitle) labelTitle.innerText = "主旨 (即訊息盒膠囊文字)";
+                if (labelImage) labelImage.innerText = "對話截圖網址 (多張請用逗號分隔)";
+                if (labelNotes) labelNotes.innerText = "筆記想法 (悄悄話)";
+
+                document.getElementById('placeFolder').value = '心動預告片';
+            } else {
+                if (locField) locField.classList.remove('hidden');
+                if (dateField) dateField.classList.remove('hidden');
+                if (folderField) folderField.classList.remove('hidden');
+                if (colorIconField) colorIconField.classList.remove('hidden');
+                if (videoField) videoField.classList.remove('hidden');
+
+                if (labelTitle) labelTitle.innerText = "主旨";
+                if (labelImage) labelImage.innerText = "圖片網址 (多張用逗號隔開)";
+                if (labelNotes) labelNotes.innerText = "筆記想法";
+            }
+
             if (isNew) {
-                document.getElementById('panelTitle').innerText = "新增浪漫景點";
+                document.getElementById('panelTitle').innerText = isTeaser ? "新增訊息條目" : "新增浪漫景點";
                 document.getElementById('placeTitle').value = "";
                 document.getElementById('placeLocation').value = "";
                 document.getElementById('placeDate').value = new Date().toISOString().split('T')[0];
@@ -1186,7 +1215,7 @@
                 document.getElementById('placeColor').value = 'blue';
                 document.getElementById('placeIcon').value = 'map-pin';
             } else {
-                document.getElementById('panelTitle').innerText = "編輯手帳細節";
+                document.getElementById('panelTitle').innerText = isTeaser ? "編輯訊息條目" : "編輯手帳細節";
                 document.getElementById('btnDelete').classList.remove('hidden');
             }
         }
@@ -1292,7 +1321,12 @@
             const videoUrlMobile = document.getElementById('placeVideoUrlMobile').value;
             const color = document.getElementById('placeColor').value;
             let icon = document.getElementById('placeIcon').value;
-            const folder = document.getElementById('placeFolder').value;
+            let folder = document.getElementById('placeFolder').value;
+
+            const isChatActive = !document.getElementById('teaserMainStage').classList.contains('hidden');
+            if (isChatActive || folder === '心動預告片') {
+                folder = '心動預告片';
+            }
 
             const id = activeId || 'id_' + Date.now();
             const lat = currentLatLng ? currentLatLng.lat : (currentMarker ? currentMarker.getLatLng().lat : 23.6);
@@ -1404,7 +1438,6 @@
             }
         }
 
-        /* 📌 需求 2 & 3 修復：精密定位 - 照片卡片 100% 正中央，Pin 腳位在照片左下方 35px 近處 */
         function positionMapForCenteredPhoto(lat, lng) {
             const pinLatLng = L.latLng(parseFloat(lat), parseFloat(lng));
             const targetZoom = Math.max(map.getZoom(), 15);
@@ -1412,7 +1445,6 @@
             map.setZoom(targetZoom, { animate: false });
             const mapSize = map.getSize();
 
-            // Pin 點設定於 (視口中心 X-180px, 視口中心 Y+190px)
             const targetPinPoint = L.point(mapSize.x / 2 - 180, mapSize.y / 2 + 190);
 
             const currentPinPoint = map.latLngToContainerPoint(pinLatLng);
@@ -1433,7 +1465,6 @@
             }
         };
 
-        /* 📌 需求 2 修復：連接線長度縮短至 1/3 (約 30px) */
         function updateDashedLeaderLine() {
             if (!window.activePinLatLng) {
                 if (window.activeDashedLine) {
@@ -1445,7 +1476,6 @@
 
             const pinLatLng = window.activePinLatLng;
             
-            // 抓取真實照片卡片 DOM
             const cardEl = document.querySelector('.flip-card-front');
             let cardBottomLeftLatLng = null;
 
@@ -1541,7 +1571,6 @@
 
             window.isSwitchingPopup = true;
 
-            // 確保標記 100% 顯示並置頂
             marker.addTo(map);
             if (marker.setZIndexOffset) marker.setZIndexOffset(2000);
 
@@ -1649,7 +1678,6 @@
                 </div>
             `;
 
-            // 設定精密 Offset (讓照片卡片置中在螢幕正中央)
             marker.bindPopup(popupHtml, { 
                 autoPan: false,
                 offset: [180, -5]
@@ -1657,7 +1685,6 @@
 
             positionMapForCenteredPhoto(item.lat, item.lng);
 
-            // 確保照片牆上的該張照片維持隱藏狀態
             if (window.activeGalleryCardId) {
                 const targetCard = document.getElementById('gallery_card_' + window.activeGalleryCardId);
                 if (targetCard) targetCard.classList.add('photo-hidden');
@@ -1691,7 +1718,6 @@
             }
         });
 
-        /* 📌 需求 1 修復：渲染所有地點圖釘標記，設定置頂與標記圖示 */
         function renderMapMarkers(data) {
             markersData = data || [];
             markersData.sort((a, b) => (a.order || 0) - (b.order || 0));
@@ -1748,6 +1774,7 @@
             renderSidebar();
             renderTimeline();
             renderGallery();
+            renderTeaserMainStage();
             updateFolderSelect();
             
             lucide.createIcons();
@@ -1759,9 +1786,10 @@
         }
 
         function switchSidebarTab(tabName) {
-            const tabs = ['folders', 'timeline', 'gallery'];
+            const tabs = ['folders', 'timeline', 'gallery', 'chat'];
             const sidebar = document.getElementById('sidebarPanel');
             const tabsContainer = document.getElementById('sidebarTabsContainer');
+            const teaserStage = document.getElementById('teaserMainStage');
 
             tabs.forEach(t => {
                 const btn = document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1));
@@ -1788,7 +1816,18 @@
                 if (tabsContainer) tabsContainer.classList.remove('hidden');
             }
 
-            if (window.innerWidth < 768 && tabName === 'gallery') {
+            if (tabName === 'chat') {
+                map.closePopup();
+                if (teaserStage) teaserStage.classList.remove('hidden');
+                if (!isEditMode && sidebar) sidebar.classList.add('hidden');
+                renderTeaserMainStage();
+            } else {
+                if (teaserStage) teaserStage.classList.add('hidden');
+                if (sidebar) sidebar.classList.remove('hidden');
+                setTimeout(() => map.invalidateSize(), 200);
+            }
+
+            if (window.innerWidth < 768 && (tabName === 'gallery')) {
                 sidebar.classList.remove('h-[62vh]', 'h-auto');
                 sidebar.classList.add('h-[92vh]');
                 isMobileListCollapsed = false;
@@ -1798,22 +1837,205 @@
                 sidebar.classList.add('h-[62vh]');
             }
 
-            if (tabName === 'timeline') {
+            if (!isEditMode && tabName === 'timeline') {
                 openStoryStage();
             } else {
                 closeStoryStage();
             }
 
             const btnReturn = document.getElementById('btnReturnToEnvelope');
-            if (!isEditMode && document.getElementById('viewCoverStage').classList.contains('hidden')) {
+            if (isEditMode) {
+                if (btnReturn) btnReturn.classList.add('hidden');
+            } else if (document.getElementById('viewCoverStage').classList.contains('hidden')) {
                 if (btnReturn) btnReturn.classList.remove('hidden');
             }
 
             lucide.createIcons();
         }
 
+        window.changeChatImage = function(itemId, delta, total) {
+            if (!window.chatImageIndices[itemId]) window.chatImageIndices[itemId] = 0;
+            window.chatImageIndices[itemId] = (window.chatImageIndices[itemId] + delta + total) % total;
+            renderTeaserMainStage();
+        };
+
+        window.toggleSecretNotes = function(evt, itemId) {
+            if (evt) {
+                evt.preventDefault();
+                evt.stopPropagation();
+            }
+            window.secretUnfoldedState[itemId] = !window.secretUnfoldedState[itemId];
+            renderTeaserMainStage();
+        };
+
+        function renderTeaserMainStage() {
+            const container = document.getElementById('teaserMainStageContent');
+            const sidebar = document.getElementById('sidebarPanel');
+            if (!container) return;
+            container.innerHTML = '';
+
+            if (!isEditMode) {
+                if (sidebar) sidebar.classList.add('hidden');
+            } else {
+                if (sidebar) sidebar.classList.remove('hidden');
+            }
+
+            const chatItems = markersData.filter(m => m.folder_name === '心動預告片').sort((a, b) => {
+                const dateA = formatDateString(a.date) || '9999-99-99';
+                const dateB = formatDateString(b.date) || '9999-99-99';
+                if (dateA === dateB) return (a.order || 0) - (b.order || 0);
+                return dateA.localeCompare(dateB);
+            });
+
+            let itemsHtml = '';
+            chatItems.forEach((item) => {
+                const images = parseImageUrls(item.image_url);
+                const totalImgs = images.length;
+                
+                if (window.chatImageIndices[item.id] === undefined) {
+                    window.chatImageIndices[item.id] = 0;
+                }
+                const currentIdx = window.chatImageIndices[item.id] % Math.max(1, totalImgs);
+
+                let photoFrameHtml = '';
+
+                if (totalImgs === 0) {
+                    photoFrameHtml = '<div class="text-xs text-slate-400 py-6 text-center">尚無對話截圖</div>';
+                } else if (totalImgs === 1) {
+                    const imgHtml = buildImgWithFallback(images[0], 'w-full h-auto block rounded-xs object-contain', item.title);
+                    photoFrameHtml = `
+                        <div class="w-full overflow-hidden rounded-sm flex justify-center">
+                            ${imgHtml}
+                        </div>`;
+                } else {
+                    const currentImg = images[currentIdx];
+                    const imgHtml = buildImgWithFallback(currentImg, 'w-full h-auto block rounded-xs object-contain relative z-10 bg-white p-1 shadow-md', item.title);
+
+                    photoFrameHtml = `
+                        <div class="relative w-full py-1">
+                            <div class="absolute inset-x-2 top-0 bottom-0 bg-white border border-slate-200/80 rounded-sm shadow-md transform -rotate-3 z-0 pointer-events-none"></div>
+                            <div class="absolute inset-x-2 top-0 bottom-0 bg-white border border-slate-200/80 rounded-sm shadow-md transform rotate-3 z-0 pointer-events-none"></div>
+                            
+                            <div class="relative z-10 w-full flex justify-center overflow-hidden">
+                                ${imgHtml}
+                            </div>
+
+                            <button onclick="event.stopPropagation(); changeChatImage('${item.id}', -1, ${totalImgs})" class="absolute left-1 top-1/2 -translate-y-1/2 z-20 bg-black/60 hover:bg-black/80 text-white rounded-full p-1.5 shadow-lg transition btn-interactive">
+                                <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                            </button>
+                            <button onclick="event.stopPropagation(); changeChatImage('${item.id}', 1, ${totalImgs})" class="absolute right-1 top-1/2 -translate-y-1/2 z-20 bg-black/60 hover:bg-black/80 text-white rounded-full p-1.5 shadow-lg transition btn-interactive">
+                                <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                            </button>
+                            <div class="absolute bottom-3 right-3 z-20 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded-full font-mono shadow-sm">
+                                ${currentIdx + 1} / ${totalImgs}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                const editOverlay = isEditMode ? `
+                    <div class="absolute top-2 right-2 z-30">
+                        <button onclick="event.stopPropagation(); openEditPanelForItemById('${item.id}')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] px-2.5 py-1 rounded-md shadow-md transition font-bold flex items-center gap-1">
+                            <i data-lucide="edit-3" class="w-3 h-3"></i> 編輯條目
+                        </button>
+                    </div>
+                ` : '';
+
+                const isUnfolded = !!window.secretUnfoldedState[item.id];
+                const hasNotes = item.notes && item.notes.trim().length > 0;
+
+                const secretNoteHtml = `
+                    <div onclick="toggleSecretNotes(event, '${item.id}')" 
+                         class="cursor-pointer relative bg-[#fdfbf7] p-3 md:p-4 rounded-2xl shadow-md border-2 border-dashed border-[#e3d5c5] transform rotate-1 hover:rotate-0 transition-all duration-300 select-none group">
+                        
+                        <div class="flex items-center justify-between border-b border-[#ebdcd0] pb-1.5 mb-2">
+                            <span class="text-xs font-bold text-[#8c6d46] font-rounded flex items-center gap-1">
+                                🔒 悄悄話
+                            </span>
+                            <span class="text-[10px] text-pink-500 font-bold tracking-wider">
+                                ${isUnfolded ? '▲ 輕觸摺疊' : '▼ 點擊查看心意'}
+                            </span>
+                        </div>
+
+                        ${isUnfolded ? `
+                            <div class="text-xs md:text-sm text-[#5c4d43] font-rounded leading-relaxed whitespace-pre-line animate-photo-fade">
+                                ${hasNotes ? escapeHtml(item.notes) : '<span class="text-slate-400 italic">點擊編輯按鈕新增悄悄話...</span>'}
+                            </div>
+                        ` : `
+                            <div class="flex items-center justify-center py-2 text-xs text-[#a0825c] font-rounded bg-[#f5ebe0]/60 rounded-xl border border-[#e8ded2] group-hover:bg-[#f5ebe0] transition">
+                                <span>💌 封存的悄悄話 (點擊打開)</span>
+                            </div>
+                        `}
+                    </div>
+                `;
+
+                itemsHtml += `
+                    <div class="relative mb-14 last:mb-4 group">
+                        ${editOverlay}
+                        <div class="absolute -left-[29px] top-1 text-xs text-[#c49272]">♥</div>
+                        
+                        <div class="mb-3">
+                            <span class="inline-block bg-[#7f5539] text-white text-base md:text-xl font-bold px-4 py-1.5 rounded-full shadow-xs font-rounded tracking-wide">
+                                ${escapeHtml(item.title || '對話紀錄')}
+                            </span>
+                        </div>
+
+                        <div class="relative grid grid-cols-1 md:grid-cols-12 gap-4 items-start">
+                            
+                            <div onclick="${isEditMode ? `openEditPanelForItemById('${item.id}')` : ''}" class="md:col-span-6 relative bg-white p-2 pb-2.5 rounded-xl shadow-lg border border-[#e8ded2] transform -rotate-1 hover:rotate-0 transition-transform duration-300 ml-0 md:ml-2 z-10 ${isEditMode ? 'cursor-pointer hover:ring-2 hover:ring-emerald-400' : ''}">
+                                <div class="washi-tape-top"></div>
+                                ${photoFrameHtml}
+                            </div>
+
+                            <div class="block md:hidden absolute -top-4 right-0 w-3/4 z-30 transform rotate-2">
+                                ${secretNoteHtml}
+                            </div>
+
+                            <div class="hidden md:flex md:col-span-6 flex-col gap-3 mt-0">
+                                ${secretNoteHtml}
+                                <div class="flex items-center gap-2">
+                                    <div class="bg-[#f2e8dc] text-[#70522c] text-[10px] font-bold px-2.5 py-1 rounded-lg border border-[#d8c8b8] shadow-2xs font-mono">
+                                        ✨ MEMORIES
+                                    </div>
+                                    <div class="bg-rose-100/80 text-rose-700 text-[10px] font-bold px-2.5 py-1 rounded-lg border border-rose-200/80 shadow-2xs font-mono">
+                                        💖 OUR STORY
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                `;
+            });
+
+            const editHeaderBtn = isEditMode ? `
+                <div class="flex justify-end mb-4">
+                    <button onclick="addNewTeaserItem()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-md transition flex items-center gap-1">
+                        <i data-lucide="plus" class="w-4 h-4"></i> 新增對話條目
+                    </button>
+                </div>
+            ` : '';
+
+            container.innerHTML = `
+                ${editHeaderBtn}
+                <div class="bg-[#f8f4ec] border-2 border-dashed border-[#d8c8b8] rounded-3xl p-4 md:p-8 shadow-2xl text-[#5c4d43] font-sans my-2 relative">
+                    <div class="text-center mb-8">
+                        <h2 class="text-xl md:text-2xl font-bold tracking-wider text-[#6b4c38] font-rounded flex items-center justify-center gap-1.5">
+                            我們的訊息盒 💌
+                        </h2>
+                        <div class="text-xs text-[#a88d77] font-serif mt-1">— 從相遇到約定的點點滴滴 —</div>
+                    </div>
+
+                    <div class="relative pl-6 md:pl-8 border-l-2 border-dashed border-[#d8c8b8] ml-2 md:ml-4 my-4">
+                        ${itemsHtml || '<div class="text-xs text-slate-400 text-center py-8">尚未新增對話截圖...</div>'}
+                    </div>
+                </div>
+            `;
+            lucide.createIcons();
+        }
+
         function getSortedTimelineItems() {
-            return markersData.filter(m => formatDateString(m.date) && m.in_timeline !== 'no').sort((a, b) => {
+            return markersData.filter(m => formatDateString(m.date) && m.in_timeline !== 'no' && m.folder_name !== '心動預告片').sort((a, b) => {
                 const dateA = formatDateString(a.date);
                 const dateB = formatDateString(b.date);
                 if (dateA === dateB) return (a.order || 0) - (b.order || 0);
@@ -1840,6 +2062,7 @@
             container.innerHTML = '';
 
             const sortedItems = markersData.filter(m => {
+                if (m.folder_name === '心動預告片') return false;
                 if (!formatDateString(m.date)) return false;
                 if (!isEditMode && m.in_timeline === 'no') return false;
                 return true;
@@ -1908,7 +2131,6 @@
             renderGallery(true);
         }
 
-        /* 📌 需求 4 修復：照片牆點擊後精準隱藏照片，開啟地圖卡片 */
         window.focusPlaceWithFlyAnim = function(event, lat, lng, id) {
             if (window.innerWidth < 768) {
                 toggleMobileList(true);
@@ -1916,7 +2138,6 @@
 
             closeStoryStage();
 
-            // 1. 還原舊隱藏的照片，隱藏剛點擊的照片
             if (window.activeGalleryCardId) {
                 const oldCard = document.getElementById('gallery_card_' + window.activeGalleryCardId);
                 if (oldCard) oldCard.classList.remove('photo-hidden');
@@ -1949,7 +2170,6 @@
             const isMultiPhoto = rawImages.length > 1;
             const stackClass = isMultiPhoto ? 'stacked-polaroid' : '';
 
-            // 是否為目前被選中的照片
             const isCurrentlyActive = (window.activeGalleryCardId && String(window.activeGalleryCardId) === String(item.id));
             const hiddenClass = isCurrentlyActive ? 'photo-hidden' : '';
 
@@ -1993,7 +2213,7 @@
                 container.classList.add('animate-gallery-slide');
             }
 
-            const photoItems = markersData.filter(m => m.image_url && parseImageUrls(m.image_url).length > 0);
+            const photoItems = markersData.filter(m => m.folder_name !== '心動預告片' && m.image_url && parseImageUrls(m.image_url).length > 0);
 
             if (photoItems.length === 0) {
                 container.innerHTML = '<div class="text-xs text-slate-100 text-center py-6 bg-black/20 rounded-xl">軟木牆上尚未釘上照片...</div>';
@@ -2069,6 +2289,7 @@
         }
 
         function openStoryStage() {
+            if (isEditMode) return;
             document.getElementById('storyStage').classList.remove('hidden');
             if (!isEditMode) {
                 document.getElementById('btnReturnToEnvelope').classList.remove('hidden');
@@ -2525,8 +2746,8 @@
                 const password = prompt("請輸入管理員密碼以開啟編輯權限：");
                 if (password === "20250214") {
                     isEditMode = true;
-                    applyAuthDOMChanges();
                     document.getElementById('floatingSettingsMenu').classList.add('hidden');
+                    applyAuthDOMChanges();
                     openPanel(true);
                 } else if (password !== null) {
                     alert("密碼錯誤，拒絕存取！");
@@ -2552,13 +2773,18 @@
             map.closePopup();
 
             if (isEditMode) {
+                closeStoryStage();
+                const coverStage = document.getElementById('viewCoverStage');
+                if (coverStage) {
+                    coverStage.classList.add('hidden', 'opacity-0', 'pointer-events-none');
+                }
+                if (btnReturn) btnReturn.classList.add('hidden');
+
                 if (editFolderHeader) editFolderHeader.classList.remove('hidden');
                 if (btnToggle) btnToggle.classList.remove('hidden');
                 if (sidebarTabs) sidebarTabs.classList.remove('hidden');
                 
-                const coverStage = document.getElementById('viewCoverStage');
-                if (coverStage) coverStage.classList.add('hidden', 'opacity-0', 'pointer-events-none');
-                if (btnReturn) btnReturn.classList.add('hidden');
+                switchSidebarTab('folders');
             } else {
                 if (editFolderHeader) editFolderHeader.classList.add('hidden');
                 if (btnToggle) btnToggle.classList.add('hidden');
@@ -2574,6 +2800,7 @@
             renderSidebar();
             renderTimeline();
             renderGallery();
+            renderTeaserMainStage();
             lucide.createIcons();
         }
 
