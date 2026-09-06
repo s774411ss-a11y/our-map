@@ -2033,7 +2033,7 @@
 
                 const hasNotes = item.notes && item.notes.trim().length > 0;
 
-                /* 💮 加入「悄悄話 for Amber」日系橡皮章印戳 */
+                /* 💮 日系橡皮章印戳悄悄話區塊 */
                 const secretNoteHtml = `
                     <div class="relative bg-[#fdfbf7] p-3.5 md:p-4 rounded-2xl shadow-md border-2 border-dashed border-[#e3d5c5] transform rotate-1 transition-all duration-300 select-none overflow-hidden min-h-[120px] flex flex-col justify-between">
                         
@@ -2079,20 +2079,12 @@
                             </span>
                         </div>
 
-                        <div class="relative grid grid-cols-1 md:grid-cols-12 gap-4 items-start">
+                        <div class="relative flex flex-col md:grid md:grid-cols-12 gap-4 items-start">
                             
-                            <div onclick="${isEditMode ? `openEditPanelForItemById('${item.id}')` : ''}" class="md:col-span-6 relative bg-white p-2 pb-2.5 rounded-xl shadow-lg border border-[#e8ded2] transform -rotate-1 hover:rotate-0 transition-transform duration-300 ml-0 md:ml-2 z-10 ${isEditMode ? 'cursor-pointer hover:ring-2 hover:ring-emerald-400' : ''}">
-                                <div class="washi-tape-top"></div>
-                                ${photoFrameHtml}
-                            </div>
-
-                            <div class="block md:hidden w-full z-20 mt-1">
+                            <!-- 📱 手機版在上：悄悄話對話框 (電腦版會在右側 md:col-span-6) -->
+                            <div class="w-full md:col-span-6 z-20 order-1 md:order-2">
                                 ${secretNoteHtml}
-                            </div>
-
-                            <div class="hidden md:flex md:col-span-6 flex-col gap-3 mt-0">
-                                ${secretNoteHtml}
-                                <div class="flex items-center gap-2">
+                                <div class="hidden md:flex items-center gap-2 mt-3">
                                     <div class="bg-[#f2e8dc] text-[#70522c] text-[10px] font-bold px-2.5 py-1 rounded-lg border border-[#d8c8b8] shadow-2xs font-mono">
                                         ✨ MEMORIES
                                     </div>
@@ -2100,6 +2092,12 @@
                                         💖 OUR STORY
                                     </div>
                                 </div>
+                            </div>
+
+                            <!-- 📱 手機版在下：對話截圖 (電腦版會在左側 md:col-span-6) -->
+                            <div onclick="${isEditMode ? `openEditPanelForItemById('${item.id}')` : ''}" class="w-full md:col-span-6 relative bg-white p-2 pb-2.5 rounded-xl shadow-lg border border-[#e8ded2] transform -rotate-1 hover:rotate-0 transition-transform duration-300 z-10 order-2 md:order-1 ${isEditMode ? 'cursor-pointer hover:ring-2 hover:ring-emerald-400' : ''}">
+                                <div class="washi-tape-top"></div>
+                                ${photoFrameHtml}
                             </div>
 
                         </div>
