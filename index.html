@@ -77,7 +77,6 @@
             box-shadow: inset 0 0 15px rgba(0,0,0,0.3);
         }
 
-        /* 🎬 復古和紙膠帶 (信封用) */
         .washi-tape-top {
             position: absolute;
             top: -8px;
@@ -98,6 +97,25 @@
             backface-visibility: hidden !important; 
             -webkit-backface-visibility: hidden !important; 
         }
+
+        .envelope-3d-inner {
+            transition: transform 0.75s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+        .envelope-3d-inner.is-flipped-back {
+            transform: rotateY(180deg);
+        }
+
+        .envelope-face-front {
+            backface-visibility: hidden !important;
+            -webkit-backface-visibility: hidden !important;
+        }
+        .envelope-face-back {
+            backface-visibility: hidden !important;
+            -webkit-backface-visibility: hidden !important;
+            transform: rotateY(180deg);
+        }
+
         .flip-card-inner { 
             transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); 
             transform-style: preserve-3d;
@@ -126,11 +144,12 @@
             z-index: 2000 !important;
         }
 
+        /* 信封頂蓋與口袋層級構建 */
         .envelope-top-flap {
             clip-path: polygon(0 0, 100% 0, 50% 100%);
             transform-origin: top center;
-            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), z-index 0.2s;
-            z-index: 25 !important;
+            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), z-index 0.2s;
+            z-index: 35 !important;
         }
         .envelope-pocket-front {
             clip-path: polygon(0 0, 50% 45%, 100% 0, 100% 100%, 0 100%);
@@ -142,14 +161,12 @@
             border: 1px solid #d4c5b2;
             box-shadow: 0 8px 22px rgba(0, 0, 0, 0.25);
             position: relative;
-            opacity: 1 !important;
         }
 
         .letter-kraft-paper {
             background-color: #e2ceb1 !important;
             border: 1px solid #bd9c71;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
-            opacity: 1 !important;
         }
 
         .letter-lace-border {
@@ -163,47 +180,61 @@
             background-size: 100% 25px;
         }
 
-        /* ✉️ 信紙初始預設 */
+        /* 未開啟信封時，紙條 100% 隱藏且不出界 */
         .paper-card {
             pointer-events: none;
-            transition: transform 0.45s cubic-bezier(0.34, 1.45, 0.64, 1), box-shadow 0.3s ease;
+            transition: transform 0.5s cubic-bezier(0.34, 1.45, 0.64, 1), opacity 0.3s ease, visibility 0.3s ease;
             transform-origin: bottom center;
-            transform: translateY(0) rotate(0deg) translateX(0px) scale(0.85);
-            z-index: 5 !important;
+            transform: translateY(0) scale(0.8);
+            opacity: 0 !important;
+            visibility: hidden !important;
+            z-index: 15 !important;
         }
 
+        /* 信封打開時，頂蓋降至層級 10，防止擋住紙條 */
         .envelope-flap-open .envelope-top-flap {
             transform: rotateX(180deg);
-            z-index: 1 !important;
+            z-index: 10 !important;
         }
 
+        /* 信封開啟後，紙條才顯示並向上抽出 */
         .envelope-papers-out .paper-card {
             pointer-events: auto;
-            transform: translateY(-45px) rotate(0deg) translateX(0px) scale(0.85);
-            z-index: 30 !important;
+            transform: translateY(-25px) scale(0.88);
+            opacity: 1 !important;
+            visibility: visible !important;
+            z-index: 15 !important;
         }
 
-        .envelope-papers-out .paper-3 { z-index: 31 !important; }
-        .envelope-papers-out .paper-2 { z-index: 32 !important; }
-        .envelope-papers-out .paper-1 { z-index: 33 !important; }
+        .envelope-papers-out .paper-3 { z-index: 16 !important; }
+        .envelope-papers-out .paper-2 { z-index: 17 !important; }
+        .envelope-papers-out .paper-1 { z-index: 18 !important; }
 
+        /* 被點選的紙條拉高並超越口袋 (z-40) */
         .envelope-papers-out .paper-3.active-paper {
-            transform: translateY(-135px) rotate(-4deg) translateX(-18px) scale(0.92) !important;
-            z-index: 60 !important;
+            transform: translateY(-110px) rotate(-4deg) translateX(-18px) scale(0.95) !important;
+            z-index: 40 !important;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4) !important;
         }
         .envelope-papers-out .paper-2.active-paper {
-            transform: translateY(-140px) rotate(0deg) translateX(0px) scale(0.92) !important;
-            z-index: 60 !important;
+            transform: translateY(-115px) rotate(0deg) translateX(0px) scale(0.95) !important;
+            z-index: 40 !important;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4) !important;
         }
         .envelope-papers-out .paper-1.active-paper {
-            transform: translateY(-145px) rotate(3deg) translateX(18px) scale(0.94) !important;
-            z-index: 60 !important;
+            transform: translateY(-120px) rotate(3deg) translateX(18px) scale(0.97) !important;
+            z-index: 40 !important;
             box-shadow: 0 22px 45px rgba(0, 0, 0, 0.45) !important;
         }
 
-        /* ✂️ 純膠帶遮罩與撕裂效果 */
+        @keyframes cassetteSpin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .cassette-spinning {
+            animation: cassetteSpin 2s linear infinite !important;
+        }
+
         .secret-cover-mask {
             position: absolute;
             inset: 0;
@@ -258,7 +289,6 @@
             border-bottom: 1px solid rgba(180, 140, 100, 0.25);
         }
 
-        /* 💮 日系橡皮章樣式 (Rubber Stamp) */
         .rubber-stamp {
             position: relative;
             z-index: 60;
@@ -280,7 +310,6 @@
             opacity: 0.92;
         }
 
-        /* 撕開離場觸發狀態 */
         .secret-cover-mask.is-peeled {
             opacity: 0 !important;
             pointer-events: none !important;
@@ -491,60 +520,132 @@
     </button>
 
     <!-- 觀看模式封面：3D 信封主舞台 -->
-    <div id="viewCoverStage" class="fixed inset-0 z-[2000] bg-[#1a0f0a]/90 backdrop-blur-md flex items-center justify-center p-4 transition-all duration-500 perspective-1000">
-        <div id="envelopeContainer" class="relative w-full max-w-md h-[290px] preserve-3d cursor-pointer group" onclick="toggle3DEnvelope()">
-            <div class="absolute inset-0 bg-[#e6ccb2] rounded-2xl shadow-2xl border border-[#ddc8b4] z-[1]"></div>
-
-            <div id="papersStack" class="absolute inset-x-10 bottom-2 z-[5] h-[260px] flex items-end justify-center">
+    <div id="viewCoverStage" class="fixed inset-0 z-[2000] bg-[#1a0f0a]/90 backdrop-blur-md flex flex-col items-center justify-center p-4 transition-all duration-500 perspective-1000">
+        <div id="envelopeContainer" class="relative w-full max-w-md h-[290px] preserve-3d group">
+            
+            <!-- 3D 信封翻轉內層 -->
+            <div id="envelope3dInner" class="envelope-3d-inner relative w-full h-full preserve-3d">
                 
-                <!-- 📸 第 3 張信紙（左側）：【拍立得相片牆】 -->
-                <div onclick="event.stopPropagation(); handlePaperClick('gallery', 3)" class="paper-card paper-3 absolute w-[205px] h-[250px] vintage-letter-paper rounded-xl p-2.5 cursor-pointer flex flex-col justify-start select-none">
-                    <div class="w-full h-full letter-lace-border flex flex-col items-center bg-[#fcf9f2]">
-                        <div class="text-xl mb-1">📸</div>
-                        <div class="font-bold text-[#6b4c27] text-xs text-center border-b border-[#c8b396] pb-1 w-full tracking-wider">拍立得相片牆</div>
-                        <div class="text-[10px] text-[#a0825c] tracking-tight font-medium mt-2 text-center">相片牆記憶與足跡探索</div>
-                        <div class="w-full flex-1 letter-dashed-lines mt-3 opacity-60"></div>
-                        <div class="text-[8px] text-[#a0825c] font-serif self-center mt-auto">Delife Paper</div>
-                    </div>
-                </div>
+                <!-- ✉️ 【正面】信封與信紙組合 (點擊信封任意處均可開啟) -->
+                <div class="envelope-face-front absolute inset-0 preserve-3d cursor-pointer" onclick="handleFrontEnvelopeClick(event)">
+                    <div class="absolute inset-0 bg-[#e6ccb2] rounded-2xl shadow-2xl border border-[#ddc8b4] z-[1]"></div>
 
-                <!-- 🐇 第 2 張信紙（中間）：【故事放映室】 -->
-                <div onclick="event.stopPropagation(); handlePaperClick('timeline', 2)" class="paper-card paper-2 absolute w-[205px] h-[250px] vintage-letter-paper rounded-xl p-2.5 cursor-pointer flex flex-col justify-start select-none">
-                    <div class="w-full h-full border-2 border-dashed border-[#8c6b41] rounded-lg p-2 flex flex-col items-center bg-[#f7f3eb]">
-                        <div class="text-xl mb-1 text-[#8c6d46]">🐇</div>
-                        <div class="font-bold text-[#6b4c27] text-xs text-center border-b border-[#c8b396] pb-1 w-full tracking-wider">故事放映室</div>
-                        <div class="text-[10px] text-[#a0825c] tracking-tight font-medium mt-2 text-center">— 我們的故事 —</div>
-                        <div class="w-full flex-1 letter-dashed-lines mt-3 opacity-60"></div>
-                        <div class="text-[8px] text-[#a0825c] font-serif self-center mt-auto">Delife Paper</div>
-                    </div>
-                </div>
-
-                <!-- 💌 第 1 張信紙（右側）：【我們的訊息盒】 -->
-                <div onclick="event.stopPropagation(); handlePaperClick('chat', 1)" class="paper-card paper-1 absolute w-[205px] h-[250px] letter-kraft-paper rounded-xl p-2.5 cursor-pointer flex flex-col justify-start select-none">
-                    <div class="w-full h-full border-2 border-dashed border-[#8c6b41] rounded-lg p-2 flex flex-col items-center bg-[#e2ceb1]">
-                        <div class="text-2xl mb-1 text-[#573d1e]">💌</div>
-                        <div class="font-bold text-[#573d1e] text-xs text-center border-b border-[#a3835a] pb-1 w-full tracking-wider flex items-center justify-center gap-1">
-                            我們的訊息盒
+                    <div id="papersStack" class="absolute inset-x-10 bottom-2 z-[15] h-[260px] flex items-end justify-center">
+                        
+                        <!-- 📸 第 3 張信紙（左側）：【拍立得相片牆】 -->
+                        <div onclick="event.stopPropagation(); handlePaperClick('gallery', 3)" class="paper-card paper-3 absolute w-[205px] h-[250px] vintage-letter-paper rounded-xl p-2.5 cursor-pointer flex flex-col justify-start select-none">
+                            <div class="w-full h-full letter-lace-border flex flex-col items-center bg-[#fcf9f2]">
+                                <div class="text-xl mb-1">📸</div>
+                                <div class="font-bold text-[#6b4c27] text-xs text-center border-b border-[#c8b396] pb-1 w-full tracking-wider">拍立得相片牆</div>
+                                <div class="text-[10px] text-[#a0825c] tracking-tight font-medium mt-2 text-center">相片牆記憶與足跡探索</div>
+                                <div class="w-full flex-1 letter-dashed-lines mt-3 opacity-60"></div>
+                                <div class="text-[8px] text-[#a0825c] font-serif self-center mt-auto">Delife Paper</div>
+                            </div>
                         </div>
-                        <div class="text-[9px] text-[#70522c] tracking-tight font-medium mt-2 text-center">— 從相遇到約定的點點滴滴 —</div>
-                        <div class="w-full flex-1 letter-dashed-lines mt-3 opacity-60"></div>
-                        <div class="text-[8px] text-[#70522c] font-serif self-center mt-auto font-bold">Sweet Messages</div>
+
+                        <!-- 🐇 第 2 張信紙（中間）：【故事放映室】 -->
+                        <div onclick="event.stopPropagation(); handlePaperClick('timeline', 2)" class="paper-card paper-2 absolute w-[205px] h-[250px] vintage-letter-paper rounded-xl p-2.5 cursor-pointer flex flex-col justify-start select-none">
+                            <div class="w-full h-full border-2 border-dashed border-[#8c6b41] rounded-lg p-2 flex flex-col items-center bg-[#f7f3eb]">
+                                <div class="text-xl mb-1 text-[#8c6d46]">🐇</div>
+                                <div class="font-bold text-[#6b4c27] text-xs text-center border-b border-[#c8b396] pb-1 w-full tracking-wider">故事放映室</div>
+                                <div class="text-[10px] text-[#a0825c] tracking-tight font-medium mt-2 text-center">— 我們的故事 —</div>
+                                <div class="w-full flex-1 letter-dashed-lines mt-3 opacity-60"></div>
+                                <div class="text-[8px] text-[#a0825c] font-serif self-center mt-auto">Delife Paper</div>
+                            </div>
+                        </div>
+
+                        <!-- 💌 第 1 張信紙（右側）：【我們的訊息盒】 -->
+                        <div onclick="event.stopPropagation(); handlePaperClick('chat', 1)" class="paper-card paper-1 absolute w-[205px] h-[250px] letter-kraft-paper rounded-xl p-2.5 cursor-pointer flex flex-col justify-start select-none">
+                            <div class="w-full h-full border-2 border-dashed border-[#8c6b41] rounded-lg p-2 flex flex-col items-center bg-[#e2ceb1]">
+                                <div class="text-2xl mb-1 text-[#573d1e]">💌</div>
+                                <div class="font-bold text-[#573d1e] text-xs text-center border-b border-[#a3835a] pb-1 w-full tracking-wider flex items-center justify-center gap-1">
+                                    我們的訊息盒
+                                </div>
+                                <div class="text-[9px] text-[#70522c] tracking-tight font-medium mt-2 text-center">— 從相遇到約定的點點滴滴 —</div>
+                                <div class="w-full flex-1 letter-dashed-lines mt-3 opacity-60"></div>
+                                <div class="text-[8px] text-[#70522c] font-serif self-center mt-auto font-bold">Sweet Messages</div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- 信封前口袋 (z-20) 蓋住紙條下半部 -->
+                    <div class="absolute inset-0 bg-[#f5ebe0] envelope-pocket-front rounded-b-2xl shadow-lg border-t border-[#ddc8b4] pointer-events-none"></div>
+
+                    <!-- 提示字樣寫在信封正面下方，開啟後顯示 -->
+                    <div id="envelopeFrontHint" class="hidden absolute -bottom-9 inset-x-0 text-center text-[#e6ccb2] font-rounded text-sm tracking-widest animate-pulse pointer-events-none select-none z-30 drop-shadow-md">
+                        ♥ 選一張紙條吧 ♥
+                    </div>
+
+                    <!-- 蓋子處的玫瑰印章（點擊玫瑰執行翻頁） -->
+                    <div class="absolute inset-x-0 top-0 h-40 bg-[#ddc8b4] envelope-top-flap shadow-md flex items-center justify-center pointer-events-none">
+                        <div id="roseStampFront" onclick="handleRoseStampClick(event)" class="w-10 h-10 rounded-full bg-rose-700 border-2 border-rose-300 shadow-md flex items-center justify-center text-lg text-white mb-8 pointer-events-auto cursor-pointer btn-interactive" title="點擊翻轉信封">
+                            🌹
+                        </div>
                     </div>
                 </div>
 
-            </div>
+                <!-- 📼 【背面】復古錄音帶信封面 -->
+                <div class="envelope-face-back absolute inset-0 bg-[#d7ccc8] rounded-2xl shadow-2xl border-2 border-[#bcaaa4] flex flex-col items-center justify-between p-3 select-none">
+                    
+                    <!-- 背面頂部玫瑰印章按鈕（點擊翻回正面） -->
+                    <div class="w-full flex justify-center pt-0.5 z-50">
+                        <div onclick="handleRoseStampClick(event)" class="w-9 h-9 rounded-full bg-rose-700 border-2 border-rose-300 shadow-md flex items-center justify-center text-base text-white cursor-pointer btn-interactive" title="點擊翻回正面">
+                            🌹
+                        </div>
+                    </div>
 
-            <div class="absolute inset-0 bg-[#f5ebe0] envelope-pocket-front rounded-b-2xl shadow-lg border-t border-[#ddc8b4] pointer-events-none flex items-end justify-center pb-3">
-                <span id="envelopeHint" class="text-xs font-bold text-[#9c6644] bg-white/90 px-3.5 py-1.5 rounded-full shadow-xs border border-rose-200/80 animate-bounce">
-                    🌹 點擊撕開玫瑰信封
-                </span>
-            </div>
+                    <!-- 正中央錄音帶圖案 -->
+                    <div onclick="handleCassetteClick(event)" class="relative w-36 h-22 bg-[#3e2723] rounded-xl border-2 border-[#5d4037] shadow-xl p-2 flex flex-col justify-between cursor-pointer hover:scale-105 transition-transform btn-interactive my-auto">
+                        <div class="bg-[#fff8e1] rounded-md p-1 border border-[#ffe082] flex flex-col items-center justify-center">
+                            <div id="cassetteTitleText" class="text-[10px] font-bold text-[#5d4037] tracking-wider truncate w-full text-center">
+                                🎵 我的悄悄話
+                            </div>
+                        </div>
 
-            <div class="absolute inset-x-0 top-0 h-40 bg-[#ddc8b4] envelope-top-flap shadow-md flex items-center justify-center pointer-events-none">
-                <div class="w-10 h-10 rounded-full bg-rose-700 border-2 border-rose-300 shadow-md flex items-center justify-center text-lg text-white mb-8">
-                    🌹
+                        <div class="bg-[#212121] rounded-md h-8 px-3 flex items-center justify-between border border-[#424242]">
+                            <div class="w-6 h-6 rounded-full border-2 border-dashed border-amber-300 flex items-center justify-center bg-[#424242] cassette-gear">
+                                <div class="w-2 h-2 rounded-full bg-amber-100"></div>
+                            </div>
+                            
+                            <div class="flex-1 mx-2 h-2 bg-[#4e342e] rounded-full overflow-hidden border border-[#3e2723]">
+                                <div id="cassetteTapeProgress" class="h-full bg-amber-600/80 w-0 transition-all"></div>
+                            </div>
+
+                            <div class="w-6 h-6 rounded-full border-2 border-dashed border-amber-300 flex items-center justify-center bg-[#424242] cassette-gear">
+                                <div class="w-2 h-2 rounded-full bg-amber-100"></div>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-between items-center px-1">
+                            <span class="text-[8px] text-[#a1887f] font-mono">A-SIDE</span>
+                            <div id="cassetteStatusDot" class="w-2 h-2 rounded-full bg-slate-500"></div>
+                            <span class="text-[8px] text-[#a1887f] font-mono">REC ★</span>
+                        </div>
+                    </div>
+
+                    <!-- 錄音帶下方獨立可拉動進度條 (與錄音帶等寬 w-36) -->
+                    <div class="w-36 flex flex-col gap-1 z-50 mb-1" onclick="event.stopPropagation()">
+                        <div class="relative w-full flex items-center">
+                            <input type="range" id="audioSeekRange" min="0" max="100" value="0" step="0.1" 
+                                   class="w-full h-1.5 bg-[#5d4037]/30 rounded-lg appearance-none cursor-pointer accent-amber-600 focus:outline-none" 
+                                   oninput="onAudioSeekInput(this.value)" 
+                                   onclick="event.stopPropagation()">
+                        </div>
+                        <div class="flex justify-between items-center text-[9px] text-[#5d4037] font-mono px-0.5">
+                            <span id="audioCurrentTime">00:00</span>
+                            <span id="audioDuration">00:00</span>
+                        </div>
+                    </div>
+
+                    <div class="text-[9px] font-serif text-[#6d4c41] tracking-widest opacity-80">
+                        ♥ VOICE MEMORIES ♥
+                    </div>
+
                 </div>
+
             </div>
+
         </div>
     </div>
 
@@ -553,7 +654,10 @@
         <div class="shrink-0 mb-1.5">
             <div class="flex justify-between items-center mb-1">
                 <h1 class="text-base md:text-xl font-bold flex items-center gap-1.5 text-[#7f5539]">
-                    <i data-lucide="camera" class="text-[#b7b7a4]"></i> 拍立得相片牆
+                    <button id="btnHeaderCamera" onclick="handleCameraIconClick(event)" class="p-1 rounded-lg transition-all" title="拍立得相片牆">
+                        <i data-lucide="camera" class="text-[#b7b7a4]"></i>
+                    </button>
+                    <span>拍立得相片牆</span>
                 </h1>
                 
                 <div class="flex items-center gap-1">
@@ -697,6 +801,13 @@
                 <input type="text" id="placeTitle" class="w-full p-2 rounded-md bg-white border border-emerald-200 text-slate-800 focus:outline-none focus:border-emerald-600" placeholder="例如：距離第一次見面：還有 14 天">
             </div>
 
+            <div id="fieldContainerAudioUrl" class="hidden">
+                <label class="block text-xs font-bold text-amber-800 mb-1 flex items-center gap-1">
+                    <i data-lucide="music" class="w-3.5 h-3.5 text-amber-600"></i> 錄音音訊檔連結 (MP3 / Google Drive Direct Link)
+                </label>
+                <input type="text" id="placeAudioUrl" class="w-full p-2 rounded-md bg-white border border-amber-300 text-slate-800 focus:outline-none focus:border-amber-600 text-xs" placeholder="請貼上音訊檔 MP3 或語音連結">
+            </div>
+
             <div id="fieldContainerLocation">
                 <label class="block text-xs font-medium text-slate-600 mb-1">地點名稱</label>
                 <input type="text" id="placeLocation" class="w-full p-2 rounded-md bg-white border border-emerald-200 text-slate-800 focus:outline-none focus:border-emerald-600" placeholder="例如：台南水仙宮市場">
@@ -737,7 +848,7 @@
                 </div>
             </div>
 
-            <div>
+            <div id="fieldContainerImageUrl">
                 <label id="labelPlaceImageUrl" class="block text-xs font-medium text-slate-600 mb-1">對話截圖網址 (多張請用逗號分隔)</label>
                 <input type="text" id="placeImageUrl" class="w-full p-2 rounded-md bg-white border border-emerald-200 text-slate-800 focus:outline-none focus:border-emerald-600" placeholder="請貼上對話截圖圖片網址，多張用逗號隔開">
             </div>
@@ -753,7 +864,7 @@
                 </div>
             </div>
 
-            <div>
+            <div id="fieldContainerNotes">
                 <label id="labelPlaceNotes" class="block text-xs font-medium text-slate-600 mb-1">筆記想法</label>
                 <textarea id="placeNotes" rows="4" class="w-full p-2 rounded-md bg-white border border-emerald-200 text-slate-800 focus:outline-none focus:border-emerald-600" placeholder="對話截圖下方的真實心境..."></textarea>
             </div>
@@ -765,6 +876,9 @@
         </div>
     </div>
 
+    <!-- 隱藏音訊播放器元件 -->
+    <audio id="cassetteAudioPlayer" class="hidden"></audio>
+
     <script>
         const map = L.map('map').setView([23.6, 121.0], 7);
         
@@ -774,6 +888,9 @@
         }).addTo(map);
 
         let isEnvelopeOpen = false;
+        let isEnvelopeFlippedBack = false;
+        let isAudioPlaying = false;
+
         let currentGalleryMode = 'time';
         window.activeGalleryCardId = null;
         window.isSwitchingPopup = false;
@@ -796,32 +913,58 @@
             menu.classList.toggle('hidden');
         }
 
-        function toggle3DEnvelope() {
-            const container = document.getElementById('envelopeContainer');
-            const hint = document.getElementById('envelopeHint');
-            isEnvelopeOpen = !isEnvelopeOpen;
-
-            document.querySelectorAll('.paper-card').forEach(p => p.classList.remove('active-paper'));
-
-            if (isEnvelopeOpen) {
-                container.classList.add('envelope-flap-open');
-                if (hint) hint.innerText = "撕開信封中...";
-
-                setTimeout(() => {
-                    container.classList.add('envelope-papers-out');
-                    if (hint) hint.innerText = "請點擊感興趣的信紙 🌹";
-                }, 350);
-            } else {
-                container.classList.remove('envelope-papers-out');
-                setTimeout(() => {
-                    container.classList.remove('envelope-flap-open');
-                    if (hint) hint.innerText = "🌹 點擊撕開玫瑰信封";
-                }, 300);
+        function handleFrontEnvelopeClick(e) {
+            if (isEnvelopeFlippedBack) return;
+            if (!isEnvelopeOpen) {
+                openEnvelope();
             }
         }
 
+        function openEnvelope() {
+            if (isEnvelopeOpen) return;
+            isEnvelopeOpen = true;
+            const container = document.getElementById('envelopeContainer');
+            container.classList.add('envelope-flap-open');
+
+            setTimeout(() => {
+                container.classList.add('envelope-papers-out');
+                const hint = document.getElementById('envelopeFrontHint');
+                if (hint) hint.classList.remove('hidden');
+            }, 350);
+        }
+
+        function handleRoseStampClick(e) {
+            if (e) e.stopPropagation();
+            
+            if (isEnvelopeFlippedBack) {
+                flipEnvelopeBack();
+            } else if (!isEnvelopeOpen) {
+                openEnvelope();
+            } else {
+                flipEnvelopeToBack();
+            }
+        }
+
+        function handleCameraIconClick(e) {
+            if (isEditMode) {
+                e.stopPropagation();
+                openAudioEditPanel();
+            }
+        }
+
+        function flipEnvelopeToBack() {
+            isEnvelopeFlippedBack = true;
+            document.getElementById('envelope3dInner').classList.add('is-flipped-back');
+        }
+
+        function flipEnvelopeBack() {
+            isEnvelopeFlippedBack = false;
+            document.getElementById('envelope3dInner').classList.remove('is-flipped-back');
+            pauseCassetteAudio();
+        }
+
         function handlePaperClick(paperType, paperNum) {
-            if (!isEnvelopeOpen) return;
+            if (!isEnvelopeOpen || isEnvelopeFlippedBack) return;
             const targetPaper = document.querySelector(`.paper-${paperNum}`);
 
             if (targetPaper.classList.contains('active-paper')) {
@@ -862,6 +1005,141 @@
             coverStage.classList.remove('hidden');
             document.querySelectorAll('.paper-card').forEach(p => p.classList.remove('active-paper'));
             setTimeout(() => coverStage.classList.remove('opacity-0', 'pointer-events-none'), 10);
+        }
+
+        function handleCassetteClick(e) {
+            e.stopPropagation();
+            if (!isEnvelopeFlippedBack) return;
+
+            if (isEditMode) {
+                openAudioEditPanel();
+                return;
+            }
+
+            toggleCassetteAudio();
+        }
+
+        function openAudioEditPanel() {
+            activeId = null;
+            const audioItem = markersData.find(m => m.folder_name === '錄音');
+            
+            openPanel(false, false, true);
+            
+            if (audioItem) {
+                activeId = audioItem.id;
+                document.getElementById('placeTitle').value = audioItem.title || '我的悄悄話';
+                document.getElementById('placeAudioUrl').value = audioItem.video_url || audioItem.image_url || '';
+            } else {
+                document.getElementById('placeTitle').value = '我的悄悄話';
+                document.getElementById('placeAudioUrl').value = '';
+            }
+        }
+
+        function toggleCassetteAudio() {
+            const audioItem = markersData.find(m => m.folder_name === '錄音');
+            const audioUrl = audioItem ? (audioItem.video_url || audioItem.image_url || '') : '';
+
+            if (!audioUrl || audioUrl.trim() === '') {
+                alert("目前尚無設定錄音檔連結喔！(請在編輯模式下設定)");
+                return;
+            }
+
+            const player = document.getElementById('cassetteAudioPlayer');
+
+            if (isAudioPlaying) {
+                pauseCassetteAudio();
+            } else {
+                player.src = convertGoogleDriveAudioLink(audioUrl);
+                player.play().then(() => {
+                    isAudioPlaying = true;
+                    updateCassetteUI(true);
+                }).catch(err => {
+                    alert("語音檔案無法播放，請檢查連結權限或格式是否正確。");
+                    console.error(err);
+                });
+            }
+        }
+
+        function pauseCassetteAudio() {
+            const player = document.getElementById('cassetteAudioPlayer');
+            player.pause();
+            isAudioPlaying = false;
+            updateCassetteUI(false);
+        }
+
+        function updateCassetteUI(playing) {
+            const gears = document.querySelectorAll('.cassette-gear');
+            const dot = document.getElementById('cassetteStatusDot');
+
+            if (playing) {
+                gears.forEach(g => g.classList.add('cassette-spinning'));
+                if (dot) dot.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse';
+            } else {
+                gears.forEach(g => g.classList.remove('cassette-spinning'));
+                if (dot) dot.className = 'w-2 h-2 rounded-full bg-slate-500';
+            }
+        }
+
+        function formatAudioTime(seconds) {
+            if (isNaN(seconds) || seconds < 0) return '00:00';
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+
+        function onAudioSeekInput(val) {
+            const player = document.getElementById('cassetteAudioPlayer');
+            if (player && player.duration) {
+                player.currentTime = (val / 100) * player.duration;
+            }
+        }
+
+        const cassettePlayer = document.getElementById('cassetteAudioPlayer');
+        cassettePlayer.addEventListener('timeupdate', () => {
+            if (!cassettePlayer.duration) return;
+            const pct = (cassettePlayer.currentTime / cassettePlayer.duration) * 100;
+            const range = document.getElementById('audioSeekRange');
+            if (range) range.value = pct;
+
+            const curTimeEl = document.getElementById('audioCurrentTime');
+            if (curTimeEl) curTimeEl.innerText = formatAudioTime(cassettePlayer.currentTime);
+
+            const durEl = document.getElementById('audioDuration');
+            if (durEl) durEl.innerText = formatAudioTime(cassettePlayer.duration);
+
+            const innerProgress = document.getElementById('cassetteTapeProgress');
+            if (innerProgress) innerProgress.style.width = pct + '%';
+        });
+
+        cassettePlayer.addEventListener('loadedmetadata', () => {
+            const durEl = document.getElementById('audioDuration');
+            if (durEl) durEl.innerText = formatAudioTime(cassettePlayer.duration);
+        });
+
+        cassettePlayer.addEventListener('ended', () => {
+            isAudioPlaying = false;
+            updateCassetteUI(false);
+            const range = document.getElementById('audioSeekRange');
+            if (range) range.value = 0;
+            const curTimeEl = document.getElementById('audioCurrentTime');
+            if (curTimeEl) curTimeEl.innerText = '00:00';
+        });
+
+        function convertGoogleDriveAudioLink(url) {
+            if (!url) return '';
+            url = String(url).trim();
+            if (url.includes('drive.google.com')) {
+                let id = '';
+                if (url.includes('/file/d/')) {
+                    id = url.split('/file/d/')[1].split('/')[0].split('?')[0];
+                } else if (url.includes('id=')) {
+                    id = url.split('id=')[1].split('&')[0];
+                }
+                if (id) {
+                    return `https://docs.google.com/uc?export=download&id=${id}`;
+                }
+            }
+            return url;
         }
 
         const CustomTaiwanGeocoder = {
@@ -1000,7 +1278,7 @@
         function getGroupedItems() {
             const groups = {};
             markersData.forEach(item => {
-                if (item.folder_name === '心動預告片') return;
+                if (item.folder_name === '心動預告片' || item.folder_name === '錄音') return;
                 const key = getLocKey(item.lat, item.lng);
                 if (!key) return;
                 if (!groups[key]) groups[key] = [];
@@ -1222,6 +1500,29 @@
             openPanel(true, true);
         };
 
+        window.addNewEntryAtLocation = function(locKey) {
+            if (!isEditMode) return;
+            const groups = getGroupedItems();
+            const items = groups[locKey] || [];
+            
+            let baseLat = 23.6, baseLng = 121.0, baseLoc = '';
+            if (items.length > 0) {
+                baseLat = parseFloat(items[0].lat);
+                baseLng = parseFloat(items[0].lng);
+                baseLoc = items[0].location || '';
+            } else if (locKey) {
+                const parts = locKey.split(',');
+                baseLat = parseFloat(parts[0]);
+                baseLng = parseFloat(parts[1]);
+            }
+
+            activeId = null;
+            currentLatLng = { lat: baseLat, lng: baseLng };
+            openPanel(true, false);
+            
+            document.getElementById('placeLocation').value = baseLoc;
+        };
+
         window.openEditPanelForItemById = function(itemId) {
             if (!isEditMode) return;
             const item = markersData.find(m => String(m.id) === String(itemId));
@@ -1237,13 +1538,15 @@
             currentLatLng = { lat: parseFloat(item.lat || 23.6), lng: parseFloat(item.lng || 121.0) };
             
             const isTeaser = (item.folder_name === '心動預告片');
-            openPanel(false, isTeaser);
+            const isAudio = (item.folder_name === '錄音');
+            openPanel(false, isTeaser, isAudio);
             
             document.getElementById('placeTitle').value = item.title || '';
             document.getElementById('placeLocation').value = item.location || '';
             document.getElementById('placeDate').value = formatDateString(item.date) || '';
             document.getElementById('placeNotes').value = item.notes || '';
             document.getElementById('placeImageUrl').value = item.image_url || '';
+            document.getElementById('placeAudioUrl').value = item.video_url || item.image_url || '';
             document.getElementById('placeVideoUrl').value = item.video_url || '';
             document.getElementById('placeVideoUrlMobile').value = item.video_url_mobile || '';
             document.getElementById('placeColor').value = item.color || 'blue';
@@ -1251,11 +1554,11 @@
             
             const folderSelect = document.getElementById('placeFolder');
             if (folderSelect) {
-                folderSelect.value = item.folder_name || (isTeaser ? '心動預告片' : '行程總覽');
+                folderSelect.value = item.folder_name || (isTeaser ? '心動預告片' : (isAudio ? '錄音' : '行程總覽'));
             }
         }
 
-        function openPanel(isNew = false, isTeaser = false) {
+        function openPanel(isNew = false, isTeaser = false, isAudio = false) {
             if (!isEditMode) return;
             document.getElementById('editPanel').classList.remove('hidden');
             updateFolderSelect();
@@ -1265,22 +1568,35 @@
             const folderField = document.getElementById('fieldContainerFolder');
             const colorIconField = document.getElementById('fieldContainerColorIcon');
             const videoField = document.getElementById('fieldContainerVideo');
+            const imgUrlField = document.getElementById('fieldContainerImageUrl');
+            const notesField = document.getElementById('fieldContainerNotes');
+            const audioUrlField = document.getElementById('fieldContainerAudioUrl');
 
             const labelTitle = document.getElementById('labelPlaceTitle');
-            const labelImage = document.getElementById('labelPlaceImageUrl');
-            const labelNotes = document.getElementById('labelPlaceNotes');
 
-            if (isTeaser) {
+            if (isAudio) {
+                if (locField) locField.classList.add('hidden');
+                if (dateField) dateField.classList.add('hidden');
+                if (folderField) folderField.classList.add('hidden');
+                if (colorIconField) colorIconField.classList.add('hidden');
+                if (videoField) videoField.classList.add('hidden');
+                if (imgUrlField) imgUrlField.classList.add('hidden');
+                if (notesField) notesField.classList.add('hidden');
+                if (audioUrlField) audioUrlField.classList.remove('hidden');
+
+                if (labelTitle) labelTitle.innerText = "錄音標題";
+                document.getElementById('placeFolder').value = '錄音';
+            } else if (isTeaser) {
                 if (locField) locField.classList.add('hidden');
                 if (dateField) dateField.classList.remove('hidden');
                 if (folderField) folderField.classList.add('hidden');
                 if (colorIconField) colorIconField.classList.add('hidden');
                 if (videoField) videoField.classList.add('hidden');
+                if (imgUrlField) imgUrlField.classList.remove('hidden');
+                if (notesField) notesField.classList.remove('hidden');
+                if (audioUrlField) audioUrlField.classList.add('hidden');
 
                 if (labelTitle) labelTitle.innerText = "主旨 (即訊息盒膠囊文字)";
-                if (labelImage) labelImage.innerText = "對話截圖網址 (多張請用逗號分隔)";
-                if (labelNotes) labelNotes.innerText = "筆記想法 (悄悄話)";
-
                 document.getElementById('placeFolder').value = '心動預告片';
             } else {
                 if (locField) locField.classList.remove('hidden');
@@ -1288,26 +1604,28 @@
                 if (folderField) folderField.classList.remove('hidden');
                 if (colorIconField) colorIconField.classList.remove('hidden');
                 if (videoField) videoField.classList.remove('hidden');
+                if (imgUrlField) imgUrlField.classList.remove('hidden');
+                if (notesField) notesField.classList.remove('hidden');
+                if (audioUrlField) audioUrlField.classList.add('hidden');
 
                 if (labelTitle) labelTitle.innerText = "主旨";
-                if (labelImage) labelImage.innerText = "圖片網址 (多張用逗號隔開)";
-                if (labelNotes) labelNotes.innerText = "筆記想法";
             }
 
             if (isNew) {
-                document.getElementById('panelTitle').innerText = isTeaser ? "新增訊息條目" : "新增浪漫景點";
-                document.getElementById('placeTitle').value = "";
-                document.getElementById('placeLocation').value = "";
+                document.getElementById('panelTitle').innerText = isAudio ? "🎙️ 設定錄音帶語音" : (isTeaser ? "新增訊息條目" : "新增浪漫景點");
+                document.getElementById('placeTitle').value = isAudio ? "我的悄悄話" : "";
+                if (!currentLatLng) document.getElementById('placeLocation').value = "";
                 document.getElementById('placeDate').value = new Date().toISOString().split('T')[0];
                 document.getElementById('placeNotes').value = "";
                 document.getElementById('placeImageUrl').value = "";
+                document.getElementById('placeAudioUrl').value = "";
                 document.getElementById('placeVideoUrl').value = "";
                 document.getElementById('placeVideoUrlMobile').value = "";
                 document.getElementById('btnDelete').classList.add('hidden');
                 document.getElementById('placeColor').value = 'blue';
                 document.getElementById('placeIcon').value = 'map-pin';
             } else {
-                document.getElementById('panelTitle').innerText = isTeaser ? "編輯訊息條目" : "編輯手帳細節";
+                document.getElementById('panelTitle').innerText = isAudio ? "🎙️ 編輯錄音帶語音" : (isTeaser ? "編輯訊息條目" : "編輯手帳細節");
                 document.getElementById('btnDelete').classList.remove('hidden');
             }
         }
@@ -1398,7 +1716,15 @@
 
         async function saveMarkerData() {
             if (!isEditMode) return;
-            const title = document.getElementById('placeTitle').value || "未命名主旨";
+            let folder = document.getElementById('placeFolder').value;
+            const audioUrlVal = document.getElementById('placeAudioUrl').value || "";
+
+            const isAudioActive = !document.getElementById('fieldContainerAudioUrl').classList.contains('hidden');
+            if (isAudioActive) {
+                folder = '錄音';
+            }
+
+            const title = document.getElementById('placeTitle').value || (folder === '錄音' ? "我的悄悄話" : "未命名主旨");
             const location = document.getElementById('placeLocation').value || "";
             
             const rawDateVal = document.getElementById('placeDate').value || ""; 
@@ -1408,15 +1734,18 @@
             const inTimeline = existingItem ? (existingItem.in_timeline || 'yes') : 'yes';
 
             const notes = document.getElementById('placeNotes').value;
-            const imageUrl = document.getElementById('placeImageUrl').value;
-            const videoUrl = document.getElementById('placeVideoUrl').value;
+            let imageUrl = document.getElementById('placeImageUrl').value;
+            let videoUrl = document.getElementById('placeVideoUrl').value;
             const videoUrlMobile = document.getElementById('placeVideoUrlMobile').value;
             const color = document.getElementById('placeColor').value;
             let icon = document.getElementById('placeIcon').value;
-            let folder = document.getElementById('placeFolder').value;
+
+            if (folder === '錄音') {
+                videoUrl = audioUrlVal;
+            }
 
             const isChatActive = !document.getElementById('teaserMainStage').classList.contains('hidden');
-            if (isChatActive || folder === '心動預告片') {
+            if (isChatActive && folder !== '錄音') {
                 folder = '心動預告片';
             }
 
@@ -1441,7 +1770,7 @@
                 } catch (e) {
                     console.error(e);
                     saveSucceeded = false;
-                    alert("⚠️ 儲存到雲端時發生網路錯誤，請檢查網路連線後重試。本機畫面仍會先更新，但可能尚未同步。");
+                    alert("⚠️ 儲存到雲端時發生網路錯誤，請檢查網路連線後重試。");
                 }
             }
 
@@ -1456,7 +1785,7 @@
 
         async function deleteMarker() {
             if (!isEditMode || !activeId) return;
-            if (!confirm("確定要刪除這個景點手帳嗎？")) return;
+            if (!confirm("確定要刪除這個條目嗎？")) return;
             if (gasUrl) {
                 try {
                     await fetch(gasUrl, {
@@ -1613,12 +1942,12 @@
                 return dateA.localeCompare(dateB);
             });
 
-            let listHtml = `<div class="p-2 text-slate-700 bg-white rounded-xl shadow-2xl border border-slate-200 min-w-[260px]">`;
-            listHtml += `<div class="font-bold text-sm text-[#7f5539] mb-2 pb-1 border-b border-[#ddc8b4] flex justify-between items-center">`;
-            listHtml += `<span class="flex items-center gap-1"><i data-lucide="layers" class="w-4 h-4 text-[#b7b7a4]"></i> 地點手帳列表 (${items.length})</span>`;
+            let listHtml = `<div class="p-2.5 text-slate-700 bg-white rounded-xl shadow-2xl border border-slate-200 min-w-[270px]">`;
+            listHtml += `<div class="font-bold text-sm text-[#7f5539] mb-2 pb-1.5 border-b border-[#ddc8b4] flex justify-between items-center">`;
+            listHtml += `<span class="flex items-center gap-1.5"><i data-lucide="layers" class="w-4 h-4 text-[#b7b7a4]"></i> 地點手帳列表 (${items.length})</span>`;
             
             if (isEditMode) {
-                listHtml += `<button onclick="addNewEntryAtLocation('${locKey}')" class="text-[11px] bg-emerald-600 text-white px-2 py-0.5 rounded-md hover:bg-emerald-700 transition font-medium">+ 新增手帳</button>`;
+                listHtml += `<button onclick="addNewEntryAtLocation('${locKey}')" class="text-[11px] bg-emerald-600 text-white px-2 py-0.5 rounded-md hover:bg-emerald-700 transition font-bold shadow-2xs flex items-center gap-0.5">+ 新增手帳</button>`;
             }
             listHtml += `</div>`;
 
@@ -1626,12 +1955,15 @@
             items.forEach(item => {
                 const cleanDate = formatDateString(item.date) || '未設定日期';
                 listHtml += `
-                    <div onclick="showItemDetailInPopup('${locKey}', '${item.id}', true, 0)" class="btn-interactive p-2 rounded-lg bg-white/90 border border-slate-200/80 hover:border-[#7f5539] hover:bg-[#fdfbf7] cursor-pointer transition flex items-center justify-between shadow-2xs">
-                        <div>
-                            <div class="font-bold text-xs text-slate-800">${escapeHtml(item.title)}</div>
+                    <div onclick="showItemDetailInPopup('${locKey}', '${item.id}', true, 0)" class="btn-interactive p-2 rounded-lg bg-white/90 border border-slate-200/80 hover:border-[#7f5539] hover:bg-[#fdfbf7] cursor-pointer transition flex items-center justify-between shadow-2xs group">
+                        <div class="flex-1 overflow-hidden pr-2">
+                            <div class="font-bold text-xs text-slate-800 truncate">${escapeHtml(item.title)}</div>
                             <div class="text-[10px] text-pink-600 font-medium flex items-center gap-1 mt-0.5">📅 ${escapeHtml(cleanDate)}</div>
                         </div>
-                        <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+                        <div class="flex items-center gap-1 shrink-0">
+                            ${isEditMode ? `<span class="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-bold">編輯</span>` : ''}
+                            <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400 group-hover:text-[#7f5539]"></i>
+                        </div>
                     </div>
                 `;
             });
@@ -1814,6 +2146,16 @@
             markersData = data || [];
             markersData.sort((a, b) => (a.order || 0) - (b.order || 0));
 
+            const audioItem = markersData.find(m => m.folder_name === '錄音');
+            const cassetteTitle = document.getElementById('cassetteTitleText');
+            if (cassetteTitle) {
+                if (audioItem && audioItem.title && audioItem.title !== '甜蜜錄音帶') {
+                    cassetteTitle.innerText = '🎵 ' + audioItem.title;
+                } else {
+                    cassetteTitle.innerText = '🎵 我的悄悄話';
+                }
+            }
+
             map.eachLayer(layer => {
                 if (layer instanceof L.Marker) map.removeLayer(layer);
             });
@@ -1854,7 +2196,8 @@
 
                         const currentGroups = getGroupedItems();
                         const currentItems = currentGroups[locKey] || [];
-                        if (currentItems.length > 1) {
+                        
+                        if (isEditMode || currentItems.length > 1) {
                             showGroupListInPopup(locKey);
                         } else if (currentItems.length === 1) {
                             showItemDetailInPopup(locKey, currentItems[0].id, false, 0);
@@ -1951,7 +2294,6 @@
             renderTeaserMainStage();
         };
 
-        /* ✂️ 撕開膠帶連同橡皮章 function */
         window.peelTapeCover = function(el) {
             if (el) {
                 el.classList.add('is-peeled');
@@ -2033,15 +2375,12 @@
 
                 const hasNotes = item.notes && item.notes.trim().length > 0;
 
-                /* 💮 日系橡皮章印戳悄悄話區塊 */
                 const secretNoteHtml = `
-                    <div class="relative bg-[#fdfbf7] p-3.5 md:p-4 rounded-2xl shadow-md border-2 border-dashed border-[#e3d5c5] transform rotate-1 transition-all duration-300 select-none overflow-hidden min-h-[120px] flex flex-col justify-between">
+                    <div class="relative bg-[#fdfbf7] p-3.5 md:p-4 rounded-2xl shadow-[0_12px_35px_rgba(0,0,0,0.2)] md:shadow-md border-2 border-dashed border-[#e3d5c5] transform rotate-2 md:rotate-1 transition-all duration-300 select-none overflow-hidden min-h-[120px] flex flex-col justify-between">
                         
-                        <!-- ✂️ 膠帶與中央橡皮章印戳 -->
                         <div onclick="peelTapeCover(this)" class="secret-cover-mask">
                             <div class="washi-tape-strip tape-1"></div>
                             
-                            <!-- 💮 日系橡皮章 (位於正中間) -->
                             <div class="rubber-stamp">
                                 <span class="font-stamp text-sm font-bold tracking-widest leading-none flex items-center gap-1">
                                     悄悄話 <span class="text-[10px] text-rose-800">♥</span>
@@ -2054,7 +2393,6 @@
                             <div class="washi-tape-strip tape-2"></div>
                         </div>
 
-                        <!-- 底層悄悄話內容 -->
                         <div class="flex items-center justify-between border-b border-[#ebdcd0] pb-1.5 mb-2">
                             <span class="text-xs font-bold text-[#8c6d46] font-rounded flex items-center gap-1">
                                 💌 悄悄話
@@ -2069,7 +2407,7 @@
                 `;
 
                 itemsHtml += `
-                    <div class="relative mb-14 last:mb-4 group">
+                    <div class="relative mb-16 last:mb-8 group">
                         ${editOverlay}
                         <div class="absolute -left-[29px] top-1 text-xs text-[#c49272]">♥</div>
                         
@@ -2079,10 +2417,16 @@
                             </span>
                         </div>
 
-                        <div class="relative flex flex-col md:grid md:grid-cols-12 gap-4 items-start">
+                        <div class="relative flex flex-col items-center md:items-start md:grid md:grid-cols-12 gap-0 md:gap-4">
                             
-                            <!-- 📱 手機版在上：悄悄話對話框 (電腦版會在右側 md:col-span-6) -->
-                            <div class="w-full md:col-span-6 z-20 order-1 md:order-2">
+                            <!-- 📷 第一張紙：對話截圖 (手機版置於底層、上方) -->
+                            <div onclick="${isEditMode ? `openEditPanelForItemById('${item.id}')` : ''}" class="w-full md:col-span-6 relative bg-white p-2 pb-10 md:pb-2.5 rounded-xl shadow-md border border-[#e8ded2] transform -rotate-1 hover:rotate-0 transition-transform duration-300 z-10 order-1 ${isEditMode ? 'cursor-pointer hover:ring-2 hover:ring-emerald-400' : ''}">
+                                <div class="washi-tape-top"></div>
+                                ${photoFrameHtml}
+                            </div>
+
+                            <!-- 💌 第二張紙：悄悄話 (手機版縮小寬度、向上推移重疊在截圖下半部) -->
+                            <div class="w-[94%] md:w-full md:col-span-6 z-20 order-2 -mt-28 md:mt-0 relative transition-transform duration-300">
                                 ${secretNoteHtml}
                                 <div class="hidden md:flex items-center gap-2 mt-3">
                                     <div class="bg-[#f2e8dc] text-[#70522c] text-[10px] font-bold px-2.5 py-1 rounded-lg border border-[#d8c8b8] shadow-2xs font-mono">
@@ -2092,12 +2436,6 @@
                                         💖 OUR STORY
                                     </div>
                                 </div>
-                            </div>
-
-                            <!-- 📱 手機版在下：對話截圖 (電腦版會在左側 md:col-span-6) -->
-                            <div onclick="${isEditMode ? `openEditPanelForItemById('${item.id}')` : ''}" class="w-full md:col-span-6 relative bg-white p-2 pb-2.5 rounded-xl shadow-lg border border-[#e8ded2] transform -rotate-1 hover:rotate-0 transition-transform duration-300 z-10 order-2 md:order-1 ${isEditMode ? 'cursor-pointer hover:ring-2 hover:ring-emerald-400' : ''}">
-                                <div class="washi-tape-top"></div>
-                                ${photoFrameHtml}
                             </div>
 
                         </div>
@@ -2132,7 +2470,7 @@
         }
 
         function getSortedTimelineItems() {
-            return markersData.filter(m => formatDateString(m.date) && m.in_timeline !== 'no' && m.folder_name !== '心動預告片').sort((a, b) => {
+            return markersData.filter(m => formatDateString(m.date) && m.in_timeline !== 'no' && m.folder_name !== '心動預告片' && m.folder_name !== '錄音').sort((a, b) => {
                 const dateA = formatDateString(a.date);
                 const dateB = formatDateString(b.date);
                 if (dateA === dateB) return (a.order || 0) - (b.order || 0);
@@ -2159,7 +2497,7 @@
             container.innerHTML = '';
 
             const sortedItems = markersData.filter(m => {
-                if (m.folder_name === '心動預告片') return false;
+                if (m.folder_name === '心動預告片' || m.folder_name === '錄音') return false;
                 if (!formatDateString(m.date)) return false;
                 if (!isEditMode && m.in_timeline === 'no') return false;
                 return true;
@@ -2310,7 +2648,7 @@
                 container.classList.add('animate-gallery-slide');
             }
 
-            const photoItems = markersData.filter(m => m.folder_name !== '心動預告片' && m.image_url && parseImageUrls(m.image_url).length > 0);
+            const photoItems = markersData.filter(m => m.folder_name !== '心動預告片' && m.folder_name !== '錄音' && m.image_url && parseImageUrls(m.image_url).length > 0);
 
             if (photoItems.length === 0) {
                 container.innerHTML = '<div class="text-xs text-slate-100 text-center py-6 bg-black/20 rounded-xl">軟木牆上尚未釘上照片...</div>';
@@ -2747,7 +3085,11 @@
                     closeStoryStage();
                     
                     const locKey = getLocKey(targetLat, targetLng);
-                    showItemDetailInPopup(locKey, id, false, 0);
+                    if (isEditMode) {
+                        showGroupListInPopup(locKey);
+                    } else {
+                        showItemDetailInPopup(locKey, id, false, 0);
+                    }
                 }
             }, 200);
 
@@ -2767,6 +3109,8 @@
             const allFolders = Array.from(new Set([...folders, ...markersData.map(m => m.folder_name).filter(Boolean)]));
 
             allFolders.forEach(folderName => {
+                if (folderName === '錄音') return;
+
                 const folderItems = markersData.filter(m => m.folder_name === folderName);
                 
                 const isDefault = folderName === '行程總覽';
@@ -2866,6 +3210,7 @@
             const editFolderHeader = document.getElementById('editFolderHeader');
             const btnReturn = document.getElementById('btnReturnToEnvelope');
             const sidebarTabs = document.getElementById('sidebarTabsContainer');
+            const btnHeaderCamera = document.getElementById('btnHeaderCamera');
 
             map.closePopup();
 
@@ -2880,12 +3225,22 @@
                 if (editFolderHeader) editFolderHeader.classList.remove('hidden');
                 if (btnToggle) btnToggle.classList.remove('hidden');
                 if (sidebarTabs) sidebarTabs.classList.remove('hidden');
+
+                if (btnHeaderCamera) {
+                    btnHeaderCamera.className = "p-1 rounded-lg bg-emerald-100 text-emerald-700 hover:bg-emerald-200 cursor-pointer shadow-2xs transition-all flex items-center justify-center";
+                    btnHeaderCamera.title = "點擊設定錄音帶語音 (編輯模式專用)";
+                }
                 
                 switchSidebarTab('folders');
             } else {
                 if (editFolderHeader) editFolderHeader.classList.add('hidden');
                 if (btnToggle) btnToggle.classList.add('hidden');
                 if (sidebarTabs) sidebarTabs.classList.remove('hidden');
+
+                if (btnHeaderCamera) {
+                    btnHeaderCamera.className = "p-1 rounded-lg text-[#b7b7a4]";
+                    btnHeaderCamera.title = "拍立得相片牆";
+                }
                 
                 closePanel();
 
