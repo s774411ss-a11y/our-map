@@ -483,6 +483,53 @@
             text-align: center;
             padding: 8px;
         }
+
+        /* 📌 紙膠帶直接定位於截圖圖片邊角 */
+        .washi-tape-corner-left {
+            position: absolute;
+            top: -8px;
+            left: -8px;
+            transform: rotate(-14deg);
+            width: 52px;
+            height: 18px;
+            background: rgba(245, 222, 195, 0.95);
+            border: 1px dashed rgba(180, 140, 100, 0.85);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.25);
+            z-index: 50;
+            pointer-events: none;
+        }
+        .washi-tape-corner-right {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            transform: rotate(12deg);
+            width: 52px;
+            height: 18px;
+            background: rgba(245, 222, 195, 0.95);
+            border: 1px dashed rgba(180, 140, 100, 0.85);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.25);
+            z-index: 50;
+            pointer-events: none;
+        }
+
+        /* 📚 多張截圖背後錯位重疊層 */
+        .stacked-photo-stack {
+            position: relative;
+        }
+        .stacked-photo-stack::before,
+        .stacked-photo-stack::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: #e2d4c4;
+            border: 1px solid #c8b8a6;
+            border-radius: 4px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.18);
+            z-index: -1;
+            pointer-events: none;
+        }
+        .stacked-photo-stack::before { transform: rotate(-3.5deg) translate(-4px, 2px); }
+        .stacked-photo-stack::after { transform: rotate(3deg) translate(4px, 2px); }
     </style>
 </head>
 <body class="fixed inset-0 bg-[#2b1c14] text-slate-700 flex flex-col md:flex-row font-sans overflow-hidden">
@@ -882,9 +929,10 @@
     <script>
         const map = L.map('map').setView([23.6, 121.0], 7);
         
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors',
-            maxZoom: 19
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            subdomains: 'abcd',
+            maxZoom: 20
         }).addTo(map);
 
         let isEnvelopeOpen = false;
@@ -2288,6 +2336,187 @@
             lucide.createIcons();
         }
 
+        // 全域狀態控制 (我的訊息盒最新版本控制)
+        window.currentTeaserIndex = 0;
+        window.chatImageIndices = window.chatImageIndices || {};
+        window.isRightPageRevealed = false; 
+        window.isCatalogOpen = false; 
+
+        function renderTeaserMainStage() {
+            const container = document.getElementById('teaserMainStageContent');
+            if (!container) return;
+            container.innerHTML = '';
+
+            const chatItems = markersData.filter(m => m.folder_name === '心動預告片').sort((a, b) => {
+                return (formatDateString(a.date) || '').localeCompare(formatDateString(b.date) || '');
+            });
+
+            if (chatItems.length === 0) {
+                container.innerHTML = `<div class="text-center p-8 bg-white/80 rounded-2xl font-bold text-[#7f5539]">訊息盒內尚無紀錄</div>`;
+                return;
+            }
+
+            if (window.currentTeaserIndex >= chatItems.length) window.currentTeaserIndex = 0;
+            const currentItem = chatItems[window.currentTeaserIndex];
+
+            const images = parseImageUrls(currentItem.image_url);
+            const totalImgs = images.length;
+            if (window.chatImageIndices[currentItem.id] === undefined) window.chatImageIndices[currentItem.id] = 0;
+            let currentImgIdx = window.chatImageIndices[currentItem.id] % Math.max(1, totalImgs);
+
+            let photoFrameHtml = '';
+            if (totalImgs === 0) {
+                photoFrameHtml = '<div class="text-xs text-slate-400 py-12 text-center">尚無對話截圖</div>';
+            } else {
+                const activeImg = images[currentImgIdx];
+                photoFrameHtml = `
+                    <div class="relative inline-flex items-center justify-center max-h-full max-w-full ${totalImgs > 1 ? 'stacked-photo-stack' : ''}">
+                        <div class="washi-tape-corner-left"></div>
+                        <div class="washi-tape-corner-right"></div>
+                        <img src="${activeImg}" class="max-h-[68vh] md:max-h-[74vh] w-auto max-w-full object-contain rounded-xs shadow-md border border-slate-200/50 block" alt="對話截圖">
+                        ${totalImgs > 1 ? `
+                            <button onclick="event.stopPropagation(); changeChatImage('${currentItem.id}', -1, ${totalImgs})" class="absolute left-2 top-1/2 -translate-y-1/2 z-30 bg-black/60 hover:bg-black/80 text-white rounded-full p-2 shadow-lg transition btn-interactive">
+                                <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                            </button>
+                            <button onclick="event.stopPropagation(); changeChatImage('${currentItem.id}', 1, ${totalImgs})" class="absolute right-2 top-1/2 -translate-y-1/2 z-30 bg-black/60 hover:bg-black/80 text-white rounded-full p-2 shadow-lg transition btn-interactive">
+                                <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                            </button>
+                            <div class="absolute bottom-3 right-3 z-30 bg-black/75 text-white text-xs px-2.5 py-1 rounded-md font-mono font-bold shadow-md">
+                                ${currentImgIdx + 1} / ${totalImgs}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+
+            let catalogListHtml = '';
+            chatItems.forEach((it, idx) => {
+                const isActive = (idx === window.currentTeaserIndex);
+                catalogListHtml += `
+                    <div onclick="switchTeaserCardWithAnim(${idx}); window.toggleTeaserCatalog(event);" 
+                         class="p-2 rounded-lg cursor-pointer transition flex items-center justify-between border ${isActive ? 'bg-[#f5ebe0] border-[#b45309] font-bold text-[#5d4037]' : 'bg-white/70 border-slate-200/80 hover:bg-white text-slate-700'}">
+                        <span class="truncate text-xs">${escapeHtml(it.title || '無標題')}</span>
+                        <span class="text-[10px] text-pink-600 font-mono ml-2 shrink-0">${escapeHtml(formatDateString(it.date))}</span>
+                    </div>
+                `;
+            });
+
+            const safeNotes = currentItem.notes ? escapeHtml(currentItem.notes) : '這一天也寫下了特別的記憶... (*\'∀\')~♥';
+
+            container.innerHTML = `
+                <div class="w-full h-full flex flex-col items-center justify-center relative p-1 md:p-2 select-none">
+                    <div class="relative w-full max-w-6xl h-[92vh] bg-[#fbf7ee] rounded-2xl shadow-2xl border-4 border-[#bcaaa4] flex flex-col md:flex-row overflow-hidden">
+                        
+                        <div class="hidden md:block absolute left-1/2 top-0 bottom-0 w-8 -translate-x-1/2 scrapbook-spine z-30 pointer-events-none"></div>
+
+                        <!-- 👈 左頁：截圖向上貼齊頂線 + 底部導覽下移對齊 -->
+                        <div class="w-full md:w-1/2 h-1/2 md:h-full px-4 pt-3 pb-2 flex flex-col justify-between relative border-b md:border-b-0 md:border-r border-[#d7ccc8] bg-[#f8f1e5] overflow-hidden">
+                            
+                            <!-- 頂部標題與日期（字級縮小 1 號） -->
+                            <div class="w-full flex items-center justify-between border-b border-[#d7ccc8] pb-1.5 px-1 shrink-0 z-30 h-8">
+                                <div class="text-sm md:text-base font-bold text-[#5d4037] font-rounded truncate flex items-center gap-1">
+                                    📌 <span>${escapeHtml(currentItem.title || '對話紀錄')}</span>
+                                </div>
+                                <div class="text-[11px] md:text-xs text-pink-600 font-bold font-mono shrink-0 flex items-center gap-1">
+                                    <span>📅</span> <span>${escapeHtml(formatDateString(currentItem.date))}</span>
+                                </div>
+                            </div>
+
+                            <!-- 圖片區：向上頂格放大展示 -->
+                            <div class="relative w-full flex-1 flex items-start justify-center pt-2 pb-1 overflow-hidden my-auto">
+                                ${photoFrameHtml}
+                            </div>
+
+                            <!-- 👈 左頁底部按鈕：固定 h-10 與右頁導覽平行對齊 -->
+                            <div class="w-full h-10 border-t border-[#e0d5c1] flex items-center justify-start shrink-0 z-20">
+                                <button onclick="switchTeaserCardWithAnim((${window.currentTeaserIndex} - 1 + ${chatItems.length}) % ${chatItems.length})" class="px-4 py-1.5 rounded-lg bg-[#e6ccb2] hover:bg-[#ddc8b4] text-[#5d4037] font-bold text-xs transition flex items-center gap-1 btn-interactive shadow-2xs">
+                                    ❮ 上一頁
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 👉 右頁：手寫筆記與導覽列平行對齊 -->
+                        <div onclick="revealRightPageNotes(event)" class="w-full md:w-1/2 h-1/2 md:h-full px-4 pt-3 pb-2 flex flex-col justify-between relative bg-[#fdfbf7] touch-scroll overflow-y-auto cursor-pointer">
+                            
+                            <div class="w-full border-b-2 border-dashed border-[#d7ccc8] pb-1.5 shrink-0 flex items-center justify-end relative z-30 h-8">
+                                <button onclick="toggleTeaserCatalog(event)" class="px-3.5 py-1 rounded-full border-2 border-rose-600/80 text-rose-700 bg-rose-50/50 font-bold text-xs shadow-xs transition flex items-center gap-1 btn-interactive font-stamp">
+                                    <span>對話紀錄 📖</span>
+                                </button>
+                            </div>
+
+                            <div id="teaserCatalogDrawer" class="hidden opacity-0 -translate-y-2 transition-all duration-200 absolute top-12 right-4 w-64 max-h-64 bg-[#fffdfa] border-2 border-[#d7ccc8] rounded-xl shadow-2xl z-50 p-2 overflow-y-auto touch-scroll space-y-1" onclick="event.stopPropagation();">
+                                <div class="text-[11px] font-bold text-[#7f5539] border-b border-[#e0d5c1] pb-1 px-1 mb-1 flex justify-between items-center">
+                                    <span>📜 對話紀錄目錄</span>
+                                    <button onclick="toggleTeaserCatalog(event)" class="text-slate-400 hover:text-slate-600">✕</button>
+                                </div>
+                                ${catalogListHtml}
+                            </div>
+
+                            <div class="flex-1 w-full letter-dashed-lines py-2 my-1 relative overflow-hidden flex flex-col justify-start">
+                                <div id="rightPageNotesCover" class="${window.isRightPageRevealed ? 'hidden opacity-0 pointer-events-none' : 'flex'} absolute inset-0 bg-[#fdfbf7] z-20 flex-col items-center justify-center text-center p-6 transition-all duration-300">
+                                    <div class="text-4xl md:text-5xl mb-2 text-[#bcaaa4] animate-pulse">✍️</div>
+                                    <div class="text-xl md:text-2xl font-bold text-[#735146] font-rounded tracking-wider">我的悄悄話</div>
+                                    <div class="text-xs md:text-sm text-[#8c6d62] font-mono mt-2 font-bold">✨ 點擊解鎖筆記...</div>
+                                </div>
+
+                                <div id="rightPageRealText" class="${window.isRightPageRevealed ? 'block animate-ink-reveal' : 'hidden'} text-slate-800 text-sm md:text-base leading-relaxed font-rounded popup-notes overflow-y-auto touch-scroll z-10">
+                                    ${safeNotes}
+                                </div>
+                            </div>
+
+                            <!-- 👉 右頁底部：固定 h-10 確保與左頁完全同一排 -->
+                            <div class="w-full h-10 border-t border-[#e0d5c1] flex items-center justify-between shrink-0 z-20" onclick="event.stopPropagation();">
+                                <span class="font-mono text-[11px] font-bold text-[#8d6e63]">
+                                    PAGE ${window.currentTeaserIndex + 1} / ${chatItems.length}
+                                </span>
+                                <button onclick="switchTeaserCardWithAnim((${window.currentTeaserIndex} + 1) % ${chatItems.length})" class="px-4 py-1.5 rounded-lg bg-[#e6ccb2] hover:bg-[#ddc8b4] text-[#5d4037] font-bold text-xs transition flex items-center gap-1 btn-interactive shadow-2xs">
+                                    下一頁 ❯
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            `;
+            if (window.lucide) lucide.createIcons();
+        }
+
+        window.switchTeaserCardWithAnim = function(index) {
+            window.isRightPageRevealed = false; 
+            const chatItems = markersData.filter(m => m.folder_name === '心動預告片');
+            if (index >= 0 && index < chatItems.length) {
+                window.currentTeaserIndex = index;
+                renderTeaserMainStage();
+            }
+        };
+
+        window.revealRightPageNotes = function(e) {
+            if (e) e.stopPropagation();
+            if (window.isRightPageRevealed) return;
+            window.isRightPageRevealed = true;
+            document.getElementById('rightPageNotesCover')?.classList.add('hidden');
+            const realText = document.getElementById('rightPageRealText');
+            if (realText) {
+                realText.classList.remove('hidden');
+                realText.classList.add('animate-ink-reveal');
+            }
+        };
+
+        window.toggleTeaserCatalog = function(e) {
+            if (e) e.stopPropagation();
+            window.isCatalogOpen = !window.isCatalogOpen;
+            const drawer = document.getElementById('teaserCatalogDrawer');
+            if (drawer) {
+                if (window.isCatalogOpen) {
+                    drawer.classList.remove('hidden');
+                    setTimeout(() => drawer.classList.remove('opacity-0', '-translate-y-2'), 10);
+                } else {
+                    drawer.classList.add('opacity-0', '-translate-y-2');
+                    setTimeout(() => drawer.classList.add('hidden'), 200);
+                }
+            }
+        };
+
         window.changeChatImage = function(itemId, delta, total) {
             if (!window.chatImageIndices[itemId]) window.chatImageIndices[itemId] = 0;
             window.chatImageIndices[itemId] = (window.chatImageIndices[itemId] + delta + total) % total;
@@ -2299,176 +2528,6 @@
                 el.classList.add('is-peeled');
             }
         };
-
-        function renderTeaserMainStage() {
-            const container = document.getElementById('teaserMainStageContent');
-            const sidebar = document.getElementById('sidebarPanel');
-            if (!container) return;
-            container.innerHTML = '';
-
-            if (!isEditMode) {
-                if (sidebar) sidebar.classList.add('hidden');
-            } else {
-                if (sidebar) sidebar.classList.remove('hidden');
-            }
-
-            const chatItems = markersData.filter(m => m.folder_name === '心動預告片').sort((a, b) => {
-                const dateA = formatDateString(a.date) || '9999-99-99';
-                const dateB = formatDateString(b.date) || '9999-99-99';
-                if (dateA === dateB) return (a.order || 0) - (b.order || 0);
-                return dateA.localeCompare(dateB);
-            });
-
-            let itemsHtml = '';
-            chatItems.forEach((item, index) => {
-                const images = parseImageUrls(item.image_url);
-                const totalImgs = images.length;
-                
-                if (window.chatImageIndices[item.id] === undefined) {
-                    window.chatImageIndices[item.id] = 0;
-                }
-                const currentIdx = window.chatImageIndices[item.id] % Math.max(1, totalImgs);
-
-                let photoFrameHtml = '';
-
-                if (totalImgs === 0) {
-                    photoFrameHtml = '<div class="text-xs text-slate-400 py-6 text-center">尚無對話截圖</div>';
-                } else if (totalImgs === 1) {
-                    const imgHtml = buildImgWithFallback(images[0], 'w-full h-auto block rounded-xs object-contain', item.title);
-                    photoFrameHtml = `
-                        <div class="w-full overflow-hidden rounded-sm flex justify-center">
-                            ${imgHtml}
-                        </div>`;
-                } else {
-                    const currentImg = images[currentIdx];
-                    const imgHtml = buildImgWithFallback(currentImg, 'w-full h-auto block rounded-xs object-contain relative z-10 bg-white p-1 shadow-md', item.title);
-
-                    photoFrameHtml = `
-                        <div class="relative w-full py-1">
-                            <div class="absolute inset-x-2 top-0 bottom-0 bg-white border border-slate-200/80 rounded-sm shadow-md transform -rotate-3 z-0 pointer-events-none"></div>
-                            <div class="absolute inset-x-2 top-0 bottom-0 bg-white border border-slate-200/80 rounded-sm shadow-md transform rotate-3 z-0 pointer-events-none"></div>
-                            
-                            <div class="relative z-10 w-full flex justify-center overflow-hidden">
-                                ${imgHtml}
-                            </div>
-
-                            <button onclick="event.stopPropagation(); changeChatImage('${item.id}', -1, ${totalImgs})" class="absolute left-1 top-1/2 -translate-y-1/2 z-20 bg-black/60 hover:bg-black/80 text-white rounded-full p-1.5 shadow-lg transition btn-interactive">
-                                <i data-lucide="chevron-left" class="w-4 h-4"></i>
-                            </button>
-                            <button onclick="event.stopPropagation(); changeChatImage('${item.id}', 1, ${totalImgs})" class="absolute right-1 top-1/2 -translate-y-1/2 z-20 bg-black/60 hover:bg-black/80 text-white rounded-full p-1.5 shadow-lg transition btn-interactive">
-                                <i data-lucide="chevron-right" class="w-4 h-4"></i>
-                            </button>
-                            <div class="absolute bottom-3 right-3 z-20 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded-full font-mono shadow-sm">
-                                ${currentIdx + 1} / ${totalImgs}
-                            </div>
-                        </div>
-                    `;
-                }
-
-                const editOverlay = isEditMode ? `
-                    <div class="absolute top-2 right-2 z-40">
-                        <button onclick="event.stopPropagation(); openEditPanelForItemById('${item.id}')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] px-2.5 py-1 rounded-md shadow-md transition font-bold flex items-center gap-1">
-                            <i data-lucide="edit-3" class="w-3 h-3"></i> 編輯條目
-                        </button>
-                    </div>
-                ` : '';
-
-                const hasNotes = item.notes && item.notes.trim().length > 0;
-
-                const secretNoteHtml = `
-                    <div class="relative bg-[#fdfbf7] p-3.5 md:p-4 rounded-2xl shadow-[0_10px_25px_rgba(0,0,0,0.18)] border-2 border-dashed border-[#e3d5c5] transform rotate-2 md:rotate-1 transition-all duration-300 select-none overflow-hidden min-h-[110px] flex flex-col justify-between">
-                        
-                        <div onclick="peelTapeCover(this)" class="secret-cover-mask">
-                            <div class="washi-tape-strip tape-1"></div>
-                            
-                            <div class="rubber-stamp">
-                                <span class="font-stamp text-sm font-bold tracking-widest leading-none flex items-center gap-1">
-                                    悄悄話 <span class="text-[10px] text-rose-800">♥</span>
-                                </span>
-                                <span class="font-mono text-[9px] font-bold tracking-wider opacity-80 mt-0.5 border-t border-[#6b4c38]/40 pt-0.5">
-                                    for Amber
-                                </span>
-                            </div>
-
-                            <div class="washi-tape-strip tape-2"></div>
-                        </div>
-
-                        <div class="flex items-center justify-between border-b border-[#ebdcd0] pb-1.5 mb-2">
-                            <span class="text-xs font-bold text-[#8c6d46] font-rounded flex items-center gap-1">
-                                💌 悄悄話
-                            </span>
-                            <span class="text-[10px] text-rose-400 font-bold tracking-wider">♥ SWEET MESSAGE</span>
-                        </div>
-
-                        <div class="text-xs md:text-sm text-[#5c4d43] font-rounded leading-relaxed whitespace-pre-line flex-1">
-                            ${hasNotes ? escapeHtml(item.notes) : '<span class="text-slate-400 italic">點擊編輯按鈕新增悄悄話...</span>'}
-                        </div>
-                    </div>
-                `;
-
-                itemsHtml += `
-                    <div class="relative mb-16 last:mb-8 group">
-                        ${editOverlay}
-                        <div class="absolute -left-[29px] top-1 text-xs text-[#c49272]">♥</div>
-                        
-                        <!-- 標題區塊 -->
-                        <div class="mb-3">
-                            <span class="inline-block bg-[#7f5539] text-white text-base md:text-xl font-bold px-4 py-1.5 rounded-full shadow-xs font-rounded tracking-wide">
-                                ${escapeHtml(item.title || '對話紀錄')}
-                            </span>
-                        </div>
-
-                        <div class="relative flex flex-col items-center md:items-start md:grid md:grid-cols-12 gap-0 md:gap-4">
-                            
-                            <!-- 💌 第一張紙：悄悄話 (手機版置於頂層、標題下方，寬度90%，下方留負邊距使對話截圖貼在背後) -->
-                            <div class="w-[90%] md:w-full md:col-span-6 z-20 order-1 mb-[-4rem] md:mb-0 relative transition-transform duration-300">
-                                ${secretNoteHtml}
-                                <div class="hidden md:flex items-center gap-2 mt-3">
-                                    <div class="bg-[#f2e8dc] text-[#70522c] text-[10px] font-bold px-2.5 py-1 rounded-lg border border-[#d8c8b8] shadow-2xs font-mono">
-                                        ✨ MEMORIES
-                                    </div>
-                                    <div class="bg-rose-100/80 text-rose-700 text-[10px] font-bold px-2.5 py-1 rounded-lg border border-rose-200/80 shadow-2xs font-mono">
-                                        💖 OUR STORY
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- 📷 第二張紙：對話截圖 (手機版置於悄悄話底下，頂端內襯 pt-16 避免對話內容被頂部的悄悄話完全遮蓋) -->
-                            <div onclick="${isEditMode ? `openEditPanelForItemById('${item.id}')` : ''}" class="w-full md:col-span-6 relative bg-white p-2 pt-16 md:pt-2.5 rounded-xl shadow-md border border-[#e8ded2] transform -rotate-1 hover:rotate-0 transition-transform duration-300 z-10 order-2 ${isEditMode ? 'cursor-pointer hover:ring-2 hover:ring-emerald-400' : ''}">
-                                <div class="washi-tape-top"></div>
-                                ${photoFrameHtml}
-                            </div>
-
-                        </div>
-                    </div>
-                `;
-            });
-
-            const editHeaderBtn = isEditMode ? `
-                <div class="flex justify-end mb-4">
-                    <button onclick="addNewTeaserItem()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-md transition flex items-center gap-1">
-                        <i data-lucide="plus" class="w-4 h-4"></i> 新增對話條目
-                    </button>
-                </div>
-            ` : '';
-
-            container.innerHTML = `
-                ${editHeaderBtn}
-                <div class="bg-[#f8f4ec] border-2 border-dashed border-[#d8c8b8] rounded-3xl p-4 md:p-8 shadow-2xl text-[#5c4d43] font-sans my-2 relative">
-                    <div class="text-center mb-8">
-                        <h2 class="text-xl md:text-2xl font-bold tracking-wider text-[#6b4c38] font-rounded flex items-center justify-center gap-1.5">
-                            我們的訊息盒 💌
-                        </h2>
-                        <div class="text-xs text-[#a88d77] font-serif mt-1">— 從相遇到約定的點點滴滴 —</div>
-                    </div>
-
-                    <div class="relative pl-6 md:pl-8 border-l-2 border-dashed border-[#d8c8b8] ml-2 md:ml-4 my-4">
-                        ${itemsHtml || '<div class="text-xs text-slate-400 text-center py-8">尚未新增對話截圖...</div>'}
-                    </div>
-                </div>
-            `;
-            lucide.createIcons();
-        }
 
         function getSortedTimelineItems() {
             return markersData.filter(m => formatDateString(m.date) && m.in_timeline !== 'no' && m.folder_name !== '心動預告片' && m.folder_name !== '錄音').sort((a, b) => {
