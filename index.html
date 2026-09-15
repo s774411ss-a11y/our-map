@@ -5,21 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="referrer" content="no-referrer-when-downgrade">
     <title>質感生活同步互動地圖 - 回憶手帳版</title>
+    
+    <!-- CSS Dependencies -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/fancyapps/ui@5.0/dist/fancybox/fancybox.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=M+PLUS+Rounded+1c:wght@500;700;800&family=Noto+Sans+TC:wght@400;500;700&family=Shippori+Mincho:wght@600;800&display=swap" rel="stylesheet">
+
+    <!-- JS Dependencies -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    
     <script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.umd.js"></script>
-    <link rel="stylesheet" href="https://unpkg.com/fancyapps/ui@5.0/dist/fancybox/fancybox.css" />
-
-    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
     <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
-
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
-
-    <!-- Google 字體 -->
-    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=M+PLUS+Rounded+1c:wght@500;700;800&family=Noto+Sans+TC:wght@400;500;700&family=Shippori+Mincho:wght@600;800&display=swap" rel="stylesheet">
 
     <style>
         html, body {
@@ -62,7 +61,7 @@
             margin-left: -18px !important;
             margin-top: -35px !important;
             -webkit-backface-visibility: hidden;
-            -webkit-transform-style: preserve-3d;
+            transform-style: preserve-3d;
             transform-origin: 50% 100% !important;
             pointer-events: auto !important;
         }
@@ -79,11 +78,7 @@
 
         .perspective-1000 { perspective: 1000px; }
         .preserve-3d { transform-style: preserve-3d; }
-        .backface-hidden { 
-            backface-visibility: hidden !important; 
-            -webkit-backface-visibility: hidden !important; 
-        }
-
+        
         .envelope-3d-inner {
             transition: transform 0.75s cubic-bezier(0.4, 0, 0.2, 1);
             transform-style: preserve-3d;
@@ -92,13 +87,11 @@
             transform: rotateY(180deg);
         }
 
-        .envelope-face-front {
+        .envelope-face-front, .envelope-face-back {
             backface-visibility: hidden !important;
             -webkit-backface-visibility: hidden !important;
         }
         .envelope-face-back {
-            backface-visibility: hidden !important;
-            -webkit-backface-visibility: hidden !important;
             transform: rotateY(180deg);
         }
 
@@ -374,7 +367,6 @@
             padding: 8px;
         }
 
-        /* 📌 紙膠帶邊角定位 */
         .washi-tape-corner-left {
             position: absolute;
             top: -8px;
@@ -402,7 +394,6 @@
             pointer-events: none;
         }
 
-        /* 📚 多張截圖背後錯位重疊層 */
         .stacked-photo-stack {
             position: relative;
         }
@@ -421,7 +412,6 @@
         .stacked-photo-stack::before { transform: rotate(-3.5deg) translate(-4px, 2px); }
         .stacked-photo-stack::after { transform: rotate(3deg) translate(4px, 2px); }
 
-        /* 📱 手機版全螢幕側邊欄選單樣式 */
         @media (max-width: 767px) {
             .mobile-fullscreen-sidebar {
                 position: fixed !important;
@@ -441,7 +431,7 @@
     <div class="fixed bottom-4 left-4 z-[2500] flex flex-col items-start gap-2 pointer-events-auto">
         <div id="floatingSettingsMenu" class="hidden bg-[#2b1c14]/90 backdrop-blur-md p-3 rounded-2xl border border-white/20 text-white shadow-2xl w-72 mb-1 space-y-2.5">
             <div onclick="promptForEditMode()" class="text-xs font-bold text-amber-200/90 border-b border-white/10 pb-1.5 flex items-center justify-between cursor-pointer select-none">
-                <span class="flex items-center gap-1"><i data-lucide="settings-2" class="w-3.5 h-3.5"></i> 系統設定 (輸入密碼進入編輯模式)</span>
+                <span class="flex items-center gap-1"><i data-lucide="settings-2" class="w-3.5 h-3.5"></i> 系統設定 (點擊輸入密碼)</span>
                 <button onclick="event.stopPropagation(); toggleSettingsMenu()" class="text-slate-400 hover:text-white p-0.5"><i data-lucide="x" class="w-4 h-4"></i></button>
             </div>
             
@@ -464,7 +454,7 @@
         </button>
     </div>
 
-    <!-- 💌 右下角重選信封圖案按鈕 -->
+    <!-- 💌 右下角重選信封按鈕 -->
     <button id="btnReturnToEnvelope" onclick="returnToEnvelope()" class="hidden fixed bottom-4 right-4 z-[2500] w-12 h-12 bg-white/90 hover:bg-white text-[#7f5539] border border-rose-300 rounded-full shadow-2xl flex items-center justify-center text-xl transition-all active:scale-90 btn-interactive" title="重選信封紙張">
         💌
     </button>
@@ -473,16 +463,14 @@
     <div id="viewCoverStage" class="fixed inset-0 z-[2000] bg-[#1a0f0a]/90 backdrop-blur-md flex flex-col items-center justify-center p-4 transition-all duration-500 perspective-1000">
         <div id="envelopeContainer" class="relative w-full max-w-md h-[290px] preserve-3d group">
             
-            <!-- 3D 信封翻轉內層 -->
             <div id="envelope3dInner" class="envelope-3d-inner relative w-full h-full preserve-3d">
                 
-                <!-- ✉️ 【正面】信封與信紙組合 -->
+                <!-- ✉️ 【正面】 -->
                 <div class="envelope-face-front absolute inset-0 preserve-3d cursor-pointer" onclick="handleFrontEnvelopeClick(event)">
                     <div class="absolute inset-0 bg-[#e6ccb2] rounded-2xl shadow-2xl border border-[#ddc8b4] z-[1]"></div>
 
                     <div id="papersStack" class="absolute inset-x-10 bottom-2 z-[15] h-[260px] flex items-end justify-center">
-                        
-                        <!-- 📸 第 3 張信紙（左側）：【拍立得相片牆】 -->
+                        <!-- 📸 第 3 張信紙 -->
                         <div onclick="event.stopPropagation(); handlePaperClick('gallery', 3)" class="paper-card paper-3 absolute w-[205px] h-[250px] vintage-letter-paper rounded-xl p-2.5 cursor-pointer flex flex-col justify-start select-none">
                             <div class="w-full h-full letter-lace-border flex flex-col items-center bg-[#fcf9f2]">
                                 <div class="text-xl mb-1">📸</div>
@@ -493,7 +481,7 @@
                             </div>
                         </div>
 
-                        <!-- 🐇 第 2 張信紙（中間）：【故事放映室】 -->
+                        <!-- 🐇 第 2 張信紙 -->
                         <div onclick="event.stopPropagation(); handlePaperClick('timeline', 2)" class="paper-card paper-2 absolute w-[205px] h-[250px] vintage-letter-paper rounded-xl p-2.5 cursor-pointer flex flex-col justify-start select-none">
                             <div class="w-full h-full border-2 border-dashed border-[#8c6b41] rounded-lg p-2 flex flex-col items-center bg-[#f7f3eb]">
                                 <div class="text-xl mb-1 text-[#8c6d46]">🐇</div>
@@ -504,7 +492,7 @@
                             </div>
                         </div>
 
-                        <!-- 💌 第 1 張信紙（右側）：【我們的訊息盒】 -->
+                        <!-- 💌 第 1 張信紙 -->
                         <div onclick="event.stopPropagation(); handlePaperClick('chat', 1)" class="paper-card paper-1 absolute w-[205px] h-[250px] letter-kraft-paper rounded-xl p-2.5 cursor-pointer flex flex-col justify-start select-none">
                             <div class="w-full h-full border-2 border-dashed border-[#8c6b41] rounded-lg p-2 flex flex-col items-center bg-[#e2ceb1]">
                                 <div class="text-2xl mb-1 text-[#573d1e]">💌</div>
@@ -516,18 +504,14 @@
                                 <div class="text-[8px] text-[#70522c] font-serif self-center mt-auto font-bold">Sweet Messages</div>
                             </div>
                         </div>
-
                     </div>
 
-                    <!-- 信封前口袋 (z-20) 蓋住紙條下半部 -->
                     <div class="absolute inset-0 bg-[#f5ebe0] envelope-pocket-front rounded-b-2xl shadow-lg border-t border-[#ddc8b4] pointer-events-none"></div>
 
-                    <!-- 提示字樣 -->
                     <div id="envelopeFrontHint" class="hidden absolute -bottom-9 inset-x-0 text-center text-[#e6ccb2] font-rounded text-sm tracking-widest animate-pulse pointer-events-none select-none z-30 drop-shadow-md">
                         ♥ 選一張紙條吧 ♥
                     </div>
 
-                    <!-- 蓋子處玫瑰印章 -->
                     <div class="absolute inset-x-0 top-0 h-40 bg-[#ddc8b4] envelope-top-flap shadow-md flex items-center justify-center pointer-events-none">
                         <div id="roseStampFront" onclick="handleRoseStampClick(event)" class="w-10 h-10 rounded-full bg-rose-700 border-2 border-rose-300 shadow-md flex items-center justify-center text-lg text-white mb-8 pointer-events-auto cursor-pointer btn-interactive" title="點擊翻轉信封">
                             🌹
@@ -535,7 +519,7 @@
                     </div>
                 </div>
 
-                <!-- 📼 【背面】復古錄音帶信封面 -->
+                <!-- 📼 【背面】錄音帶 -->
                 <div class="envelope-face-back absolute inset-0 bg-[#d7ccc8] rounded-2xl shadow-2xl border-2 border-[#bcaaa4] flex flex-col items-center justify-between p-3 select-none">
                     <div class="w-full flex justify-center pt-0.5 z-50">
                         <div onclick="handleRoseStampClick(event)" class="w-9 h-9 rounded-full bg-rose-700 border-2 border-rose-300 shadow-md flex items-center justify-center text-base text-white cursor-pointer btn-interactive" title="點擊翻回正面">
@@ -655,7 +639,7 @@
     <div id="mainStageArea" class="flex-1 h-full relative overflow-hidden bg-slate-900">
         <div id="map" class="w-full h-full z-[1]"></div>
 
-        <!-- 💌 【我們的訊息盒】專屬中央主舞台 -->
+        <!-- 💌 【我們的訊息盒】 -->
         <div id="teaserMainStage" class="hidden absolute inset-0 z-[1500] bg-[#2b1c14] overflow-y-auto touch-scroll p-0 md:p-8 flex justify-center items-start">
             <div id="teaserMainStageContent" class="w-full h-full max-w-2xl md:max-w-4xl"></div>
         </div>
@@ -729,7 +713,7 @@
         </div>
     </div>
 
-    <!-- 專屬獨立編輯面板 -->
+    <!-- 專屬編輯面板 -->
     <div id="editPanel" class="hidden w-full md:w-80 bg-[#f4f7f4] p-4 border-t md:border-t-0 md:border-l border-emerald-300 md:h-full flex flex-col z-[1000] shadow-2xl">
         <div class="flex justify-between items-center mb-3 pb-2 border-b border-emerald-200">
             <h3 id="panelTitle" class="font-bold text-base md:text-lg text-emerald-900 flex items-center gap-1.5">
@@ -819,7 +803,7 @@
         </div>
     </div>
 
-    <!-- 隱藏音訊播放器元件 -->
+    <!-- 音訊播放器 -->
     <audio id="cassetteAudioPlayer" class="hidden"></audio>
 
     <script>
@@ -1153,7 +1137,6 @@
         const colorMap = { red: '#ef4444', blue: '#3b82f6', green: '#10b981', yellow: '#eab308', purple: '#a855f7' };
         const iconEmojiMap = { 'map-pin': '📍', 'footprints': '👣', 'utensils': '🍴', 'heart': '💖', 'calendar': '📅' };
 
-        /* 📱 修正重點 2：手機版拍立得全螢幕展開邏輯 */
         function toggleMobileList(forceState = null) {
             const listWrapper = document.getElementById('listContentWrapper');
             const icon = document.getElementById('toggleListIcon');
@@ -1747,7 +1730,7 @@
                     const listData = json.data || (Array.isArray(json) ? json : null);
                     if (listData) {
                         renderMapMarkers(listData);
-                        if (showAlert) alert("✅ 連線成功！已成功同步雲端手帳。");
+                        if (showAlert) alert("✅ 連线成功！已成功同步雲端手帳。");
                         return;
                     }
                 }
@@ -2072,7 +2055,6 @@
             });
         }
 
-        /* 📱 修正重點 2：拍立得切換切換為全螢幕展示 */
         function switchSidebarTab(tabName) {
             const tabs = ['folders', 'timeline', 'gallery', 'chat'];
             const sidebar = document.getElementById('sidebarPanel');
@@ -2115,7 +2097,6 @@
                 setTimeout(() => map.invalidateSize(), 200);
             }
 
-            /* 📱 拍立得照片牆全螢幕切換控制 */
             if (window.innerWidth < 768 && (tabName === 'gallery')) {
                 sidebar.classList.add('mobile-fullscreen-sidebar');
                 sidebar.classList.remove('h-[62vh]', 'h-auto');
@@ -2142,13 +2123,11 @@
             lucide.createIcons();
         }
 
-        // 全域狀態控制
         window.currentTeaserIndex = 0;
         window.chatImageIndices = window.chatImageIndices || {};
         window.isRightPageRevealed = false; 
         window.isCatalogOpen = false; 
 
-        /* 📱 修正重點 1：我的訊息盒（手機/電腦 雙模式自適應渲染） */
         function renderTeaserMainStage() {
             const container = document.getElementById('teaserMainStageContent');
             if (!container) return;
@@ -2216,7 +2195,7 @@
                         
                         <div class="hidden md:block absolute left-1/2 top-0 bottom-0 w-8 -translate-x-1/2 scrapbook-spine z-30 pointer-events-none"></div>
 
-                        <!-- 👈 左頁 / 手機版頂頁：截圖呈現完整大小 -->
+                        <!-- 👈 左頁 -->
                         <div class="w-full md:w-1/2 flex-1 md:h-full px-3 md:px-4 pt-3 pb-2 flex flex-col justify-between relative border-b md:border-b-0 md:border-r border-[#d7ccc8] bg-[#f8f1e5] overflow-hidden">
                             
                             <div class="w-full flex items-center justify-between border-b border-[#d7ccc8] pb-1.5 px-1 shrink-0 z-30 h-8">
@@ -2232,7 +2211,6 @@
                                 ${photoFrameHtml}
                             </div>
 
-                            <!-- 電腦版專屬底部導覽 -->
                             <div class="hidden md:flex w-full h-10 border-t border-[#e0d5c1] items-center justify-start shrink-0 z-20">
                                 <button onclick="switchTeaserCardWithAnim((${window.currentTeaserIndex} - 1 + ${chatItems.length}) % ${chatItems.length})" class="px-4 py-1.5 rounded-lg bg-[#e6ccb2] hover:bg-[#ddc8b4] text-[#5d4037] font-bold text-xs transition flex items-center gap-1 btn-interactive shadow-2xs">
                                     ❮ 上一頁
@@ -2240,7 +2218,7 @@
                             </div>
                         </div>
 
-                        <!-- 👉 右頁 / 手機版底頁：悄悄話占螢幕 1/4 -->
+                        <!-- 👉 右頁 -->
                         <div onclick="revealRightPageNotes(event)" class="w-full md:w-1/2 h-[25vh] md:h-full px-3 md:px-4 pt-2 pb-2 flex flex-col justify-between relative bg-[#fdfbf7] shrink-0 cursor-pointer">
                             
                             <div class="w-full border-b-2 border-dashed border-[#d7ccc8] pb-1 shrink-0 flex items-center justify-end relative z-30 h-7 md:h-8">
@@ -2269,7 +2247,6 @@
                                 </div>
                             </div>
 
-                            <!-- 電腦版專屬右頁頁碼導覽 -->
                             <div class="hidden md:flex w-full h-10 border-t border-[#e0d5c1] items-center justify-between shrink-0 z-20" onclick="event.stopPropagation();">
                                 <span class="font-mono text-[11px] font-bold text-[#8d6e63]">
                                     PAGE ${window.currentTeaserIndex + 1} / ${chatItems.length}
@@ -2280,7 +2257,7 @@
                             </div>
                         </div>
 
-                        <!-- 📱 手機版專屬最底部固定導覽列 -->
+                        <!-- 📱 手機底欄 -->
                         <div class="md:hidden fixed bottom-0 inset-x-0 h-12 bg-[#f5ebe0] border-t border-[#ddc8b4] flex items-center justify-between px-4 z-50 shadow-lg" onclick="event.stopPropagation();">
                             <button onclick="switchTeaserCardWithAnim((${window.currentTeaserIndex} - 1 + ${chatItems.length}) % ${chatItems.length})" class="px-3 py-1.5 rounded-lg bg-[#e6ccb2] active:bg-[#ddc8b4] text-[#5d4037] font-bold text-xs transition flex items-center gap-1 btn-interactive">
                                 ❮ 上一頁
