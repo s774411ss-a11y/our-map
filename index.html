@@ -77,20 +77,6 @@
             box-shadow: inset 0 0 15px rgba(0,0,0,0.3);
         }
 
-        .washi-tape-top {
-            position: absolute;
-            top: -8px;
-            left: 20%;
-            transform: rotate(-2deg);
-            width: 70px;
-            height: 18px;
-            background: rgba(245, 222, 195, 0.85);
-            border: 1px dashed rgba(190, 150, 110, 0.6);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.12);
-            z-index: 25;
-            pointer-events: none;
-        }
-
         .perspective-1000 { perspective: 1000px; }
         .preserve-3d { transform-style: preserve-3d; }
         .backface-hidden { 
@@ -144,7 +130,6 @@
             z-index: 2000 !important;
         }
 
-        /* 信封頂蓋與口袋層級構建 */
         .envelope-top-flap {
             clip-path: polygon(0 0, 100% 0, 50% 100%);
             transform-origin: top center;
@@ -180,7 +165,6 @@
             background-size: 100% 25px;
         }
 
-        /* 未開啟信封時，紙條 100% 隱藏且不出界 */
         .paper-card {
             pointer-events: none;
             transition: transform 0.5s cubic-bezier(0.34, 1.45, 0.64, 1), opacity 0.3s ease, visibility 0.3s ease;
@@ -191,13 +175,11 @@
             z-index: 15 !important;
         }
 
-        /* 信封打開時，頂蓋降至層級 10，防止擋住紙條 */
         .envelope-flap-open .envelope-top-flap {
             transform: rotateX(180deg);
             z-index: 10 !important;
         }
 
-        /* 信封開啟後，紙條才顯示並向上抽出 */
         .envelope-papers-out .paper-card {
             pointer-events: auto;
             transform: translateY(-25px) scale(0.88);
@@ -210,7 +192,6 @@
         .envelope-papers-out .paper-2 { z-index: 17 !important; }
         .envelope-papers-out .paper-1 { z-index: 18 !important; }
 
-        /* 被點選的紙條拉高並超越口袋 (z-40) */
         .envelope-papers-out .paper-3.active-paper {
             transform: translateY(-110px) rotate(-4deg) translateX(-18px) scale(0.95) !important;
             z-index: 40 !important;
@@ -233,97 +214,6 @@
         }
         .cassette-spinning {
             animation: cassetteSpin 2s linear infinite !important;
-        }
-
-        .secret-cover-mask {
-            position: absolute;
-            inset: 0;
-            background-color: rgba(248, 242, 235, 0.95);
-            z-index: 50;
-            cursor: pointer !important;
-            pointer-events: auto !important;
-            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-            border-radius: 1rem;
-        }
-
-        .washi-tape-strip {
-            position: absolute;
-            height: 42px;
-            background: rgba(246, 230, 212, 0.96);
-            background-image: 
-                radial-gradient(rgba(140, 100, 60, 0.18) 1.2px, transparent 0),
-                linear-gradient(to right, rgba(255,255,255,0.5), rgba(255,255,255,0.1));
-            background-size: 6px 6px, 100% 100%;
-            clip-path: polygon(
-                0% 2px, 2% 0px, 4% 3px, 6% 0px, 8% 2px, 10% 0px,
-                90% 0px, 92% 3px, 94% 0px, 96% 2px, 98% 0px, 100% 3px,
-                100% calc(100% - 2px), 98% 100%, 96% calc(100% - 3px), 94% 100%, 92% calc(100% - 2px), 90% 100%,
-                10% 100%, 8% calc(100% - 3px), 6% 100%, 4% calc(100% - 2px), 2% 100%, 0% calc(100% - 3px)
-            );
-            box-shadow: 0 5px 12px rgba(0, 0, 0, 0.18);
-            backdrop-filter: blur(4px);
-            transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
-            pointer-events: none;
-        }
-
-        .tape-1 {
-            top: 15%;
-            left: -10%;
-            right: -10%;
-            transform: rotate(-3.5deg);
-            border-top: 1px solid rgba(255, 255, 255, 0.8);
-            border-bottom: 1px solid rgba(180, 140, 100, 0.25);
-        }
-
-        .tape-2 {
-            bottom: 15%;
-            left: -10%;
-            right: -10%;
-            transform: rotate(3deg);
-            background: rgba(238, 218, 198, 0.96);
-            border-top: 1px solid rgba(255, 255, 255, 0.8);
-            border-bottom: 1px solid rgba(180, 140, 100, 0.25);
-        }
-
-        .rubber-stamp {
-            position: relative;
-            z-index: 60;
-            padding: 6px 16px;
-            border: 2px solid #6b4c38;
-            border-radius: 8px;
-            color: #6b4c38;
-            background: rgba(253, 251, 247, 0.85);
-            backdrop-filter: blur(2px);
-            box-shadow: inset 0 0 0 2px rgba(107, 76, 56, 0.2), 0 4px 10px rgba(0, 0, 0, 0.12);
-            transform: rotate(-4deg);
-            transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
-            pointer-events: none;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            user-select: none;
-            opacity: 0.92;
-        }
-
-        .secret-cover-mask.is-peeled {
-            opacity: 0 !important;
-            pointer-events: none !important;
-            transform: scale(0.95);
-        }
-        .secret-cover-mask.is-peeled .tape-1 {
-            transform: translate(-150%, -80px) rotate(-45deg) scale(0.6);
-        }
-        .secret-cover-mask.is-peeled .tape-2 {
-            transform: translate(150%, 80px) rotate(45deg) scale(0.6);
-        }
-        .secret-cover-mask.is-peeled .rubber-stamp {
-            transform: scale(0.5) rotate(20deg);
-            opacity: 0;
         }
 
         @keyframes bubblePop {
@@ -484,7 +374,7 @@
             padding: 8px;
         }
 
-        /* 📌 紙膠帶直接定位於截圖圖片邊角 */
+        /* 📌 紙膠帶邊角定位 */
         .washi-tape-corner-left {
             position: absolute;
             top: -8px;
@@ -530,6 +420,19 @@
         }
         .stacked-photo-stack::before { transform: rotate(-3.5deg) translate(-4px, 2px); }
         .stacked-photo-stack::after { transform: rotate(3deg) translate(4px, 2px); }
+
+        /* 📱 手機版全螢幕側邊欄選單樣式 */
+        @media (max-width: 767px) {
+            .mobile-fullscreen-sidebar {
+                position: fixed !important;
+                inset: 0 !important;
+                width: 100vw !important;
+                height: 100vh !important;
+                height: 100dvh !important;
+                z-index: 2200 !important;
+                border-radius: 0 !important;
+            }
+        }
     </style>
 </head>
 <body class="fixed inset-0 bg-[#2b1c14] text-slate-700 flex flex-col md:flex-row font-sans overflow-hidden">
@@ -573,7 +476,7 @@
             <!-- 3D 信封翻轉內層 -->
             <div id="envelope3dInner" class="envelope-3d-inner relative w-full h-full preserve-3d">
                 
-                <!-- ✉️ 【正面】信封與信紙組合 (點擊信封任意處均可開啟) -->
+                <!-- ✉️ 【正面】信封與信紙組合 -->
                 <div class="envelope-face-front absolute inset-0 preserve-3d cursor-pointer" onclick="handleFrontEnvelopeClick(event)">
                     <div class="absolute inset-0 bg-[#e6ccb2] rounded-2xl shadow-2xl border border-[#ddc8b4] z-[1]"></div>
 
@@ -619,12 +522,12 @@
                     <!-- 信封前口袋 (z-20) 蓋住紙條下半部 -->
                     <div class="absolute inset-0 bg-[#f5ebe0] envelope-pocket-front rounded-b-2xl shadow-lg border-t border-[#ddc8b4] pointer-events-none"></div>
 
-                    <!-- 提示字樣寫在信封正面下方，開啟後顯示 -->
+                    <!-- 提示字樣 -->
                     <div id="envelopeFrontHint" class="hidden absolute -bottom-9 inset-x-0 text-center text-[#e6ccb2] font-rounded text-sm tracking-widest animate-pulse pointer-events-none select-none z-30 drop-shadow-md">
                         ♥ 選一張紙條吧 ♥
                     </div>
 
-                    <!-- 蓋子處的玫瑰印章（點擊玫瑰執行翻頁） -->
+                    <!-- 蓋子處玫瑰印章 -->
                     <div class="absolute inset-x-0 top-0 h-40 bg-[#ddc8b4] envelope-top-flap shadow-md flex items-center justify-center pointer-events-none">
                         <div id="roseStampFront" onclick="handleRoseStampClick(event)" class="w-10 h-10 rounded-full bg-rose-700 border-2 border-rose-300 shadow-md flex items-center justify-center text-lg text-white mb-8 pointer-events-auto cursor-pointer btn-interactive" title="點擊翻轉信封">
                             🌹
@@ -634,15 +537,12 @@
 
                 <!-- 📼 【背面】復古錄音帶信封面 -->
                 <div class="envelope-face-back absolute inset-0 bg-[#d7ccc8] rounded-2xl shadow-2xl border-2 border-[#bcaaa4] flex flex-col items-center justify-between p-3 select-none">
-                    
-                    <!-- 背面頂部玫瑰印章按鈕（點擊翻回正面） -->
                     <div class="w-full flex justify-center pt-0.5 z-50">
                         <div onclick="handleRoseStampClick(event)" class="w-9 h-9 rounded-full bg-rose-700 border-2 border-rose-300 shadow-md flex items-center justify-center text-base text-white cursor-pointer btn-interactive" title="點擊翻回正面">
                             🌹
                         </div>
                     </div>
 
-                    <!-- 正中央錄音帶圖案 -->
                     <div onclick="handleCassetteClick(event)" class="relative w-36 h-22 bg-[#3e2723] rounded-xl border-2 border-[#5d4037] shadow-xl p-2 flex flex-col justify-between cursor-pointer hover:scale-105 transition-transform btn-interactive my-auto">
                         <div class="bg-[#fff8e1] rounded-md p-1 border border-[#ffe082] flex flex-col items-center justify-center">
                             <div id="cassetteTitleText" class="text-[10px] font-bold text-[#5d4037] tracking-wider truncate w-full text-center">
@@ -671,7 +571,6 @@
                         </div>
                     </div>
 
-                    <!-- 錄音帶下方獨立可拉動進度條 (與錄音帶等寬 w-36) -->
                     <div class="w-36 flex flex-col gap-1 z-50 mb-1" onclick="event.stopPropagation()">
                         <div class="relative w-full flex items-center">
                             <input type="range" id="audioSeekRange" min="0" max="100" value="0" step="0.1" 
@@ -688,11 +587,9 @@
                     <div class="text-[9px] font-serif text-[#6d4c41] tracking-widest opacity-80">
                         ♥ VOICE MEMORIES ♥
                     </div>
-
                 </div>
 
             </div>
-
         </div>
     </div>
 
@@ -759,8 +656,8 @@
         <div id="map" class="w-full h-full z-[1]"></div>
 
         <!-- 💌 【我們的訊息盒】專屬中央主舞台 -->
-        <div id="teaserMainStage" class="hidden absolute inset-0 z-[1500] bg-[#2b1c14] overflow-y-auto touch-scroll p-3 md:p-8 flex justify-center items-start">
-            <div id="teaserMainStageContent" class="w-full max-w-2xl md:max-w-4xl my-2"></div>
+        <div id="teaserMainStage" class="hidden absolute inset-0 z-[1500] bg-[#2b1c14] overflow-y-auto touch-scroll p-0 md:p-8 flex justify-center items-start">
+            <div id="teaserMainStageContent" class="w-full h-full max-w-2xl md:max-w-4xl"></div>
         </div>
 
         <!-- 故事放映室舞台 -->
@@ -793,7 +690,6 @@
                 </div>
 
                 <div id="storyMediaBox" class="w-full flex-1 min-h-0 flex flex-col items-center justify-center relative rounded-2xl overflow-hidden shadow-2xl border border-white/15 bg-slate-950/80 backdrop-blur-xs select-none">
-                    
                     <div id="storyNavLeft" onclick="prevTimelinePhoto()" class="absolute top-0 left-0 w-1/4 h-full z-30 cursor-pointer flex items-center justify-start pl-3 group">
                         <span class="bg-black/50 group-hover:bg-black/80 text-white rounded-full p-2.5 shadow-xl transition transform group-hover:scale-110">
                             <i data-lucide="chevron-left" class="w-6 h-6"></i>
@@ -930,7 +826,7 @@
         const map = L.map('map').setView([23.6, 121.0], 7);
         
         L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
             subdomains: 'abcd',
             maxZoom: 20
         }).addTo(map);
@@ -943,7 +839,6 @@
         window.activeGalleryCardId = null;
         window.isSwitchingPopup = false;
         let itemMarkerMap = {};
-
         window.chatImageIndices = {};
 
         function escapeHtml(str) {
@@ -983,7 +878,6 @@
 
         function handleRoseStampClick(e) {
             if (e) e.stopPropagation();
-            
             if (isEnvelopeFlippedBack) {
                 flipEnvelopeBack();
             } else if (!isEnvelopeOpen) {
@@ -1031,7 +925,6 @@
 
             setTimeout(() => {
                 coverStage.classList.add('hidden');
-                
                 if (!isEditMode) {
                     btnReturn.classList.remove('hidden');
                 }
@@ -1063,14 +956,12 @@
                 openAudioEditPanel();
                 return;
             }
-
             toggleCassetteAudio();
         }
 
         function openAudioEditPanel() {
             activeId = null;
             const audioItem = markersData.find(m => m.folder_name === '錄音');
-            
             openPanel(false, false, true);
             
             if (audioItem) {
@@ -1193,23 +1084,16 @@
         const CustomTaiwanGeocoder = {
             geocode: function(query) {
                 const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&accept-language=zh-TW&limit=6`;
-                
                 return fetch(url)
-                    .then(res => {
-                        if (!res.ok) throw new Error("網路請求失敗");
-                        return res.json();
-                    })
+                    .then(res => res.json())
                     .then(data => {
                         if (!data || data.length === 0) return [];
-
                         return data.map(item => {
                             let cleanName = item.display_name
                                 .replace(/, 臺灣|, 中華民國/g, '')
                                 .split(', ').reverse().join(' ').trim();
-
                             const lat = parseFloat(item.lat);
                             const lng = parseFloat(item.lon);
-
                             return {
                                 name: cleanName,
                                 center: L.latLng(lat, lng),
@@ -1220,10 +1104,7 @@
                             };
                         });
                     })
-                    .catch((err) => {
-                        console.error("全球搜尋發生錯誤:", err);
-                        return [];
-                    });
+                    .catch(() => []);
             }
         };
 
@@ -1235,25 +1116,18 @@
         })
         .on('markgeocode', function(e) {
             if (!isEditMode) {
-                const latlng = e.geocode.center;
-                map.setView(latlng, 16);
+                map.setView(e.geocode.center, 16);
                 return;
             }
-
             const latlng = e.geocode.center;
-            const name = e.geocode.name;
-            
             map.setView(latlng, 16);
-            
             activeId = null;
             currentLatLng = latlng;
             if (currentMarker) map.removeLayer(currentMarker);
-            
             currentMarker = L.marker(latlng, { icon: createCustomIcon('blue', 'map-pin'), zIndexOffset: 1000 }).addTo(map);
-            
             openPanel(true);
-            document.getElementById('placeTitle').value = name;
-            document.getElementById('placeLocation').value = name;
+            document.getElementById('placeTitle').value = e.geocode.name;
+            document.getElementById('placeLocation').value = e.geocode.name;
             lucide.createIcons();
         })
         .addTo(map);
@@ -1267,7 +1141,6 @@
         const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbxfmcmztf5KUo9RUx_2zwIwuawdd5UBzQGA0jf2P6LDxFJG8izufuBRR0sZc_3KwIb5/exec';
         let gasUrl = localStorage.getItem('gasUrl') || DEFAULT_GAS_URL;
 
-        let playbackState = 'stopped';
         let currentPlaybackItemIndex = 0;
         let currentPlaybackImgIndex = 0;
 
@@ -1278,15 +1151,9 @@
         document.getElementById('gasUrlInput').value = gasUrl;
 
         const colorMap = { red: '#ef4444', blue: '#3b82f6', green: '#10b981', yellow: '#eab308', purple: '#a855f7' };
+        const iconEmojiMap = { 'map-pin': '📍', 'footprints': '👣', 'utensils': '🍴', 'heart': '💖', 'calendar': '📅' };
 
-        const iconEmojiMap = {
-            'map-pin': '📍',
-            'footprints': '👣',
-            'utensils': '🍴',
-            'heart': '💖',
-            'calendar': '📅'
-        };
-
+        /* 📱 修正重點 2：手機版拍立得全螢幕展開邏輯 */
         function toggleMobileList(forceState = null) {
             const listWrapper = document.getElementById('listContentWrapper');
             const icon = document.getElementById('toggleListIcon');
@@ -1301,14 +1168,14 @@
 
             if (isMobileListCollapsed) {
                 listWrapper.classList.add('hidden');
-                sidebar.classList.remove('h-[62vh]', 'h-[92vh]');
+                sidebar.classList.remove('mobile-fullscreen-sidebar', 'h-[62vh]');
                 sidebar.classList.add('h-auto');
                 if (icon) icon.setAttribute('data-lucide', 'chevron-down');
                 if (text) text.innerText = '展開列表';
             } else {
                 listWrapper.classList.remove('hidden');
                 sidebar.classList.remove('h-auto');
-                sidebar.classList.add('h-[62vh]');
+                sidebar.classList.add('mobile-fullscreen-sidebar');
                 if (icon) icon.setAttribute('data-lucide', 'chevron-up');
                 if (text) text.innerText = '收起列表';
             }
@@ -1567,7 +1434,6 @@
             activeId = null;
             currentLatLng = { lat: baseLat, lng: baseLng };
             openPanel(true, false);
-            
             document.getElementById('placeLocation').value = baseLoc;
         };
 
@@ -1619,7 +1485,6 @@
             const imgUrlField = document.getElementById('fieldContainerImageUrl');
             const notesField = document.getElementById('fieldContainerNotes');
             const audioUrlField = document.getElementById('fieldContainerAudioUrl');
-
             const labelTitle = document.getElementById('labelPlaceTitle');
 
             if (isAudio) {
@@ -1631,7 +1496,6 @@
                 if (imgUrlField) imgUrlField.classList.add('hidden');
                 if (notesField) notesField.classList.add('hidden');
                 if (audioUrlField) audioUrlField.classList.remove('hidden');
-
                 if (labelTitle) labelTitle.innerText = "錄音標題";
                 document.getElementById('placeFolder').value = '錄音';
             } else if (isTeaser) {
@@ -1643,7 +1507,6 @@
                 if (imgUrlField) imgUrlField.classList.remove('hidden');
                 if (notesField) notesField.classList.remove('hidden');
                 if (audioUrlField) audioUrlField.classList.add('hidden');
-
                 if (labelTitle) labelTitle.innerText = "主旨 (即訊息盒膠囊文字)";
                 document.getElementById('placeFolder').value = '心動預告片';
             } else {
@@ -1655,7 +1518,6 @@
                 if (imgUrlField) imgUrlField.classList.remove('hidden');
                 if (notesField) notesField.classList.remove('hidden');
                 if (audioUrlField) audioUrlField.classList.add('hidden');
-
                 if (labelTitle) labelTitle.innerText = "主旨";
             }
 
@@ -1774,7 +1636,6 @@
 
             const title = document.getElementById('placeTitle').value || (folder === '錄音' ? "我的悄悄話" : "未命名主旨");
             const location = document.getElementById('placeLocation').value || "";
-            
             const rawDateVal = document.getElementById('placeDate').value || ""; 
             const date = formatDateString(rawDateVal);
 
@@ -1807,7 +1668,6 @@
 
             const dataItem = { id, title, location, date, in_timeline: inTimeline, lat, lng, notes, video_url: videoUrl, video_url_mobile: videoUrlMobile, image_url: imageUrl, color, icon, folder_name: folder, order: itemOrder };
 
-            let saveSucceeded = true;
             if (gasUrl) {
                 try {
                     await fetch(gasUrl, {
@@ -1816,9 +1676,7 @@
                         body: JSON.stringify({ action: 'save', data: dataItem })
                     });
                 } catch (e) {
-                    console.error(e);
-                    saveSucceeded = false;
-                    alert("⚠️ 儲存到雲端時發生網路錯誤，請檢查網路連線後重試。");
+                    alert("⚠️ 儲存到雲端時發生網路錯誤，請檢查網路連線。");
                 }
             }
 
@@ -1854,12 +1712,6 @@
                 alert("請先貼上有效的 Google GAS 網址喔！");
                 return;
             }
-
-            if (inputUrl.includes('/edit') || inputUrl.includes('/dev')) {
-                alert("⚠️ 注意：網址結尾必須是 /exec 喔！請重新部署並複製正確的 Web App 網址。");
-                return;
-            }
-
             gasUrl = inputUrl;
             localStorage.setItem('gasUrl', gasUrl);
             document.getElementById('floatingSettingsMenu').classList.add('hidden');
@@ -1868,7 +1720,6 @@
 
         async function fetchCloudData(showAlert = false) {
             if (!gasUrl) return;
-
             let cleanUrl = gasUrl.trim().split('?')[0];
             if (!cleanUrl) return;
 
@@ -1901,29 +1752,20 @@
                     }
                 }
             } catch (e) {}
-
-            if (showAlert) {
-                alert("❌ 連線失敗！請確認 GAS 網址結尾是否為 /exec，且部署權限設為所有人。");
-            }
         }
 
         function positionMapForCenteredPhoto(lat, lng) {
             const pinLatLng = L.latLng(parseFloat(lat), parseFloat(lng));
             const targetZoom = Math.max(map.getZoom(), 15);
-
             map.setZoom(targetZoom, { animate: false });
             const mapSize = map.getSize();
-
             const targetPinPoint = L.point(mapSize.x / 2 - 180, mapSize.y / 2 + 190);
-
             const currentPinPoint = map.latLngToContainerPoint(pinLatLng);
             const dx = currentPinPoint.x - targetPinPoint.x;
             const dy = currentPinPoint.y - targetPinPoint.y;
-
             const currentCenterPoint = map.latLngToContainerPoint(map.getCenter());
             const newCenterPoint = L.point(currentCenterPoint.x + dx, currentCenterPoint.y + dy);
             const newCenterLatLng = map.containerPointToLatLng(newCenterPoint);
-
             map.setView(newCenterLatLng, targetZoom, { animate: true, duration: 0.3 });
         }
 
@@ -1944,7 +1786,6 @@
             }
 
             const pinLatLng = window.activePinLatLng;
-            
             const cardEl = document.querySelector('.flip-card-front');
             let cardBottomLeftLatLng = null;
 
@@ -1978,7 +1819,6 @@
         window.showGroupListInPopup = function(locKey) {
             const marker = markerInstances[locKey];
             if (!marker) return;
-
             const groups = getGroupedItems();
             let items = groups[locKey] || [];
             if (items.length === 0) return;
@@ -1993,12 +1833,10 @@
             let listHtml = `<div class="p-2.5 text-slate-700 bg-white rounded-xl shadow-2xl border border-slate-200 min-w-[270px]">`;
             listHtml += `<div class="font-bold text-sm text-[#7f5539] mb-2 pb-1.5 border-b border-[#ddc8b4] flex justify-between items-center">`;
             listHtml += `<span class="flex items-center gap-1.5"><i data-lucide="layers" class="w-4 h-4 text-[#b7b7a4]"></i> 地點手帳列表 (${items.length})</span>`;
-            
             if (isEditMode) {
                 listHtml += `<button onclick="addNewEntryAtLocation('${locKey}')" class="text-[11px] bg-emerald-600 text-white px-2 py-0.5 rounded-md hover:bg-emerald-700 transition font-bold shadow-2xs flex items-center gap-0.5">+ 新增手帳</button>`;
             }
             listHtml += `</div>`;
-
             listHtml += `<div class="space-y-1.5 max-h-[220px] overflow-y-auto touch-scroll pr-1">`;
             items.forEach(item => {
                 const cleanDate = formatDateString(item.date) || '未設定日期';
@@ -2017,21 +1855,13 @@
             });
             listHtml += `</div></div>`;
 
-            marker.bindPopup(listHtml, { 
-                autoPan: true, 
-                autoPanPaddingTopLeft: [10, 100],
-                autoPanPaddingBottomRight: [10, 20] 
-            }).openPopup();
+            marker.bindPopup(listHtml, { autoPan: true, autoPanPaddingTopLeft: [10, 100], autoPanPaddingBottomRight: [10, 20] }).openPopup();
             lucide.createIcons();
         };
 
         function formatNotesLikeStoryBubble(text) {
             if (!text) return '這裡會顯示滿滿的筆記與回憶喔！(*\'∀`)~♥';
-            return String(text)
-                .split('\n')
-                .map(line => line.trim())
-                .filter(line => line.length > 0)
-                .join('\n');
+            return String(text).split('\n').map(line => line.trim()).filter(line => line.length > 0).join('\n');
         }
 
         window.showItemDetailInPopup = function(locKey, itemId, showBackBtn = false, initialMediaIndex = 0) {
@@ -2042,7 +1872,6 @@
             if (!marker) return;
 
             window.isSwitchingPopup = true;
-
             marker.addTo(map);
             if (marker.setZIndexOffset) marker.setZIndexOffset(2000);
 
@@ -2085,7 +1914,6 @@
             if (mediaList.length > 1) {
                 const prevIdx = (validIndex - 1 + mediaList.length) % mediaList.length;
                 const nextIdx = (validIndex + 1) % mediaList.length;
-
                 navOverlayHtml = `
                     <button onclick="event.stopPropagation(); showItemDetailInPopup('${locKey}', '${item.id}', ${showBackBtn}, ${prevIdx})" class="absolute left-2 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/80 text-white rounded-full p-1.5 z-30 transition shadow-md btn-interactive">
                         <i data-lucide="chevron-left" class="w-4 h-4"></i>
@@ -2104,17 +1932,13 @@
             let popupHtml = `
                 <div class="w-[300px] h-[370px] perspective-1000 select-none">
                     <div id="mapFlipCard_${item.id}" class="flip-card-inner relative w-full h-full preserve-3d">
-                        
-                        <!-- 📷 正面 -->
                         <div class="flip-card-front absolute inset-0 bg-white p-2.5 pb-4 rounded-xs shadow-2xl border border-slate-200/90 flex flex-col justify-between backface-hidden overflow-hidden">
                             <div class="flex-1 flex flex-col min-h-0">
                                 ${showBackBtn ? `<button onclick="showGroupListInPopup('${locKey}')" class="text-[10px] text-[#7f5539] hover:underline font-bold mb-1 block">❮ 返回列表</button>` : ''}
-                                
                                 <div class="polaroid-photo-frame relative w-full flex-1 bg-slate-900 rounded-xs overflow-hidden mb-2 shadow-inner flex items-center justify-center">
                                     ${photoContent}
                                     ${navOverlayHtml}
                                 </div>
-
                                 <div class="px-1 mt-auto">
                                     <div class="text-sm font-bold text-slate-800 line-clamp-1 leading-snug font-rounded">${escapeHtml(item.title)}</div>
                                     <div class="text-xs text-slate-500 mt-0.5 flex items-center gap-1 line-clamp-1">
@@ -2126,7 +1950,6 @@
                             <div onclick="event.stopPropagation(); toggleMapCardFlip('${item.id}')" class="real-curl-fold" title="翻面看筆記"></div>
                         </div>
 
-                        <!-- ✍️ 背面 -->
                         <div class="flip-card-back absolute inset-0 bg-[#fcf8f2] p-5 rounded-xs shadow-2xl border-2 border-dashed border-[#d4bead] flex flex-col justify-between items-start backface-hidden [transform:rotateY(180deg)] overflow-hidden">
                             <div class="w-full flex items-center justify-between text-xs text-[#a07855] border-b border-[#e6d5c3] pb-1.5 px-1 shrink-0">
                                 <span class="flex items-center gap-1 font-rounded"><i data-lucide="heart" class="w-3.5 h-3.5 text-rose-400 fill-rose-200"></i> 心情手札</span>
@@ -2150,11 +1973,7 @@
                 </div>
             `;
 
-            marker.bindPopup(popupHtml, { 
-                autoPan: false,
-                offset: [180, -5]
-            }).openPopup();
-
+            marker.bindPopup(popupHtml, { autoPan: false, offset: [180, -5] }).openPopup();
             positionMapForCenteredPhoto(item.lat, item.lng);
 
             if (window.activeGalleryCardId) {
@@ -2167,16 +1986,12 @@
                 window.isSwitchingPopup = false;
             }, 80);
 
-            if (isEditMode) {
-                openEditPanelForItem(item);
-            }
-
+            if (isEditMode) openEditPanelForItem(item);
             lucide.createIcons();
         };
 
         map.on('popupclose', function() {
             if (window.isSwitchingPopup) return;
-            
             if (window.activeGalleryCardId) {
                 const targetCard = document.getElementById('gallery_card_' + window.activeGalleryCardId);
                 if (targetCard) targetCard.classList.remove('photo-hidden');
@@ -2197,11 +2012,7 @@
             const audioItem = markersData.find(m => m.folder_name === '錄音');
             const cassetteTitle = document.getElementById('cassetteTitleText');
             if (cassetteTitle) {
-                if (audioItem && audioItem.title && audioItem.title !== '甜蜜錄音帶') {
-                    cassetteTitle.innerText = '🎵 ' + audioItem.title;
-                } else {
-                    cassetteTitle.innerText = '🎵 我的悄悄話';
-                }
+                cassetteTitle.innerText = (audioItem && audioItem.title) ? '🎵 ' + audioItem.title : '🎵 我的悄悄話';
             }
 
             map.eachLayer(layer => {
@@ -2229,18 +2040,12 @@
                     }).addTo(map);
 
                     markerInstances[locKey] = marker;
-
-                    items.forEach(it => {
-                        itemMarkerMap[it.id] = marker;
-                    });
+                    items.forEach(it => { itemMarkerMap[it.id] = marker; });
 
                     marker.on('click', () => {
                         closeStoryStage(); 
-
                         document.querySelectorAll('.marker-pink-pulse').forEach(el => el.classList.remove('marker-pink-pulse'));
-                        if (marker._icon) {
-                            marker._icon.classList.add('marker-pink-pulse');
-                        }
+                        if (marker._icon) marker._icon.classList.add('marker-pink-pulse');
 
                         const currentGroups = getGroupedItems();
                         const currentItems = currentGroups[locKey] || [];
@@ -2259,7 +2064,6 @@
             renderGallery();
             renderTeaserMainStage();
             updateFolderSelect();
-            
             lucide.createIcons();
 
             Fancybox.bind("[data-fancybox]", {
@@ -2268,6 +2072,7 @@
             });
         }
 
+        /* 📱 修正重點 2：拍立得切換切換為全螢幕展示 */
         function switchSidebarTab(tabName) {
             const tabs = ['folders', 'timeline', 'gallery', 'chat'];
             const sidebar = document.getElementById('sidebarPanel');
@@ -2310,13 +2115,14 @@
                 setTimeout(() => map.invalidateSize(), 200);
             }
 
+            /* 📱 拍立得照片牆全螢幕切換控制 */
             if (window.innerWidth < 768 && (tabName === 'gallery')) {
+                sidebar.classList.add('mobile-fullscreen-sidebar');
                 sidebar.classList.remove('h-[62vh]', 'h-auto');
-                sidebar.classList.add('h-[92vh]');
                 isMobileListCollapsed = false;
                 document.getElementById('listContentWrapper').classList.remove('hidden');
             } else if (window.innerWidth < 768 && !isMobileListCollapsed) {
-                sidebar.classList.remove('h-[92vh]');
+                sidebar.classList.remove('mobile-fullscreen-sidebar');
                 sidebar.classList.add('h-[62vh]');
             }
 
@@ -2336,12 +2142,13 @@
             lucide.createIcons();
         }
 
-        // 全域狀態控制 (我的訊息盒最新版本控制)
+        // 全域狀態控制
         window.currentTeaserIndex = 0;
         window.chatImageIndices = window.chatImageIndices || {};
         window.isRightPageRevealed = false; 
         window.isCatalogOpen = false; 
 
+        /* 📱 修正重點 1：我的訊息盒（手機/電腦 雙模式自適應渲染） */
         function renderTeaserMainStage() {
             const container = document.getElementById('teaserMainStageContent');
             if (!container) return;
@@ -2373,7 +2180,7 @@
                     <div class="relative inline-flex items-center justify-center max-h-full max-w-full ${totalImgs > 1 ? 'stacked-photo-stack' : ''}">
                         <div class="washi-tape-corner-left"></div>
                         <div class="washi-tape-corner-right"></div>
-                        <img src="${activeImg}" class="max-h-[68vh] md:max-h-[74vh] w-auto max-w-full object-contain rounded-xs shadow-md border border-slate-200/50 block" alt="對話截圖">
+                        <img src="${activeImg}" class="max-h-[50vh] md:max-h-[74vh] w-auto max-w-full object-contain rounded-xs shadow-md border border-slate-200/50 block" alt="對話截圖">
                         ${totalImgs > 1 ? `
                             <button onclick="event.stopPropagation(); changeChatImage('${currentItem.id}', -1, ${totalImgs})" class="absolute left-2 top-1/2 -translate-y-1/2 z-30 bg-black/60 hover:bg-black/80 text-white rounded-full p-2 shadow-lg transition btn-interactive">
                                 <i data-lucide="chevron-left" class="w-4 h-4"></i>
@@ -2404,47 +2211,45 @@
             const safeNotes = currentItem.notes ? escapeHtml(currentItem.notes) : '這一天也寫下了特別的記憶... (*\'∀\')~♥';
 
             container.innerHTML = `
-                <div class="w-full h-full flex flex-col items-center justify-center relative p-1 md:p-2 select-none">
-                    <div class="relative w-full max-w-6xl h-[92vh] bg-[#fbf7ee] rounded-2xl shadow-2xl border-4 border-[#bcaaa4] flex flex-col md:flex-row overflow-hidden">
+                <div class="w-full h-full flex flex-col items-center justify-center relative p-0 md:p-2 select-none">
+                    <div class="relative w-full max-w-6xl h-full md:h-[92vh] bg-[#fbf7ee] rounded-none md:rounded-2xl shadow-2xl border-0 md:border-4 border-[#bcaaa4] flex flex-col md:flex-row overflow-hidden pb-14 md:pb-0">
                         
                         <div class="hidden md:block absolute left-1/2 top-0 bottom-0 w-8 -translate-x-1/2 scrapbook-spine z-30 pointer-events-none"></div>
 
-                        <!-- 👈 左頁：截圖向上貼齊頂線 + 底部導覽下移對齊 -->
-                        <div class="w-full md:w-1/2 h-1/2 md:h-full px-4 pt-3 pb-2 flex flex-col justify-between relative border-b md:border-b-0 md:border-r border-[#d7ccc8] bg-[#f8f1e5] overflow-hidden">
+                        <!-- 👈 左頁 / 手機版頂頁：截圖呈現完整大小 -->
+                        <div class="w-full md:w-1/2 flex-1 md:h-full px-3 md:px-4 pt-3 pb-2 flex flex-col justify-between relative border-b md:border-b-0 md:border-r border-[#d7ccc8] bg-[#f8f1e5] overflow-hidden">
                             
-                            <!-- 頂部標題與日期（字級縮小 1 號） -->
                             <div class="w-full flex items-center justify-between border-b border-[#d7ccc8] pb-1.5 px-1 shrink-0 z-30 h-8">
-                                <div class="text-sm md:text-base font-bold text-[#5d4037] font-rounded truncate flex items-center gap-1">
+                                <div class="text-xs md:text-base font-bold text-[#5d4037] font-rounded truncate flex items-center gap-1">
                                     📌 <span>${escapeHtml(currentItem.title || '對話紀錄')}</span>
                                 </div>
-                                <div class="text-[11px] md:text-xs text-pink-600 font-bold font-mono shrink-0 flex items-center gap-1">
+                                <div class="text-[10px] md:text-xs text-pink-600 font-bold font-mono shrink-0 flex items-center gap-1">
                                     <span>📅</span> <span>${escapeHtml(formatDateString(currentItem.date))}</span>
                                 </div>
                             </div>
 
-                            <!-- 圖片區：向上頂格放大展示 -->
-                            <div class="relative w-full flex-1 flex items-start justify-center pt-2 pb-1 overflow-hidden my-auto">
+                            <div class="relative w-full flex-1 flex items-center justify-center py-2 overflow-hidden my-auto">
                                 ${photoFrameHtml}
                             </div>
 
-                            <!-- 👈 左頁底部按鈕：固定 h-10 與右頁導覽平行對齊 -->
-                            <div class="w-full h-10 border-t border-[#e0d5c1] flex items-center justify-start shrink-0 z-20">
+                            <!-- 電腦版專屬底部導覽 -->
+                            <div class="hidden md:flex w-full h-10 border-t border-[#e0d5c1] items-center justify-start shrink-0 z-20">
                                 <button onclick="switchTeaserCardWithAnim((${window.currentTeaserIndex} - 1 + ${chatItems.length}) % ${chatItems.length})" class="px-4 py-1.5 rounded-lg bg-[#e6ccb2] hover:bg-[#ddc8b4] text-[#5d4037] font-bold text-xs transition flex items-center gap-1 btn-interactive shadow-2xs">
                                     ❮ 上一頁
                                 </button>
                             </div>
                         </div>
 
-                        <!-- 👉 右頁：手寫筆記與導覽列平行對齊 -->
-                        <div onclick="revealRightPageNotes(event)" class="w-full md:w-1/2 h-1/2 md:h-full px-4 pt-3 pb-2 flex flex-col justify-between relative bg-[#fdfbf7] touch-scroll overflow-y-auto cursor-pointer">
+                        <!-- 👉 右頁 / 手機版底頁：悄悄話占螢幕 1/4 -->
+                        <div onclick="revealRightPageNotes(event)" class="w-full md:w-1/2 h-[25vh] md:h-full px-3 md:px-4 pt-2 pb-2 flex flex-col justify-between relative bg-[#fdfbf7] shrink-0 cursor-pointer">
                             
-                            <div class="w-full border-b-2 border-dashed border-[#d7ccc8] pb-1.5 shrink-0 flex items-center justify-end relative z-30 h-8">
-                                <button onclick="toggleTeaserCatalog(event)" class="px-3.5 py-1 rounded-full border-2 border-rose-600/80 text-rose-700 bg-rose-50/50 font-bold text-xs shadow-xs transition flex items-center gap-1 btn-interactive font-stamp">
+                            <div class="w-full border-b-2 border-dashed border-[#d7ccc8] pb-1 shrink-0 flex items-center justify-end relative z-30 h-7 md:h-8">
+                                <button onclick="toggleTeaserCatalog(event)" class="px-2.5 py-0.5 md:px-3.5 md:py-1 rounded-full border-2 border-rose-600/80 text-rose-700 bg-rose-50/50 font-bold text-[10px] md:text-xs shadow-xs transition flex items-center gap-1 btn-interactive font-stamp">
                                     <span>對話紀錄 📖</span>
                                 </button>
                             </div>
 
-                            <div id="teaserCatalogDrawer" class="hidden opacity-0 -translate-y-2 transition-all duration-200 absolute top-12 right-4 w-64 max-h-64 bg-[#fffdfa] border-2 border-[#d7ccc8] rounded-xl shadow-2xl z-50 p-2 overflow-y-auto touch-scroll space-y-1" onclick="event.stopPropagation();">
+                            <div id="teaserCatalogDrawer" class="hidden opacity-0 -translate-y-2 transition-all duration-200 absolute top-10 right-3 w-64 max-h-64 bg-[#fffdfa] border-2 border-[#d7ccc8] rounded-xl shadow-2xl z-50 p-2 overflow-y-auto touch-scroll space-y-1" onclick="event.stopPropagation();">
                                 <div class="text-[11px] font-bold text-[#7f5539] border-b border-[#e0d5c1] pb-1 px-1 mb-1 flex justify-between items-center">
                                     <span>📜 對話紀錄目錄</span>
                                     <button onclick="toggleTeaserCatalog(event)" class="text-slate-400 hover:text-slate-600">✕</button>
@@ -2452,20 +2257,20 @@
                                 ${catalogListHtml}
                             </div>
 
-                            <div class="flex-1 w-full letter-dashed-lines py-2 my-1 relative overflow-hidden flex flex-col justify-start">
-                                <div id="rightPageNotesCover" class="${window.isRightPageRevealed ? 'hidden opacity-0 pointer-events-none' : 'flex'} absolute inset-0 bg-[#fdfbf7] z-20 flex-col items-center justify-center text-center p-6 transition-all duration-300">
-                                    <div class="text-4xl md:text-5xl mb-2 text-[#bcaaa4] animate-pulse">✍️</div>
-                                    <div class="text-xl md:text-2xl font-bold text-[#735146] font-rounded tracking-wider">我的悄悄話</div>
-                                    <div class="text-xs md:text-sm text-[#8c6d62] font-mono mt-2 font-bold">✨ 點擊解鎖筆記...</div>
+                            <div class="flex-1 w-full letter-dashed-lines py-1 my-0.5 relative overflow-hidden flex flex-col justify-start">
+                                <div id="rightPageNotesCover" class="${window.isRightPageRevealed ? 'hidden opacity-0 pointer-events-none' : 'flex'} absolute inset-0 bg-[#fdfbf7] z-20 flex-col items-center justify-center text-center p-3 transition-all duration-300">
+                                    <div class="text-2xl md:text-5xl mb-1 text-[#bcaaa4] animate-pulse">✍️</div>
+                                    <div class="text-sm md:text-2xl font-bold text-[#735146] font-rounded tracking-wider">我的悄悄話</div>
+                                    <div class="text-[10px] md:text-sm text-[#8c6d62] font-mono mt-1 font-bold">✨ 點擊解鎖筆記...</div>
                                 </div>
 
-                                <div id="rightPageRealText" class="${window.isRightPageRevealed ? 'block animate-ink-reveal' : 'hidden'} text-slate-800 text-sm md:text-base leading-relaxed font-rounded popup-notes overflow-y-auto touch-scroll z-10">
+                                <div id="rightPageRealText" class="${window.isRightPageRevealed ? 'block animate-ink-reveal' : 'hidden'} text-slate-800 text-xs md:text-base leading-relaxed font-rounded popup-notes overflow-y-auto touch-scroll z-10 max-h-full">
                                     ${safeNotes}
                                 </div>
                             </div>
 
-                            <!-- 👉 右頁底部：固定 h-10 確保與左頁完全同一排 -->
-                            <div class="w-full h-10 border-t border-[#e0d5c1] flex items-center justify-between shrink-0 z-20" onclick="event.stopPropagation();">
+                            <!-- 電腦版專屬右頁頁碼導覽 -->
+                            <div class="hidden md:flex w-full h-10 border-t border-[#e0d5c1] items-center justify-between shrink-0 z-20" onclick="event.stopPropagation();">
                                 <span class="font-mono text-[11px] font-bold text-[#8d6e63]">
                                     PAGE ${window.currentTeaserIndex + 1} / ${chatItems.length}
                                 </span>
@@ -2473,6 +2278,19 @@
                                     下一頁 ❯
                                 </button>
                             </div>
+                        </div>
+
+                        <!-- 📱 手機版專屬最底部固定導覽列 -->
+                        <div class="md:hidden fixed bottom-0 inset-x-0 h-12 bg-[#f5ebe0] border-t border-[#ddc8b4] flex items-center justify-between px-4 z-50 shadow-lg" onclick="event.stopPropagation();">
+                            <button onclick="switchTeaserCardWithAnim((${window.currentTeaserIndex} - 1 + ${chatItems.length}) % ${chatItems.length})" class="px-3 py-1.5 rounded-lg bg-[#e6ccb2] active:bg-[#ddc8b4] text-[#5d4037] font-bold text-xs transition flex items-center gap-1 btn-interactive">
+                                ❮ 上一頁
+                            </button>
+                            <span class="font-mono text-xs font-bold text-[#7f5539]">
+                                PAGE ${window.currentTeaserIndex + 1} / ${chatItems.length}
+                            </span>
+                            <button onclick="switchTeaserCardWithAnim((${window.currentTeaserIndex} + 1) % ${chatItems.length})" class="px-3 py-1.5 rounded-lg bg-[#e6ccb2] active:bg-[#ddc8b4] text-[#5d4037] font-bold text-xs transition flex items-center gap-1 btn-interactive">
+                                下一頁 ❯
+                            </button>
                         </div>
 
                     </div>
@@ -2521,12 +2339,6 @@
             if (!window.chatImageIndices[itemId]) window.chatImageIndices[itemId] = 0;
             window.chatImageIndices[itemId] = (window.chatImageIndices[itemId] + delta + total) % total;
             renderTeaserMainStage();
-        };
-
-        window.peelTapeCover = function(el) {
-            if (el) {
-                el.classList.add('is-peeled');
-            }
         };
 
         function getSortedTimelineItems() {
@@ -2813,7 +2625,6 @@
 
             const uniqueMonths = Array.from(monthSet).sort();
             if (uniqueMonths.length === 0) return;
-
             const totalMonths = uniqueMonths.length;
 
             const currentDStr = formatDateString(currentItem.date);
@@ -2868,7 +2679,6 @@
                 const countInDay = group.length;
 
                 const daysInMonth = new Date(year, month, 0).getDate();
-
                 const mStartPct = (mIdx / totalMonths) * 100;
                 const mWidthPct = 100 / totalMonths;
 
@@ -2900,7 +2710,6 @@
             if (cursor) {
                 cursor.style.left = `${activeItemPos.pct}%`;
                 cursor.style.transform = `translate(-50%, calc(-50% + ${activeItemPos.offsetY}px))`;
-                
                 cursor.classList.remove('animate-heartbeat');
                 void cursor.offsetWidth;
                 cursor.classList.add('animate-heartbeat');
@@ -3036,7 +2845,6 @@
                 setNavZonesForMediaType(false);
             } else {
                 const activeMedia = mediaList[currentPlaybackImgIndex];
-                
                 if (activeMedia.type === 'image') {
                     const safeImgUrl = convertGoogleDriveLink(activeMedia.url);
                     bgBlur.style.backgroundImage = `url('${safeImgUrl}')`;
@@ -3067,7 +2875,6 @@
             }
 
             document.getElementById('storyBubbleNotes').innerText = item.notes ? item.notes : '這一天也留下了甜甜的回憶～ (´∀`)';
-
             updateTimelineHighlight(item.id);
             lucide.createIcons();
         }
@@ -3143,7 +2950,6 @@
                 map.invalidateSize();
                 if (!isNaN(targetLat) && !isNaN(targetLng)) {
                     closeStoryStage();
-                    
                     const locKey = getLocKey(targetLat, targetLng);
                     if (isEditMode) {
                         showGroupListInPopup(locKey);
@@ -3172,7 +2978,6 @@
                 if (folderName === '錄音') return;
 
                 const folderItems = markersData.filter(m => m.folder_name === folderName);
-                
                 const isDefault = folderName === '行程總覽';
                 
                 const actionButtons = (isDefault || !isEditMode) ? '' : `
@@ -3290,7 +3095,6 @@
                     btnHeaderCamera.className = "p-1 rounded-lg bg-emerald-100 text-emerald-700 hover:bg-emerald-200 cursor-pointer shadow-2xs transition-all flex items-center justify-center";
                     btnHeaderCamera.title = "點擊設定錄音帶語音 (編輯模式專用)";
                 }
-                
                 switchSidebarTab('folders');
             } else {
                 if (editFolderHeader) editFolderHeader.classList.add('hidden');
@@ -3301,7 +3105,6 @@
                     btnHeaderCamera.className = "p-1 rounded-lg text-[#b7b7a4]";
                     btnHeaderCamera.title = "拍立得相片牆";
                 }
-                
                 closePanel();
 
                 if (btnReturn && document.getElementById('viewCoverStage').classList.contains('hidden')) {
