@@ -508,7 +508,8 @@
 
                     <div class="absolute inset-0 bg-[#f5ebe0] envelope-pocket-front rounded-b-2xl shadow-lg border-t border-[#ddc8b4] pointer-events-none"></div>
 
-                    <div id="envelopeFrontHint" class="hidden absolute -bottom-9 inset-x-0 text-center text-[#e6ccb2] font-rounded text-sm tracking-widest animate-pulse pointer-events-none select-none z-30 drop-shadow-md">
+                    <!-- 【修復1a】添加點擊提示字收回紙條的事件 handleFrontHintClick -->
+                    <div id="envelopeFrontHint" onclick="handleFrontHintClick(event)" class="hidden absolute -bottom-9 inset-x-0 text-center text-[#e6ccb2] font-rounded text-sm tracking-widest animate-pulse pointer-events-auto cursor-pointer select-none z-30 drop-shadow-md">
                         ♥ 選一張紙條吧 ♥
                     </div>
 
@@ -645,7 +646,8 @@
         </div>
 
         <!-- 故事放映室舞台 -->
-        <div id="storyStage" class="hidden fixed inset-0 z-[2000] bg-slate-950 flex flex-col justify-between items-center p-2.5 md:p-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(0.75rem,env(safe-area-inset-bottom))] select-none overflow-hidden">
+        <!-- 【修復4】調整 pb 避免底部控制列擋住重選信封等浮動按鈕 -->
+        <div id="storyStage" class="hidden fixed inset-0 z-[2000] bg-slate-950 flex flex-col justify-between items-center p-2.5 md:p-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(5rem,env(safe-area-inset-bottom))] select-none overflow-hidden">
             <div id="storyBgBlur" class="absolute inset-0 bg-cover bg-center blur-2xl opacity-40 scale-110 transition-all duration-700 pointer-events-none"></div>
             <div class="absolute inset-0 bg-gradient-to-b from-black/80 via-transparent to-black/90 pointer-events-none"></div>
 
@@ -661,6 +663,7 @@
                 </div>
             </div>
 
+            <!-- 【修復4】降低照片區塊最大高度，並縮小手機版 bubble 避免擠壓遮擋 -->
             <div class="relative z-30 w-full max-w-xl md:max-w-3xl flex-1 min-h-0 flex flex-col items-start my-1 overflow-hidden">
                 <div class="flex items-center gap-2 mb-2 drop-shadow-md shrink-0 w-full overflow-hidden">
                     <div class="w-6 h-6 md:w-8 md:h-8 rounded-full bg-gradient-to-tr from-amber-400 via-pink-500 to-rose-500 p-0.5 shadow-md flex items-center justify-center shrink-0">
@@ -673,7 +676,7 @@
                     </div>
                 </div>
 
-                <div id="storyMediaBox" class="w-full flex-1 min-h-0 flex flex-col items-center justify-center relative rounded-2xl overflow-hidden shadow-2xl border border-white/15 bg-slate-950/80 backdrop-blur-xs select-none">
+                <div id="storyMediaBox" class="w-full flex-1 min-h-0 max-h-[58vh] md:max-h-full flex flex-col items-center justify-center relative rounded-2xl overflow-hidden shadow-2xl border border-white/15 bg-slate-950/80 backdrop-blur-xs select-none">
                     <div id="storyNavLeft" onclick="prevTimelinePhoto()" class="absolute top-0 left-0 w-1/4 h-full z-30 cursor-pointer flex items-center justify-start pl-3 group">
                         <span class="bg-black/50 group-hover:bg-black/80 text-white rounded-full p-2.5 shadow-xl transition transform group-hover:scale-110">
                             <i data-lucide="chevron-left" class="w-6 h-6"></i>
@@ -694,7 +697,7 @@
                         <button onclick="event.stopPropagation(); nextTimelinePhoto()" class="text-white p-1"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
                     </div>
 
-                    <div id="storyBubble" class="absolute top-4 right-4 z-40 p-5 md:p-6 text-slate-800 cursor-move select-none max-w-[210px] md:max-w-[280px] animate-bubble-pop filter drop-shadow-xl pointer-events-auto">
+                    <div id="storyBubble" class="absolute top-4 right-4 z-40 p-4 md:p-6 text-slate-800 cursor-move select-none max-w-[170px] md:max-w-[280px] animate-bubble-pop filter drop-shadow-xl pointer-events-auto">
                         <svg class="absolute inset-0 w-full h-full -z-10 overflow-visible" viewBox="0 0 200 150" preserveAspectRatio="none">
                             <path d="M 25,15 A 28,22 0 0,1 75,10 A 28,22 0 0,1 125,10 A 28,22 0 0,1 175,15 A 22,25 0 0,1 192,50 A 22,25 0 0,1 192,100 A 22,25 0 0,1 175,135 A 28,22 0 0,1 125,142 A 28,22 0 0,1 75,142 A 28,22 0 0,1 25,135 A 22,25 0 0,1 8,100 A 22,25 0 0,1 8,50 A 22,25 0 0,1 25,15 Z" 
                                   fill="rgba(255, 255, 255, 0.96)" 
@@ -704,7 +707,7 @@
                                   vector-effect="non-scaling-stroke"/>
                         </svg>
 
-                        <div id="storyBubbleNotes" class="text-[10px] md:text-xs text-slate-700 leading-relaxed font-rounded popup-notes max-h-28 md:max-h-36 overflow-y-auto pr-1 touch-scroll">
+                        <div id="storyBubbleNotes" class="text-[10px] md:text-xs text-slate-700 leading-relaxed font-rounded popup-notes max-h-24 md:max-h-36 overflow-y-auto pr-1 touch-scroll">
                             這裡會顯示滿滿的筆記與回憶喔！(*'∀')~♥
                         </div>
                     </div>
@@ -847,6 +850,17 @@
             }
         }
 
+        /* 【修復1a】新增點擊「選一張紙條吧」文字收回紙條的函式 */
+        function handleFrontHintClick(e) {
+            if (e) e.stopPropagation();
+            closeEnvelopePapers();
+        }
+
+        /* 【修復1a】把紙條收回開信狀態的專用函式 */
+        function closeEnvelopePapers() {
+            document.querySelectorAll('.paper-card').forEach(p => p.classList.remove('active-paper'));
+        }
+
         function openEnvelope() {
             if (isEnvelopeOpen) return;
             isEnvelopeOpen = true;
@@ -878,14 +892,22 @@
             }
         }
 
+        /* 【修復1a & 1b】翻背面時自動收回紙條，並隱藏提示文字；翻正面時恢復 */
         function flipEnvelopeToBack() {
+            closeEnvelopePapers();
             isEnvelopeFlippedBack = true;
             document.getElementById('envelope3dInner').classList.add('is-flipped-back');
+            const hint = document.getElementById('envelopeFrontHint');
+            if (hint) hint.classList.add('hidden');
         }
 
         function flipEnvelopeBack() {
             isEnvelopeFlippedBack = false;
             document.getElementById('envelope3dInner').classList.remove('is-flipped-back');
+            if (isEnvelopeOpen) {
+                const hint = document.getElementById('envelopeFrontHint');
+                if (hint) hint.classList.remove('hidden');
+            }
             pauseCassetteAudio();
         }
 
@@ -921,9 +943,16 @@
             }, 300);
         }
 
+        /* 【修復2】重選信封時，解除拍立得相片牆的全螢幕蓋板 */
         function returnToEnvelope() {
             if (isEditMode) return;
             closeStoryStage();
+
+            const sidebar = document.getElementById('sidebarPanel');
+            if (sidebar) {
+                sidebar.classList.remove('mobile-fullscreen-sidebar');
+            }
+
             const coverStage = document.getElementById('viewCoverStage');
             const btnReturn = document.getElementById('btnReturnToEnvelope');
             btnReturn.classList.add('hidden');
@@ -1256,7 +1285,7 @@
         window.handleImgFallback = function(imgEl) {
             let queue = [];
             try {
-                queue = JSON.parse(imgEl.getAttribute('data-fallback-queue') || '[]');
+                queue = JSON.parse(imgEl.getAttribute('data-[#fallback-queue') || '[]');
             } catch (e) { queue = []; }
 
             if (queue.length > 0) {
@@ -1730,7 +1759,7 @@
                     const listData = json.data || (Array.isArray(json) ? json : null);
                     if (listData) {
                         renderMapMarkers(listData);
-                        if (showAlert) alert("✅ 連线成功！已成功同步雲端手帳。");
+                        if (showAlert) alert("✅ 連線成功！已成功同步雲端手帳。");
                         return;
                     }
                 }
@@ -2189,9 +2218,10 @@
 
             const safeNotes = currentItem.notes ? escapeHtml(currentItem.notes) : '這一天也寫下了特別的記憶... (*\'∀\')~♥';
 
+            /* 【修復3】將手機底欄由 fixed bottom-0 改為 relative pb-2，並移至內部卡片上方，避免與系統浮動按鈕重疊 */
             container.innerHTML = `
                 <div class="w-full h-full flex flex-col items-center justify-center relative p-0 md:p-2 select-none">
-                    <div class="relative w-full max-w-6xl h-full md:h-[92vh] bg-[#fbf7ee] rounded-none md:rounded-2xl shadow-2xl border-0 md:border-4 border-[#bcaaa4] flex flex-col md:flex-row overflow-hidden pb-14 md:pb-0">
+                    <div class="relative w-full max-w-6xl h-full md:h-[92vh] bg-[#fbf7ee] rounded-none md:rounded-2xl shadow-2xl border-0 md:border-4 border-[#bcaaa4] flex flex-col md:flex-row overflow-hidden pb-2 md:pb-0">
                         
                         <div class="hidden md:block absolute left-1/2 top-0 bottom-0 w-8 -translate-x-1/2 scrapbook-spine z-30 pointer-events-none"></div>
 
@@ -2257,15 +2287,15 @@
                             </div>
                         </div>
 
-                        <!-- 📱 手機底欄 -->
-                        <div class="md:hidden fixed bottom-0 inset-x-0 h-12 bg-[#f5ebe0] border-t border-[#ddc8b4] flex items-center justify-between px-4 z-50 shadow-lg" onclick="event.stopPropagation();">
-                            <button onclick="switchTeaserCardWithAnim((${window.currentTeaserIndex} - 1 + ${chatItems.length}) % ${chatItems.length})" class="px-3 py-1.5 rounded-lg bg-[#e6ccb2] active:bg-[#ddc8b4] text-[#5d4037] font-bold text-xs transition flex items-center gap-1 btn-interactive">
+                        <!-- 📱 手機底欄（調整為 relative 往上移動避開邊緣按鈕） -->
+                        <div class="md:hidden relative w-full h-11 bg-[#f5ebe0] border-t border-[#ddc8b4] flex items-center justify-between px-4 z-40 shadow-md shrink-0 mb-1" onclick="event.stopPropagation();">
+                            <button onclick="switchTeaserCardWithAnim((${window.currentTeaserIndex} - 1 + ${chatItems.length}) % ${chatItems.length})" class="px-3 py-1 rounded-lg bg-[#e6ccb2] active:bg-[#ddc8b4] text-[#5d4037] font-bold text-xs transition flex items-center gap-1 btn-interactive">
                                 ❮ 上一頁
                             </button>
                             <span class="font-mono text-xs font-bold text-[#7f5539]">
                                 PAGE ${window.currentTeaserIndex + 1} / ${chatItems.length}
                             </span>
-                            <button onclick="switchTeaserCardWithAnim((${window.currentTeaserIndex} + 1) % ${chatItems.length})" class="px-3 py-1.5 rounded-lg bg-[#e6ccb2] active:bg-[#ddc8b4] text-[#5d4037] font-bold text-xs transition flex items-center gap-1 btn-interactive">
+                            <button onclick="switchTeaserCardWithAnim((${window.currentTeaserIndex} + 1) % ${chatItems.length})" class="px-3 py-1 rounded-lg bg-[#e6ccb2] active:bg-[#ddc8b4] text-[#5d4037] font-bold text-xs transition flex items-center gap-1 btn-interactive">
                                 下一頁 ❯
                             </button>
                         </div>
