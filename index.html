@@ -209,15 +209,6 @@
             animation: cassetteSpin 2s linear infinite !important;
         }
 
-        @keyframes bubblePop {
-            0% { transform: scale(0.85) translateY(8px); opacity: 0; }
-            70% { transform: scale(1.02) translateY(-2px); opacity: 1; }
-            100% { transform: scale(1) translateY(0); opacity: 1; }
-        }
-        .animate-bubble-pop {
-            animation: bubblePop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-        }
-
         @keyframes photoFade {
             0% { opacity: 0.3; transform: scale(0.985); }
             100% { opacity: 1; transform: scale(1); }
@@ -412,6 +403,27 @@
         .stacked-photo-stack::before { transform: rotate(-3.5deg) translate(-4px, 2px); }
         .stacked-photo-stack::after { transform: rotate(3deg) translate(4px, 2px); }
 
+        /* 🎬 💭 黑膠底片標籤展開動畫與控制樣式（左上角定位向右展開） */
+        .film-badge-container {
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            transform-origin: top left;
+        }
+        .film-badge-container.is-expanded {
+            width: 240px !important;
+            height: auto !important;
+            border-radius: 1rem !important;
+            background-color: rgba(15, 23, 42, 0.88) !important;
+            backdrop-filter: blur(12px) !important;
+            border-color: rgba(244, 114, 182, 0.4) !important;
+            padding: 0.75rem !important;
+        }
+        @media (min-width: 768px) {
+            .film-badge-container.is-expanded {
+                width: 320px !important;
+                padding: 1rem !important;
+            }
+        }
+
         @media (max-width: 767px) {
             .mobile-fullscreen-sidebar {
                 position: fixed !important;
@@ -508,7 +520,6 @@
 
                     <div class="absolute inset-0 bg-[#f5ebe0] envelope-pocket-front rounded-b-2xl shadow-lg border-t border-[#ddc8b4] pointer-events-none"></div>
 
-                    <!-- 【修復1a】添加點擊提示字收回紙條的事件 handleFrontHintClick -->
                     <div id="envelopeFrontHint" onclick="handleFrontHintClick(event)" class="hidden absolute -bottom-9 inset-x-0 text-center text-[#e6ccb2] font-rounded text-sm tracking-widest animate-pulse pointer-events-auto cursor-pointer select-none z-30 drop-shadow-md">
                         ♥ 選一張紙條吧 ♥
                     </div>
@@ -646,7 +657,6 @@
         </div>
 
         <!-- 故事放映室舞台 -->
-        <!-- 【修復4】調整 pb 避免底部控制列擋住重選信封等浮動按鈕 -->
         <div id="storyStage" class="hidden fixed inset-0 z-[2000] bg-slate-950 flex flex-col justify-between items-center p-2.5 md:p-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(5rem,env(safe-area-inset-bottom))] select-none overflow-hidden">
             <div id="storyBgBlur" class="absolute inset-0 bg-cover bg-center blur-2xl opacity-40 scale-110 transition-all duration-700 pointer-events-none"></div>
             <div class="absolute inset-0 bg-gradient-to-b from-black/80 via-transparent to-black/90 pointer-events-none"></div>
@@ -663,7 +673,6 @@
                 </div>
             </div>
 
-            <!-- 【修復4】降低照片區塊最大高度，並縮小手機版 bubble 避免擠壓遮擋 -->
             <div class="relative z-30 w-full max-w-xl md:max-w-3xl flex-1 min-h-0 flex flex-col items-start my-1 overflow-hidden">
                 <div class="flex items-center gap-2 mb-2 drop-shadow-md shrink-0 w-full overflow-hidden">
                     <div class="w-6 h-6 md:w-8 md:h-8 rounded-full bg-gradient-to-tr from-amber-400 via-pink-500 to-rose-500 p-0.5 shadow-md flex items-center justify-center shrink-0">
@@ -697,18 +706,26 @@
                         <button onclick="event.stopPropagation(); nextTimelinePhoto()" class="text-white p-1"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
                     </div>
 
-                    <div id="storyBubble" class="absolute top-4 right-4 z-40 p-4 md:p-6 text-slate-800 cursor-move select-none max-w-[170px] md:max-w-[280px] animate-bubble-pop filter drop-shadow-xl pointer-events-auto">
-                        <svg class="absolute inset-0 w-full h-full -z-10 overflow-visible" viewBox="0 0 200 150" preserveAspectRatio="none">
-                            <path d="M 25,15 A 28,22 0 0,1 75,10 A 28,22 0 0,1 125,10 A 28,22 0 0,1 175,15 A 22,25 0 0,1 192,50 A 22,25 0 0,1 192,100 A 22,25 0 0,1 175,135 A 28,22 0 0,1 125,142 A 28,22 0 0,1 75,142 A 28,22 0 0,1 25,135 A 22,25 0 0,1 8,100 A 22,25 0 0,1 8,50 A 22,25 0 0,1 25,15 Z" 
-                                  fill="rgba(255, 255, 255, 0.96)" 
-                                  stroke="#f472b6" 
-                                  stroke-width="3.5" 
-                                  stroke-linejoin="round"
-                                  vector-effect="non-scaling-stroke"/>
-                        </svg>
+                    <!-- 🎬 【方案一：左上角 💭 悄悄話筆記標籤】 -->
+                    <div id="storyBubble" onclick="toggleStoryBubbleExpand(event)" 
+                         class="film-badge-container absolute top-4 left-4 z-40 w-10 h-10 rounded-full bg-slate-900/85 backdrop-blur-md border border-white/20 shadow-2xl cursor-pointer select-none flex items-center justify-center overflow-hidden pointer-events-auto">
+                        
+                        <!-- 💭 預設未點擊：左上角雲朵圖示狀態 -->
+                        <div id="storyBubbleIconState" class="flex items-center justify-center shrink-0">
+                            <span class="text-base animate-pulse" title="點擊展開筆記">💭</span>
+                        </div>
 
-                        <div id="storyBubbleNotes" class="text-[10px] md:text-xs text-slate-700 leading-relaxed font-rounded popup-notes max-h-24 md:max-h-36 overflow-y-auto pr-1 touch-scroll">
-                            這裡會顯示滿滿的筆記與回憶喔！(*'∀')~♥
+                        <!-- ✍️ 點擊後展開：深色磨砂筆記內容 -->
+                        <div id="storyBubbleExpandedContent" class="hidden flex-col w-full">
+                            <div class="flex items-center justify-between border-b border-white/15 pb-1 mb-1.5 text-slate-300 text-[10px] md:text-xs">
+                                <span class="flex items-center gap-1 font-bold text-pink-300">
+                                    <span class="text-xs">💭</span> 心裡的悄悄話
+                                </span>
+                                <span class="text-[9px] text-slate-400 font-mono">REC ★</span>
+                            </div>
+                            <div id="storyBubbleNotes" class="text-[10px] md:text-xs text-slate-100 leading-relaxed font-rounded popup-notes max-h-28 md:max-h-40 overflow-y-auto pr-1 touch-scroll">
+                                這裡會顯示滿滿的筆記與回憶喔！(*'∀')~♥
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -850,13 +867,11 @@
             }
         }
 
-        /* 【修復1a】新增點擊「選一張紙條吧」文字收回紙條的函式 */
         function handleFrontHintClick(e) {
             if (e) e.stopPropagation();
             closeEnvelopePapers();
         }
 
-        /* 【修復1a】把紙條收回開信狀態的專用函式 */
         function closeEnvelopePapers() {
             document.querySelectorAll('.paper-card').forEach(p => p.classList.remove('active-paper'));
         }
@@ -892,7 +907,6 @@
             }
         }
 
-        /* 【修復1a & 1b】翻背面時自動收回紙條，並隱藏提示文字；翻正面時恢復 */
         function flipEnvelopeToBack() {
             closeEnvelopePapers();
             isEnvelopeFlippedBack = true;
@@ -943,7 +957,6 @@
             }, 300);
         }
 
-        /* 【修復2】重選信封時，解除拍立得相片牆的全螢幕蓋板 */
         function returnToEnvelope() {
             if (isEditMode) return;
             closeStoryStage();
@@ -1285,7 +1298,7 @@
         window.handleImgFallback = function(imgEl) {
             let queue = [];
             try {
-                queue = JSON.parse(imgEl.getAttribute('data-[#fallback-queue') || '[]');
+                queue = JSON.parse(imgEl.getAttribute('data-fallback-queue') || '[]');
             } catch (e) { queue = []; }
 
             if (queue.length > 0) {
@@ -2218,10 +2231,9 @@
 
             const safeNotes = currentItem.notes ? escapeHtml(currentItem.notes) : '這一天也寫下了特別的記憶... (*\'∀\')~♥';
 
-            /* 【修復3】將手機底欄由 fixed bottom-0 改為 relative pb-2，並移至內部卡片上方，避免與系統浮動按鈕重疊 */
             container.innerHTML = `
                 <div class="w-full h-full flex flex-col items-center justify-center relative p-0 md:p-2 select-none">
-                    <div class="relative w-full max-w-6xl h-full md:h-[92vh] bg-[#fbf7ee] rounded-none md:rounded-2xl shadow-2xl border-0 md:border-4 border-[#bcaaa4] flex flex-col md:flex-row overflow-hidden pb-2 md:pb-0">
+                    <div class="relative w-full max-w-6xl h-full md:h-[92vh] bg-[#fbf7ee] rounded-none md:rounded-2xl shadow-2xl border-0 md:border-4 border-[#bcaaa4] flex flex-col md:flex-row overflow-hidden pb-4 md:pb-0">
                         
                         <div class="hidden md:block absolute left-1/2 top-0 bottom-0 w-8 -translate-x-1/2 scrapbook-spine z-30 pointer-events-none"></div>
 
@@ -2287,8 +2299,8 @@
                             </div>
                         </div>
 
-                        <!-- 📱 手機底欄（調整為 relative 往上移動避開邊緣按鈕） -->
-                        <div class="md:hidden relative w-full h-11 bg-[#f5ebe0] border-t border-[#ddc8b4] flex items-center justify-between px-4 z-40 shadow-md shrink-0 mb-1" onclick="event.stopPropagation();">
+                        <!-- 📱 手機底欄：整體向上平移 (mb-5 pb-2)，完整避開浮動按鈕 -->
+                        <div class="md:hidden relative w-full h-11 bg-[#f5ebe0] border-t border-[#ddc8b4] flex items-center justify-between px-4 z-40 shadow-md shrink-0 mb-5 pb-2" onclick="event.stopPropagation();">
                             <button onclick="switchTeaserCardWithAnim((${window.currentTeaserIndex} - 1 + ${chatItems.length}) % ${chatItems.length})" class="px-3 py-1 rounded-lg bg-[#e6ccb2] active:bg-[#ddc8b4] text-[#5d4037] font-bold text-xs transition flex items-center gap-1 btn-interactive">
                                 ❮ 上一頁
                             </button>
@@ -2723,6 +2735,28 @@
             }
         }
 
+        /* 🎬 💭 切換黑膠 / 悄悄話圖示收合與展開狀態 */
+        window.toggleStoryBubbleExpand = function(e) {
+            if (e) e.stopPropagation();
+            const bubble = document.getElementById('storyBubble');
+            const iconState = document.getElementById('storyBubbleIconState');
+            const expandedContent = document.getElementById('storyBubbleExpandedContent');
+            
+            if (!bubble) return;
+
+            const isExpanded = bubble.classList.contains('is-expanded');
+            if (isExpanded) {
+                bubble.classList.remove('is-expanded');
+                if (expandedContent) expandedContent.classList.add('hidden');
+                if (iconState) iconState.classList.remove('hidden');
+            } else {
+                bubble.classList.add('is-expanded');
+                if (iconState) iconState.classList.add('hidden');
+                if (expandedContent) expandedContent.classList.remove('hidden');
+                if (window.lucide) lucide.createIcons();
+            }
+        };
+
         function makeBubbleDraggable() {
             const bubble = document.getElementById('storyBubble');
             if (!bubble || bubble.dataset.dragInit) return;
@@ -2870,15 +2904,20 @@
                 mediaBox.classList.remove('animate-location-shift', 'animate-photo-fade');
                 void mediaBox.offsetWidth;
                 mediaBox.classList.add('animate-location-shift');
-
-                const bubble = document.getElementById('storyBubble');
-                bubble.classList.remove('animate-bubble-pop');
-                void bubble.offsetWidth;
-                bubble.classList.add('animate-bubble-pop');
             } else {
                 mediaContent.classList.remove('animate-photo-fade');
                 void mediaContent.offsetWidth;
                 mediaContent.classList.add('animate-photo-fade');
+            }
+
+            /* 🎬 切換照片時，預設將筆記標籤恢復為收合 (💭 圖示) 狀態 */
+            const bubble = document.getElementById('storyBubble');
+            const iconState = document.getElementById('storyBubbleIconState');
+            const expandedContent = document.getElementById('storyBubbleExpandedContent');
+            if (bubble) {
+                bubble.classList.remove('is-expanded');
+                if (iconState) iconState.classList.remove('hidden');
+                if (expandedContent) expandedContent.classList.add('hidden');
             }
 
             document.getElementById('storyBubbleNotes').innerText = item.notes ? item.notes : '這一天也留下了甜甜的回憶～ (´∀`)';
