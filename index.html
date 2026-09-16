@@ -706,7 +706,7 @@
                         <button onclick="event.stopPropagation(); nextTimelinePhoto()" class="text-white p-1"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
                     </div>
 
-                    <!-- 🎬 【方案一：左上角 💭 悄悄話筆記標籤】 -->
+                    <!-- 🎬 【左上角 💭 悄悄話筆記標籤】 -->
                     <div id="storyBubble" onclick="toggleStoryBubbleExpand(event)" 
                          class="film-badge-container absolute top-4 left-4 z-40 w-10 h-10 rounded-full bg-slate-900/85 backdrop-blur-md border border-white/20 shadow-2xl cursor-pointer select-none flex items-center justify-center overflow-hidden pointer-events-auto">
                         
@@ -2201,7 +2201,8 @@
                     <div class="relative inline-flex items-center justify-center max-h-full max-w-full ${totalImgs > 1 ? 'stacked-photo-stack' : ''}">
                         <div class="washi-tape-corner-left"></div>
                         <div class="washi-tape-corner-right"></div>
-                        <img src="${activeImg}" class="max-h-[50vh] md:max-h-[74vh] w-auto max-w-full object-contain rounded-xs shadow-md border border-slate-200/50 block" alt="對話截圖">
+                        <!-- 📸 手機版照片上限放大 15% (max-h-[58vh]) -->
+                        <img src="${activeImg}" class="max-h-[58vh] md:max-h-[74vh] w-auto max-w-full object-contain rounded-xs shadow-md border border-slate-200/50 block" alt="對話截圖">
                         ${totalImgs > 1 ? `
                             <button onclick="event.stopPropagation(); changeChatImage('${currentItem.id}', -1, ${totalImgs})" class="absolute left-2 top-1/2 -translate-y-1/2 z-30 bg-black/60 hover:bg-black/80 text-white rounded-full p-2 shadow-lg transition btn-interactive">
                                 <i data-lucide="chevron-left" class="w-4 h-4"></i>
@@ -2237,7 +2238,7 @@
                         
                         <div class="hidden md:block absolute left-1/2 top-0 bottom-0 w-8 -translate-x-1/2 scrapbook-spine z-30 pointer-events-none"></div>
 
-                        <!-- 👈 左頁 -->
+                        <!-- 👈 左頁 (照片區塊) -->
                         <div class="w-full md:w-1/2 flex-1 md:h-full px-3 md:px-4 pt-3 pb-2 flex flex-col justify-between relative border-b md:border-b-0 md:border-r border-[#d7ccc8] bg-[#f8f1e5] overflow-hidden">
                             
                             <div class="w-full flex items-center justify-between border-b border-[#d7ccc8] pb-1.5 px-1 shrink-0 z-30 h-8">
@@ -2260,10 +2261,10 @@
                             </div>
                         </div>
 
-                        <!-- 👉 右頁 -->
-                        <div onclick="revealRightPageNotes(event)" class="w-full md:w-1/2 h-[25vh] md:h-full px-3 md:px-4 pt-2 pb-2 flex flex-col justify-between relative bg-[#fdfbf7] shrink-0 cursor-pointer">
+                        <!-- 👉 右頁 (悄悄話區塊：手機版縮減高度至 16vh) -->
+                        <div onclick="revealRightPageNotes(event)" class="w-full md:w-1/2 h-[16vh] md:h-full px-3 md:px-4 pt-1.5 pb-1 flex flex-col justify-between relative bg-[#fdfbf7] shrink-0 cursor-pointer">
                             
-                            <div class="w-full border-b-2 border-dashed border-[#d7ccc8] pb-1 shrink-0 flex items-center justify-end relative z-30 h-7 md:h-8">
+                            <div class="w-full border-b-2 border-dashed border-[#d7ccc8] pb-1 shrink-0 flex items-center justify-end relative z-30 h-6 md:h-8">
                                 <button onclick="toggleTeaserCatalog(event)" class="px-2.5 py-0.5 md:px-3.5 md:py-1 rounded-full border-2 border-rose-600/80 text-rose-700 bg-rose-50/50 font-bold text-[10px] md:text-xs shadow-xs transition flex items-center gap-1 btn-interactive font-stamp">
                                     <span>對話紀錄 📖</span>
                                 </button>
@@ -2278,10 +2279,10 @@
                             </div>
 
                             <div class="flex-1 w-full letter-dashed-lines py-1 my-0.5 relative overflow-hidden flex flex-col justify-start">
-                                <div id="rightPageNotesCover" class="${window.isRightPageRevealed ? 'hidden opacity-0 pointer-events-none' : 'flex'} absolute inset-0 bg-[#fdfbf7] z-20 flex-col items-center justify-center text-center p-3 transition-all duration-300">
-                                    <div class="text-2xl md:text-5xl mb-1 text-[#bcaaa4] animate-pulse">✍️</div>
-                                    <div class="text-sm md:text-2xl font-bold text-[#735146] font-rounded tracking-wider">我的悄悄話</div>
-                                    <div class="text-[10px] md:text-sm text-[#8c6d62] font-mono mt-1 font-bold">✨ 點擊解鎖筆記...</div>
+                                <div id="rightPageNotesCover" class="${window.isRightPageRevealed ? 'hidden opacity-0 pointer-events-none' : 'flex'} absolute inset-0 bg-[#fdfbf7] z-20 flex-col items-center justify-center text-center p-2 transition-all duration-300">
+                                    <div class="text-xl md:text-5xl mb-0.5 text-[#bcaaa4] animate-pulse">✍️</div>
+                                    <div class="text-xs md:text-2xl font-bold text-[#735146] font-rounded tracking-wider">我的悄悄話</div>
+                                    <div class="text-[9px] md:text-sm text-[#8c6d62] font-mono mt-0.5 font-bold">✨ 點擊解鎖筆記...</div>
                                 </div>
 
                                 <div id="rightPageRealText" class="${window.isRightPageRevealed ? 'block animate-ink-reveal' : 'hidden'} text-slate-800 text-xs md:text-base leading-relaxed font-rounded popup-notes overflow-y-auto touch-scroll z-10 max-h-full">
@@ -2299,8 +2300,8 @@
                             </div>
                         </div>
 
-                        <!-- 📱 手機底欄：整體向上平移 (mb-5 pb-2)，完整避開浮動按鈕 -->
-                        <div class="md:hidden relative w-full h-11 bg-[#f5ebe0] border-t border-[#ddc8b4] flex items-center justify-between px-4 z-40 shadow-md shrink-0 mb-5 pb-2" onclick="event.stopPropagation();">
+                        <!-- 📱 手機底欄：增加底部下邊距 (mb-16)，大幅向上提避開右下角 💌 與左下角 ⚙️ 按鈕 -->
+                        <div class="md:hidden relative w-full h-11 bg-[#f5ebe0] border-t border-[#ddc8b4] flex items-center justify-between px-4 z-40 shadow-md shrink-0 mb-16 pb-1" onclick="event.stopPropagation();">
                             <button onclick="switchTeaserCardWithAnim((${window.currentTeaserIndex} - 1 + ${chatItems.length}) % ${chatItems.length})" class="px-3 py-1 rounded-lg bg-[#e6ccb2] active:bg-[#ddc8b4] text-[#5d4037] font-bold text-xs transition flex items-center gap-1 btn-interactive">
                                 ❮ 上一頁
                             </button>
